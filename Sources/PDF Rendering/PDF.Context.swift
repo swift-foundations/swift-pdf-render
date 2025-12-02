@@ -40,6 +40,20 @@ extension PDF {
         /// as a single wrapped unit. Inline elements append to it without rendering.
         public var inlineRuns: [PDF.TextRun] = []
 
+        // MARK: - List Context
+
+        /// Type of list being rendered
+        public enum ListType: Sendable {
+            case unordered
+            case ordered(startNumber: Int)
+        }
+
+        /// Stack of active lists (for nested list support)
+        public var listStack: [(type: ListType, currentIndex: Int)] = []
+
+        /// Preformatted mode - preserves whitespace in `<pre>` blocks
+        public var preserveWhitespace: Bool = false
+
         // MARK: - Pagination Support
 
         /// Initial X position (left margin)
@@ -137,6 +151,41 @@ extension PDF {
         /// Check if there are pending inline runs
         public var hasInlineRuns: Bool {
             !inlineRuns.isEmpty
+        }
+
+        // MARK: - List Context Management
+
+        /// Push a new list onto the context stack
+        public mutating func pushList(_ type: ListType) {
+            let startIndex: Int
+            switch type {
+            case .unordered:
+                startIndex = 0
+            case .ordered(let start):
+                startIndex = start
+            }
+            listStack.append((type: type, currentIndex: startIndex))
+        }
+
+        /// Pop the current list from the stack
+        public mutating func popList() {
+            _ = listStack.popLast()
+        }
+
+        /// Get the next list marker and advance the counter
+        ///
+        /// Returns `-` for unordered lists, `1.`, `2.`, etc. for ordered lists.
+        public mutating func nextListMarker() -> String {
+            guard !listStack.isEmpty else { return "-" }
+            let index = listStack.count - 1
+            switch listStack[index].type {
+            case .unordered:
+                return "-"
+            case .ordered:
+                let num = listStack[index].currentIndex
+                listStack[index].currentIndex += 1
+                return "\(num)."
+            }
         }
 
         // MARK: - Pagination

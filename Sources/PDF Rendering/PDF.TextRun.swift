@@ -120,8 +120,8 @@ extension PDF {
         ) -> PDF.Content {
             guard !runs.isEmpty else { return PDF.Content() }
 
-            // Tokenize runs into styled words
-            let tokens = tokenize(runs)
+            // Tokenize runs into styled words (preserve whitespace for preformatted text)
+            let tokens = tokenize(runs, preserveWhitespace: context.preserveWhitespace)
             guard !tokens.isEmpty else { return PDF.Content() }
 
             // Build lines from tokens
@@ -148,11 +148,12 @@ extension PDF {
 // MARK: - Tokenization
 
 extension PDF.TextRun {
-    /// A styled token (word or whitespace)
+    /// A styled token (word, whitespace, or line break)
     struct Token: Sendable {
         enum Kind: Sendable {
             case word(String)
             case space
+            case lineBreak  // Explicit line break for preformatted text
         }
 
         let kind: Kind
@@ -166,6 +167,8 @@ extension PDF.TextRun {
                 return font.stringWidth(text, atSize: fontSize)
             case .space:
                 return font.stringWidth(" ", atSize: fontSize)
+            case .lineBreak:
+                return 0  // Line breaks have no width
             }
         }
 
@@ -173,42 +176,93 @@ extension PDF.TextRun {
             switch kind {
             case .word(let text): return text
             case .space: return " "
+            case .lineBreak: return ""
             }
         }
     }
 
     /// Tokenize runs into styled words and spaces
-    static func tokenize(_ runs: [PDF.TextRun]) -> [Token] {
+    ///
+    /// - Parameters:
+    ///   - runs: Text runs to tokenize
+    ///   - preserveWhitespace: If true, preserves newlines as explicit line breaks
+    ///     and doesn't collapse multiple spaces. Used for `<pre>` blocks.
+    static func tokenize(_ runs: [PDF.TextRun], preserveWhitespace: Bool = false) -> [Token] {
         var tokens: [Token] = []
 
         for run in runs {
             // Handle empty text
             if run.text.isEmpty { continue }
 
-            // Track if we're at the start of a word
+            // Track current word being built
             var currentWord = ""
 
             for char in run.text {
-                if char == " " || char == "\t" || char == "\n" {
-                    // Flush current word if any
-                    if !currentWord.isEmpty {
+                if preserveWhitespace {
+                    // Preformatted mode: preserve structure
+                    if char == "\n" {
+                        // Flush current word if any
+                        if !currentWord.isEmpty {
+                            tokens.append(Token(
+                                kind: .word(currentWord),
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color
+                            ))
+                            currentWord = ""
+                        }
+                        // Add explicit line break
                         tokens.append(Token(
-                            kind: .word(currentWord),
+                            kind: .lineBreak,
                             font: run.font,
                             fontSize: run.fontSize,
                             color: run.color
                         ))
-                        currentWord = ""
+                    } else if char == " " || char == "\t" {
+                        // In preformatted mode, each space/tab is its own token
+                        if !currentWord.isEmpty {
+                            tokens.append(Token(
+                                kind: .word(currentWord),
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color
+                            ))
+                            currentWord = ""
+                        }
+                        // Use tab as 4 spaces worth of width
+                        let spaceText = char == "\t" ? "    " : " "
+                        tokens.append(Token(
+                            kind: .word(spaceText),
+                            font: run.font,
+                            fontSize: run.fontSize,
+                            color: run.color
+                        ))
+                    } else {
+                        currentWord.append(char)
                     }
-                    // Add space token
-                    tokens.append(Token(
-                        kind: .space,
-                        font: run.font,
-                        fontSize: run.fontSize,
-                        color: run.color
-                    ))
                 } else {
-                    currentWord.append(char)
+                    // Normal mode: collapse whitespace
+                    if char == " " || char == "\t" || char == "\n" {
+                        // Flush current word if any
+                        if !currentWord.isEmpty {
+                            tokens.append(Token(
+                                kind: .word(currentWord),
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color
+                            ))
+                            currentWord = ""
+                        }
+                        // Add space token
+                        tokens.append(Token(
+                            kind: .space,
+                            font: run.font,
+                            fontSize: run.fontSize,
+                            color: run.color
+                        ))
+                    } else {
+                        currentWord.append(char)
+                    }
                 }
             }
 
@@ -285,6 +339,13 @@ extension PDF.TextRun {
                     }
                     // Otherwise skip the space (will start new line on next word)
                 }
+
+            case .lineBreak:
+                // Explicit line break - finish current line and start new one
+                // Add current line even if empty (to preserve blank lines in preformatted text)
+                lines.append(currentLine)
+                currentLine = Line(tokens: [])
+                currentWidth = 0
             }
         }
 
