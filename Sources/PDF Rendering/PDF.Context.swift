@@ -34,6 +34,12 @@ extension PDF {
         /// Line height multiplier
         public var lineHeight: Double
 
+        /// Accumulated inline text runs (for inline flow)
+        ///
+        /// Block elements flush this buffer to render accumulated inline content
+        /// as a single wrapped unit. Inline elements append to it without rendering.
+        public var inlineRuns: [PDF.TextRun] = []
+
         /// Create a render context
         public init(
             x: Double = 0,
@@ -80,6 +86,34 @@ extension PDF {
         /// Advance Y position by specified amount
         public mutating func advanceY(_ amount: Double) {
             y += amount
+        }
+
+        // MARK: - Inline Text Flow
+
+        /// Append a text run to the inline buffer.
+        ///
+        /// Text runs accumulate until a block element flushes them.
+        /// This enables proper inline flow with mixed styling.
+        public mutating func appendInlineRun(_ run: PDF.TextRun) {
+            inlineRuns.append(run)
+        }
+
+        /// Flush accumulated inline runs, rendering them as a wrapped block.
+        ///
+        /// Call this at the end of block elements (p, div, h1-h6, etc.)
+        /// to render accumulated inline content with proper line wrapping.
+        ///
+        /// - Returns: PDF content operations for the flushed text
+        public mutating func flushInlineRuns() -> PDF.Content {
+            guard !inlineRuns.isEmpty else { return PDF.Content() }
+            let runs = inlineRuns
+            inlineRuns = []
+            return PDF.TextRun.renderRuns(runs, context: &self)
+        }
+
+        /// Check if there are pending inline runs
+        public var hasInlineRuns: Bool {
+            !inlineRuns.isEmpty
         }
     }
 }
