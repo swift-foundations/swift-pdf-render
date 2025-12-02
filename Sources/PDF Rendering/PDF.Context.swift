@@ -40,6 +40,23 @@ extension PDF {
         /// as a single wrapped unit. Inline elements append to it without rendering.
         public var inlineRuns: [PDF.TextRun] = []
 
+        // MARK: - Pagination Support
+
+        /// Initial X position (left margin)
+        private var initialX: Double
+
+        /// Initial Y position (top margin)
+        private var initialY: Double
+
+        /// Maximum Y position (bottom boundary = top margin + content height)
+        private var maxY: Double
+
+        /// Operations for completed pages
+        public var completedPages: [[PDF.Operation]] = []
+
+        /// Operations for current page
+        public var currentPageOperations: [PDF.Operation] = []
+
         /// Create a render context
         public init(
             x: Double = 0,
@@ -53,6 +70,9 @@ extension PDF {
         ) {
             self.x = x
             self.y = y
+            self.initialX = x
+            self.initialY = y
+            self.maxY = y + availableHeight
             self.availableWidth = availableWidth
             self.availableHeight = availableHeight
             self.font = font
@@ -65,6 +85,9 @@ extension PDF {
         public init(page: PDF.Page) {
             self.x = page.margins.left
             self.y = page.margins.top
+            self.initialX = page.margins.left
+            self.initialY = page.margins.top
+            self.maxY = page.margins.top + page.contentHeight
             self.availableWidth = page.contentWidth
             self.availableHeight = page.contentHeight
             self.font = .helvetica
@@ -114,6 +137,63 @@ extension PDF {
         /// Check if there are pending inline runs
         public var hasInlineRuns: Bool {
             !inlineRuns.isEmpty
+        }
+
+        // MARK: - Pagination
+
+        /// Check if adding the given height would exceed the page boundary
+        public func wouldExceedPage(adding height: Double) -> Bool {
+            y + height > maxY
+        }
+
+        /// Remaining space on current page
+        public var remainingHeight: Double {
+            max(0, maxY - y)
+        }
+
+        /// Start a new page, saving current operations
+        public mutating func startNewPage() {
+            // Save current page operations
+            if !currentPageOperations.isEmpty {
+                completedPages.append(currentPageOperations)
+                currentPageOperations = []
+            }
+
+            // Reset position to top of page
+            y = initialY
+            x = initialX
+        }
+
+        /// Add operation to current page
+        public mutating func addOperation(_ operation: PDF.Operation) {
+            currentPageOperations.append(operation)
+        }
+
+        /// Add multiple operations to current page
+        public mutating func addOperations(_ operations: [PDF.Operation]) {
+            currentPageOperations.append(contentsOf: operations)
+        }
+
+        /// Get all pages' operations (completed + current)
+        public func getAllPages() -> [[PDF.Operation]] {
+            var allPages = completedPages
+            if !currentPageOperations.isEmpty {
+                allPages.append(currentPageOperations)
+            }
+            return allPages
+        }
+
+        /// Check if we need a page break and start new page if so
+        ///
+        /// Call this before rendering content that requires `height` space.
+        /// Returns true if a new page was started.
+        @discardableResult
+        public mutating func checkPageBreak(needing height: Double) -> Bool {
+            if wouldExceedPage(adding: height) {
+                startNewPage()
+                return true
+            }
+            return false
         }
     }
 }

@@ -9,7 +9,7 @@ extension PDF {
     /// when a block element flushes them, enabling proper inline flow
     /// with mixed styling (e.g., "It supports **bold** and *italic* text.").
     public struct TextRun: Sendable {
-        /// The text content
+        /// The text content (sanitized for PDF encoding)
         public let text: String
 
         /// Font for this text segment
@@ -28,10 +28,83 @@ extension PDF {
             fontSize: Double,
             color: PDF.Color
         ) {
-            self.text = text
+            // Sanitize text to replace unsupported Unicode characters
+            self.text = Self.sanitizeForPDF(text)
             self.font = font
             self.fontSize = fontSize
             self.color = color
+        }
+
+        /// Sanitize text for PDF Standard 14 fonts (WinAnsiEncoding).
+        ///
+        /// Replaces Unicode characters that aren't in WinAnsiEncoding
+        /// with ASCII equivalents.
+        private static func sanitizeForPDF(_ text: String) -> String {
+            var result = ""
+            result.reserveCapacity(text.count)
+
+            for scalar in text.unicodeScalars {
+                switch scalar.value {
+                // Em-dash (—) → --
+                case 0x2014:
+                    result += "--"
+                // En-dash (–) → -
+                case 0x2013:
+                    result += "-"
+                // Left double quote (") → "
+                case 0x201C:
+                    result += "\""
+                // Right double quote (") → "
+                case 0x201D:
+                    result += "\""
+                // Left single quote (') → '
+                case 0x2018:
+                    result += "'"
+                // Right single quote (') → '
+                case 0x2019:
+                    result += "'"
+                // Horizontal ellipsis (…) → ...
+                case 0x2026:
+                    result += "..."
+                // Bullet (•) → -
+                case 0x2022:
+                    result += "-"
+                // Non-breaking space → regular space
+                case 0x00A0:
+                    result += " "
+                // Minus sign (−) → -
+                case 0x2212:
+                    result += "-"
+                // Multiplication sign (×) → x
+                case 0x00D7:
+                    result += "x"
+                // Division sign (÷) → /
+                case 0x00F7:
+                    result += "/"
+                // Copyright sign (©) → (c) for safety
+                case 0x00A9:
+                    result += "(c)"
+                // Trademark (™) → (TM)
+                case 0x2122:
+                    result += "(TM)"
+                // Registered trademark (®) → (R) for safety
+                case 0x00AE:
+                    result += "(R)"
+                // Check if in WinAnsiEncoding range (Basic Latin + Latin-1 Supplement)
+                case 0x0020...0x007E, 0x00A1...0x00FF:
+                    result.append(Character(scalar))
+                // Other characters → ?
+                default:
+                    // For characters outside WinAnsiEncoding, use replacement
+                    if scalar.value < 0x0100 {
+                        result.append(Character(scalar))
+                    } else {
+                        result += "?"
+                    }
+                }
+            }
+
+            return result
         }
 
         /// Render multiple text runs with proper line wrapping.
@@ -40,6 +113,7 @@ extension PDF {
         /// 1. Tokenizes all runs into words with their styling
         /// 2. Builds lines by accumulating words until width exceeds available
         /// 3. Emits TextOperations with precise X positions for each styled segment
+        /// 4. Handles page breaks automatically when lines exceed page boundary
         public static func renderRuns(
             _ runs: [TextRun],
             context: inout PDF.Context
@@ -53,16 +127,20 @@ extension PDF {
             // Build lines from tokens
             let lines = buildLines(tokens: tokens, maxWidth: context.availableWidth)
 
-            // Render lines
-            var operations: [PDF.Operation] = []
-
+            // Render lines with pagination support
             for line in lines {
+                // Check if this line would exceed the page
+                let lineHeight = context.lineHeightPoints
+                context.checkPageBreak(needing: lineHeight)
+
+                // Render the line and add operations to context
                 let lineOps = renderLine(line, context: &context)
-                operations.append(contentsOf: lineOps)
+                context.addOperations(lineOps)
                 context.advanceLine()
             }
 
-            return PDF.Content(operations: operations)
+            // Return empty - operations are stored in context for pagination
+            return PDF.Content()
         }
     }
 }
