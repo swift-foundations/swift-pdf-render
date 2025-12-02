@@ -1,4 +1,4 @@
-// PDF.RenderContext.swift
+// PDF.Context.swift
 
 public import PDF_Standard
 
@@ -6,10 +6,10 @@ extension PDF {
     /// Rendering context for PDF layout
     ///
     /// Tracks current position, available dimensions, and styling
-    /// for layout primitives to use when generating content operations.
+    /// for layout views to use when generating content operations.
     ///
     /// Uses top-left origin with y increasing downward (matching HTML/CSS).
-    public struct RenderContext: Sendable {
+    public struct Context: Sendable {
         /// Current X position (from left edge)
         public var x: Double
 
