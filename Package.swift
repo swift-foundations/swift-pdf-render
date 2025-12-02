@@ -1,0 +1,33 @@
+// swift-tools-version:6.0
+
+import PackageDescription
+
+let package = Package(
+    name: "swift-pdf-rendering",
+    platforms: [
+        .macOS(.v15),
+        .iOS(.v18),
+    ],
+    products: [
+        .library(name: "PDF Rendering", targets: ["PDF Rendering"]),
+    ],
+    dependencies: [
+        .package(path: "../swift-renderable"),
+        .package(path: "/Users/coen/Developer/swift-standards/swift-pdf-standard"),
+    ],
+    targets: [
+        .target(
+            name: "PDF Rendering",
+            dependencies: [
+                .product(name: "Renderable", package: "swift-renderable"),
+                .product(name: "PDF Standard", package: "swift-pdf-standard"),
+            ]
+        ),
+        .testTarget(
+            name: "PDF Rendering Tests",
+            dependencies: [
+                "PDF Rendering",
+            ]
+        ),
+    ]
+)
