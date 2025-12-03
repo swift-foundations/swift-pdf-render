@@ -42,18 +42,16 @@ extension PDF.Stack {
             _ view: Self,
             context: inout PDF.Context
         ) -> PDF.Content {
-            var allOperations: [PDF.Content.Operation] = []
-
             for (index, child) in view.children.enumerated() {
-                let content = PDF.render(child, context: &context)
-                allOperations.append(contentsOf: content.operations)
+                _ = PDF.render(child, context: &context)
 
                 if index < view.children.count - 1 && view.spacing > 0 {
                     context.advanceY(view.spacing)
                 }
             }
 
-            return PDF.Content(operations: allOperations)
+            // Operations are accumulated in context
+            return PDF.Content()
         }
     }
 }
@@ -93,14 +91,12 @@ extension PDF.Stack {
             _ view: Self,
             context: inout PDF.Context
         ) -> PDF.Content {
-            var allOperations: [PDF.Content.Operation] = []
             let startY = context.y
             var maxHeight: Double = 0
 
             for (index, child) in view.children.enumerated() {
                 let childStartY = context.y
-                let content = PDF.render(child, context: &context)
-                allOperations.append(contentsOf: content.operations)
+                _ = PDF.render(child, context: &context)
 
                 let childHeight = context.y - childStartY
                 maxHeight = max(maxHeight, childHeight)
@@ -114,7 +110,8 @@ extension PDF.Stack {
 
             context.y = startY + maxHeight
 
-            return PDF.Content(operations: allOperations)
+            // Operations are accumulated in context
+            return PDF.Content()
         }
     }
 }

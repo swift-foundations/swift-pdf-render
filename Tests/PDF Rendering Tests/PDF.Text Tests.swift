@@ -51,9 +51,9 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("Hello, World!")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        #expect(content.operations.count == 1)
+        #expect(context.currentPageOperations.count == 1)
     }
 
     @Test
@@ -69,7 +69,7 @@ struct `PDF.Text Tests` {
 
         let startY = context.y
         let text = PDF.Text("Hello")
-        _ = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
         #expect(context.y == startY + 14.4)
     }
@@ -81,14 +81,14 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            font: .courierBold
+            font: .courier.bold
         )
 
         let text = PDF.Text("Hello")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        if case .text(let op) = content.operations[0] {
-            #expect(op.font == .courierBold)
+        if case .text(let op) = context.currentPageOperations[0] {
+            #expect(op.font == .courier.bold)
         } else {
             Issue.record("Expected text operation")
         }
@@ -105,9 +105,9 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("Hello", font: .times)
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        if case .text(let op) = content.operations[0] {
+        if case .text(let op) = context.currentPageOperations[0] {
             #expect(op.font == .times)
         } else {
             Issue.record("Expected text operation")
@@ -126,9 +126,9 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("This is a longer text that should wrap to multiple lines")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        let textOps = content.operations.filter {
+        let textOps = context.currentPageOperations.filter {
             if case .text = $0 { return true }
             return false
         }
@@ -149,9 +149,9 @@ struct `PDF.Text Tests` {
 
         let startY = context.y
         let text = PDF.Text("This is a longer text that should wrap")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        let lineCount = content.operations.count
+        let lineCount = context.currentPageOperations.count
         let expectedY = startY + (Double(lineCount) * 14.4)
 
         #expect(abs(context.y - expectedY) < 0.01)
@@ -167,9 +167,9 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("Supercalifragilisticexpialidocious")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        #expect(!content.operations.isEmpty)
+        #expect(!context.currentPageOperations.isEmpty)
     }
 
     // MARK: - Text Position
@@ -184,9 +184,9 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("Hello")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        if case .text(let op) = content.operations[0] {
+        if case .text(let op) = context.currentPageOperations[0] {
             #expect(op.position.x == 100)
             #expect(op.position.y == 200)
         } else {
@@ -206,8 +206,8 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("")
-        let content = text.render(context: &context)
+        _ = PDF.render(text, context: &context)
 
-        #expect(content.operations.count == 1)
+        #expect(context.currentPageOperations.count == 1)
     }
 }

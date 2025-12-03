@@ -18,41 +18,11 @@ struct `PDF.View Tests` {
             availableHeight: 700
         )
 
-        let content = PDF.Content(operations: [
-            .text(PDF.Content.Text.Operation(
-                text: "Hello",
-                position: .zero,
-                font: .helvetica,
-                size: 12,
-                color: .black
-            ))
-        ])
+        // ContentStream is a leaf view that returns itself
+        let content = PDF.Content()
+        let rendered = PDF.Content._render(content, context: &context)
 
-        let rendered = content.render(context: &context)
-
-        #expect(rendered.operations.count == 1)
-    }
-
-    @Test
-    func `PDF.Content render returns self`() {
-        var context = PDF.Context(
-            availableWidth: 400,
-            availableHeight: 600
-        )
-
-        let original = PDF.Content(operations: [
-            .text(PDF.Content.Text.Operation(
-                text: "Test",
-                position: .zero,
-                font: .helvetica,
-                size: 12,
-                color: .black
-            ))
-        ])
-
-        let rendered = original.render(context: &context)
-
-        #expect(rendered.operations.count == original.operations.count)
+        #expect(rendered.data.isEmpty)
     }
 
     // MARK: - Custom View
@@ -76,14 +46,32 @@ struct `PDF.View Tests` {
         )
 
         let view = TwoLines()
-        let content = view.render(context: &context)
+        _ = PDF.render(view, context: &context)
 
-        let textOps = content.operations.filter {
+        // Operations should be added to context
+        let textOps = context.currentPageOperations.filter {
             if case .text = $0 { return true }
             return false
         }
 
         #expect(textOps.count == 2)
+    }
+
+    @Test
+    func `Views add operations to context`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
+        // Render a simple text view
+        let view = PDF.Text("Hello, World!")
+        _ = PDF.render(view, context: &context)
+
+        // Operations should be in context
+        #expect(!context.currentPageOperations.isEmpty)
     }
 }
 

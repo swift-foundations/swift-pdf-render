@@ -48,14 +48,11 @@ struct `PDF.Context Tests` {
     }
 
     @Test
-    func `Creates context from page`() {
-        let page = PDF.Page(
-            paperSize: .letter,
-            margins: PDF.EdgeInsets(all: 72),
-            content: PDF.Content()
+    func `Creates context from mediaBox and margins`() {
+        let context = PDF.Context(
+            mediaBox: .letter,
+            margins: PDF.EdgeInsets(all: 72)
         )
-
-        let context = PDF.Context(page: page)
 
         #expect(context.x == 72)
         #expect(context.y == 72)
@@ -64,14 +61,11 @@ struct `PDF.Context Tests` {
     }
 
     @Test
-    func `Creates context from A4 page`() {
-        let page = PDF.Page(
-            paperSize: .a4,
-            margins: .standard,
-            content: PDF.Content()
+    func `Creates context from A4 mediaBox`() {
+        let context = PDF.Context(
+            mediaBox: .a4,
+            margins: .standard
         )
-
-        let context = PDF.Context(page: page)
 
         #expect(context.x == 72)
         #expect(context.y == 72)
@@ -168,13 +162,13 @@ struct `PDF.Context Tests` {
 
         context.x = 100
         context.y = 200
-        context.font = .courierBold
+        context.font = .courier.bold
         context.fontSize = 16
         context.color = .red
 
         #expect(context.x == 100)
         #expect(context.y == 200)
-        #expect(context.font == .courierBold)
+        #expect(context.font == .courier.bold)
         #expect(context.fontSize == 16)
         #expect(context.color == .red)
     }

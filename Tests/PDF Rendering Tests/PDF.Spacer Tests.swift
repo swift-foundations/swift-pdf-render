@@ -24,7 +24,7 @@ struct `PDF.Spacer Tests` {
     // MARK: - Rendering
 
     @Test
-    func `Returns empty content`() {
+    func `Does not add operations`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
@@ -33,9 +33,9 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(50)
-        let content = spacer.render(context: &context)
+        _ = PDF.render(spacer, context: &context)
 
-        #expect(content.operations.isEmpty)
+        #expect(context.currentPageOperations.isEmpty)
     }
 
     @Test
@@ -48,7 +48,7 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(50)
-        _ = spacer.render(context: &context)
+        _ = PDF.render(spacer, context: &context)
 
         #expect(context.y == 122)
     }
@@ -63,7 +63,7 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(0)
-        _ = spacer.render(context: &context)
+        _ = PDF.render(spacer, context: &context)
 
         #expect(context.y == 72)
     }
@@ -78,7 +78,7 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(50)
-        _ = spacer.render(context: &context)
+        _ = PDF.render(spacer, context: &context)
 
         #expect(context.x == 100)
     }
@@ -101,7 +101,7 @@ struct `PDF.Spacer Tests` {
         }
 
         let startY = context.y
-        _ = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
         // "Before" (12) + Spacer (50) + "After" (12) = 74
         #expect(context.y == startY + 74)

@@ -52,10 +52,11 @@ extension PDF {
                 maxWidth: context.availableWidth
             )
 
-            var operations: [PDF.Content.Operation] = []
-
             for line in lines {
-                operations.append(.text(PDF.Content.Text.Operation(
+                // Check for page break before each line
+                context.checkPageBreak(needing: context.lineHeightPoints)
+
+                context.addOperation(.text(PDF.Render.TextOperation(
                     text: line,
                     position: PDF.Point(x: context.x, y: context.y),
                     font: effectiveFont,
@@ -65,7 +66,7 @@ extension PDF {
                 context.advanceLine()
             }
 
-            return PDF.Content(operations: operations)
+            return PDF.Content()
         }
 
         /// Wrap text to fit within max width

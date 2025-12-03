@@ -43,14 +43,14 @@ extension PDF {
 
             context.advanceY(view.thickness + view.padding)
 
-            return PDF.Content(operations: [
-                .graphics(.line(
-                    from: PDF.Point(x: startX, y: lineY),
-                    to: PDF.Point(x: endX, y: lineY),
-                    color: view.color,
-                    width: view.thickness
-                ))
-            ])
+            context.addOperation(.graphics(.line(
+                from: PDF.Point(x: startX, y: lineY),
+                to: PDF.Point(x: endX, y: lineY),
+                color: view.color,
+                width: view.thickness
+            )))
+
+            return PDF.Content()
         }
     }
 }

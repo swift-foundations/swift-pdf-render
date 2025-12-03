@@ -55,9 +55,9 @@ struct `PDF.Stack.Vertical Tests` {
             PDF.Text("Line 3")
         }
 
-        let content = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
-        let textOps = content.operations.filter {
+        let textOps = context.currentPageOperations.filter {
             if case .text = $0 { return true }
             return false
         }
@@ -82,7 +82,7 @@ struct `PDF.Stack.Vertical Tests` {
         }
 
         let startY = context.y
-        _ = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
         // 2 lines at 12pt + 20pt spacing between = 44pt
         #expect(context.y == startY + 12 + 20 + 12)
@@ -104,7 +104,7 @@ struct `PDF.Stack.Vertical Tests` {
         }
 
         let startY = context.y
-        _ = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
         // Single line, no spacing added
         #expect(context.y == startY + 12)
@@ -168,9 +168,9 @@ struct `PDF.Stack.Horizontal Tests` {
             PDF.Text("C")
         }
 
-        let content = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
-        let textOps = content.operations.filter {
+        let textOps = context.currentPageOperations.filter {
             if case .text = $0 { return true }
             return false
         }
@@ -195,7 +195,7 @@ struct `PDF.Stack.Horizontal Tests` {
         }
 
         let startY = context.y
-        _ = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
         // Both are single lines, so max height is one line
         #expect(context.y == startY + 12)
@@ -230,9 +230,9 @@ struct `PDF.Stack Nested Tests` {
             PDF.Text("Below")
         }
 
-        let content = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
-        #expect(!content.operations.isEmpty)
+        #expect(!context.currentPageOperations.isEmpty)
     }
 
     @Test
@@ -252,8 +252,8 @@ struct `PDF.Stack Nested Tests` {
             PDF.Text("Side")
         }
 
-        let content = stack.render(context: &context)
+        _ = PDF.render(stack, context: &context)
 
-        #expect(!content.operations.isEmpty)
+        #expect(!context.currentPageOperations.isEmpty)
     }
 }

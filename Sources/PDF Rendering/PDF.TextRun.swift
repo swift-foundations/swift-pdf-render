@@ -421,8 +421,8 @@ extension PDF.TextRun {
 
 extension PDF.TextRun {
     /// Render a single line of tokens
-    static func renderLine(_ line: Line, context: inout PDF.Context) -> [PDF.Content.Operation] {
-        var operations: [PDF.Content.Operation] = []
+    static func renderLine(_ line: Line, context: inout PDF.Context) -> [PDF.Render.Operation] {
+        var operations: [PDF.Render.Operation] = []
         var currentX = context.x
 
         // Use trimmed tokens to avoid trailing spaces
@@ -466,7 +466,7 @@ extension PDF.TextRun {
             }
 
             // Draw text with vertical offset applied
-            operations.append(.text(PDF.Content.Text.Operation(
+            operations.append(.text(PDF.Render.TextOperation(
                 text: currentSegment,
                 position: PDF.Point(x: segmentStartX, y: textY),
                 font: font,
