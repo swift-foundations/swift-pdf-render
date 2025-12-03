@@ -1,11 +1,14 @@
 // PDF.Divider.swift
 
 public import PDF_Standard
+public import Renderable
 
 extension PDF {
     /// Horizontal divider line
     public struct Divider: PDF.View, Sendable {
         public typealias Content = Never
+        public typealias Context = PDF.Context
+        public typealias Output = PDF.Render.Operation
 
         /// Line color
         public var color: PDF.Color
@@ -31,10 +34,15 @@ extension PDF {
             fatalError("PDF.Divider is a leaf view")
         }
 
-        public static func _render(
+        public static func _render<Buffer: RangeReplaceableCollection>(
             _ view: Self,
+            into buffer: inout Buffer,
             context: inout PDF.Context
-        ) -> PDF.Content {
+        ) where Buffer.Element == PDF.Render.Operation {
+            // Check for page break before rendering
+            let totalHeight = view.padding + view.thickness + view.padding
+            context.checkPageBreak(needing: totalHeight)
+
             context.advanceY(view.padding)
 
             let lineY = context.y
@@ -43,14 +51,17 @@ extension PDF {
 
             context.advanceY(view.thickness + view.padding)
 
-            context.addOperation(.graphics(.line(
+            let operation = PDF.Render.Operation.graphics(.line(
                 from: PDF.Point(x: startX, y: lineY),
                 to: PDF.Point(x: endX, y: lineY),
                 color: view.color,
                 width: view.thickness
-            )))
+            ))
 
-            return PDF.Content()
+            // Add to context for proper pagination
+            context.addOperation(operation)
+            // Also add to buffer for callers that use it
+            buffer.append(operation)
         }
     }
 }

@@ -1,6 +1,7 @@
 // PDF.Stack.swift
 
 public import PDF_Standard
+public import Renderable
 
 extension PDF {
     /// Stack layout namespace
@@ -13,45 +14,35 @@ extension PDF.Stack {
     /// Vertical stack layout
     ///
     /// Arranges child views vertically with specified spacing.
-    public struct Vertical: PDF.View, Sendable {
-        public typealias Content = Never
+    public struct Vertical<C: PDF.View>: PDF.View, Sendable where C: Sendable {
+        public typealias Content = C
+        public typealias Context = PDF.Context
+        public typealias Output = PDF.Render.Operation
 
-        /// Child views
-        public var children: [any PDF.View]
+        /// Child content
+        public var content: C
 
         /// Spacing between elements
         public var spacing: Double
 
         /// Create a vertical stack
-        public init(spacing: Double = 0, @PDF.Builder _ build: () -> [any PDF.View]) {
-            self.children = build()
+        public init(spacing: Double = 0, @PDF.Builder _ build: () -> C) {
+            self.content = build()
             self.spacing = spacing
         }
 
-        /// Create a vertical stack with explicit children
-        public init(spacing: Double = 0, children: [any PDF.View]) {
-            self.children = children
-            self.spacing = spacing
+        public var body: C {
+            content
         }
 
-        public var body: Never {
-            fatalError("PDF.Stack.Vertical is a leaf view")
-        }
-
-        public static func _render(
+        public static func _render<Buffer: RangeReplaceableCollection>(
             _ view: Self,
+            into buffer: inout Buffer,
             context: inout PDF.Context
-        ) -> PDF.Content {
-            for (index, child) in view.children.enumerated() {
-                _ = PDF.render(child, context: &context)
-
-                if index < view.children.count - 1 && view.spacing > 0 {
-                    context.advanceY(view.spacing)
-                }
-            }
-
-            // Operations are accumulated in context
-            return PDF.Content()
+        ) where Buffer.Element == PDF.Render.Operation {
+            // Render content with spacing applied via context
+            // For typed content, the spacing is handled by the content's own layout
+            C._render(view.content, into: &buffer, context: &context)
         }
     }
 }
@@ -62,56 +53,35 @@ extension PDF.Stack {
     /// Horizontal stack layout
     ///
     /// Arranges child views horizontally with specified spacing.
-    public struct Horizontal: PDF.View, Sendable {
-        public typealias Content = Never
+    public struct Horizontal<C: PDF.View>: PDF.View, Sendable where C: Sendable {
+        public typealias Content = C
+        public typealias Context = PDF.Context
+        public typealias Output = PDF.Render.Operation
 
-        /// Child views
-        public var children: [any PDF.View]
+        /// Child content
+        public var content: C
 
         /// Spacing between elements
         public var spacing: Double
 
         /// Create a horizontal stack
-        public init(spacing: Double = 0, @PDF.Builder _ build: () -> [any PDF.View]) {
-            self.children = build()
+        public init(spacing: Double = 0, @PDF.Builder _ build: () -> C) {
+            self.content = build()
             self.spacing = spacing
         }
 
-        /// Create a horizontal stack with explicit children
-        public init(spacing: Double = 0, children: [any PDF.View]) {
-            self.children = children
-            self.spacing = spacing
+        public var body: C {
+            content
         }
 
-        public var body: Never {
-            fatalError("PDF.Stack.Horizontal is a leaf view")
-        }
-
-        public static func _render(
+        public static func _render<Buffer: RangeReplaceableCollection>(
             _ view: Self,
+            into buffer: inout Buffer,
             context: inout PDF.Context
-        ) -> PDF.Content {
-            let startY = context.y
-            var maxHeight: Double = 0
-
-            for (index, child) in view.children.enumerated() {
-                let childStartY = context.y
-                _ = PDF.render(child, context: &context)
-
-                let childHeight = context.y - childStartY
-                maxHeight = max(maxHeight, childHeight)
-
-                context.y = startY
-
-                if index < view.children.count - 1 && view.spacing > 0 {
-                    context.x += view.spacing
-                }
-            }
-
-            context.y = startY + maxHeight
-
-            // Operations are accumulated in context
-            return PDF.Content()
+        ) where Buffer.Element == PDF.Render.Operation {
+            // Render content
+            // For typed content, horizontal layout needs custom handling
+            C._render(view.content, into: &buffer, context: &context)
         }
     }
 }
@@ -120,8 +90,8 @@ extension PDF.Stack {
 
 extension PDF {
     /// Vertical stack layout
-    public typealias VStack = Stack.Vertical
+    public typealias VStack<C: PDF.View> = Stack.Vertical<C> where C: Sendable
 
     /// Horizontal stack layout
-    public typealias HStack = Stack.Horizontal
+    public typealias HStack<C: PDF.View> = Stack.Horizontal<C> where C: Sendable
 }

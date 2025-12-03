@@ -1,11 +1,14 @@
 // PDF.Spacer.swift
 
 public import PDF_Standard
+public import Renderable
 
 extension PDF {
     /// Fixed-size spacing element
     public struct Spacer: PDF.View, Sendable {
         public typealias Content = Never
+        public typealias Context = PDF.Context
+        public typealias Output = PDF.Render.Operation
 
         /// Vertical space in points
         public var height: Double
@@ -19,12 +22,13 @@ extension PDF {
             fatalError("PDF.Spacer is a leaf view")
         }
 
-        public static func _render(
+        public static func _render<Buffer: RangeReplaceableCollection>(
             _ view: Self,
+            into buffer: inout Buffer,
             context: inout PDF.Context
-        ) -> PDF.Content {
+        ) where Buffer.Element == PDF.Render.Operation {
             context.advanceY(view.height)
-            return PDF.Content()
+            // Spacer produces no operations, just advances position
         }
     }
 }

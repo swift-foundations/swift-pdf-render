@@ -1,6 +1,7 @@
 // PDF.View.swift
 
 public import PDF_Standard
+public import Renderable
 
 extension PDF {
     /// A protocol for types that can be rendered to PDF content operations.
@@ -9,8 +10,9 @@ extension PDF {
     /// allowing Swift types to represent PDF content in a declarative, composable manner.
     /// Each conforming type produces PDF content operations with computed positions.
     ///
-    /// This protocol mirrors the `Renderable` protocol pattern from swift-renderable,
-    /// using static method dispatch for compile-time type safety and monomorphization.
+    /// This protocol extends `Renderable` from swift-renderable with:
+    /// - `Output == PDF.Render.Operation` (PDF operations instead of bytes)
+    /// - `Context == PDF.Context` (PDF layout state)
     ///
     /// Example:
     /// ```swift
@@ -24,24 +26,10 @@ extension PDF {
     ///     }
     /// }
     /// ```
-    public protocol View: Sendable {
-        /// The type of content this view's body produces.
-        /// For terminal types that implement their own `_render`, use `Never`.
-        associatedtype Content: PDF.View
-
+    public protocol View: Renderable, Sendable
+    where Output == PDF.Render.Operation, Context == PDF.Context, Content: PDF.View {
         /// The body of this view, defining its structure and content.
-        var body: Content { get }
-
-        /// Renders this view into PDF content operations.
-        ///
-        /// - Parameters:
-        ///   - view: The view to render
-        ///   - context: Mutable PDF context tracking position and state
-        /// - Returns: PDF content operations for this view
-        static func _render(
-            _ view: Self,
-            context: inout PDF.Context
-        ) -> PDF.Content
+        @PDF.Builder var body: Content { get }
     }
 }
 
@@ -51,11 +39,12 @@ extension PDF.View where Content: PDF.View {
     /// Default implementation delegates to the body's render method.
     @inlinable
     @_disfavoredOverload
-    public static func _render(
+    public static func _render<Buffer: RangeReplaceableCollection>(
         _ view: Self,
+        into buffer: inout Buffer,
         context: inout PDF.Context
-    ) -> PDF.Content {
-        Content._render(view.body, context: &context)
+    ) where Buffer.Element == PDF.Render.Operation {
+        Content._render(view.body, into: &buffer, context: &context)
     }
 }
 
@@ -63,35 +52,25 @@ extension PDF.View where Content: PDF.View {
 
 extension Never: PDF.View {
     public typealias Content = Never
+    public typealias Context = PDF.Context
+    public typealias Output = PDF.Render.Operation
 
     public var body: Never {
         fatalError("Never has no body")
     }
 
-    public static func _render(
+    public static func _render<Buffer: RangeReplaceableCollection>(
         _ view: Self,
+        into buffer: inout Buffer,
         context: inout PDF.Context
-    ) -> PDF.Content {
+    ) where Buffer.Element == PDF.Render.Operation {
         fatalError("Never cannot be rendered")
     }
 }
 
-// MARK: - Content conformance (PDF.Content is a leaf type)
-
-extension PDF.Content: PDF.View {
-    public typealias Content = Never
-
-    public var body: Never {
-        fatalError("PDF.Content is a leaf view")
-    }
-
-    public static func _render(
-        _ view: Self,
-        context: inout PDF.Context
-    ) -> PDF.Content {
-        view
-    }
-}
+// Note: PDF.Content (ISO_32000.ContentStream) does NOT conform to PDF.View.
+// PDF.Content is the final low-level format (raw bytes), not an intermediate view.
+// The rendering pipeline is: PDF.View → [PDF.Render.Operation] → PDF.Page → PDF.Content
 
 // MARK: - Dynamic dispatch helper
 
@@ -99,13 +78,14 @@ extension PDF {
     /// Renders a view dynamically through existential dispatch.
     /// Use this when you have `any PDF.View` and need to call `_render`.
     @inlinable
-    public static func render(
+    public static func render<Buffer: RangeReplaceableCollection>(
         _ view: some PDF.View,
+        into buffer: inout Buffer,
         context: inout PDF.Context
-    ) -> PDF.Content {
-        func callRender<V: PDF.View>(_ v: V) -> PDF.Content {
-            V._render(v, context: &context)
+    ) where Buffer.Element == PDF.Render.Operation {
+        func callRender<V: PDF.View>(_ v: V) {
+            V._render(v, into: &buffer, context: &context)
         }
-        return callRender(view)
+        callRender(view)
     }
 }

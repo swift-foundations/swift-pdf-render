@@ -33,9 +33,10 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(50)
-        _ = PDF.render(spacer, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(spacer, into: &buffer, context: &context)
 
-        #expect(context.currentPageOperations.isEmpty)
+        #expect(buffer.isEmpty)
     }
 
     @Test
@@ -48,7 +49,8 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(50)
-        _ = PDF.render(spacer, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(spacer, into: &buffer, context: &context)
 
         #expect(context.y == 122)
     }
@@ -63,7 +65,8 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(0)
-        _ = PDF.render(spacer, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(spacer, into: &buffer, context: &context)
 
         #expect(context.y == 72)
     }
@@ -78,7 +81,8 @@ struct `PDF.Spacer Tests` {
         )
 
         let spacer = PDF.Spacer(50)
-        _ = PDF.render(spacer, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(spacer, into: &buffer, context: &context)
 
         #expect(context.x == 100)
     }
@@ -101,7 +105,8 @@ struct `PDF.Spacer Tests` {
         }
 
         let startY = context.y
-        _ = PDF.render(stack, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack, into: &buffer, context: &context)
 
         // "Before" (12) + Spacer (50) + "After" (12) = 74
         #expect(context.y == startY + 74)

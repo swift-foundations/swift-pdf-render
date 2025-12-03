@@ -1,11 +1,14 @@
 // PDF.Text.swift
 
 public import PDF_Standard
+public import Renderable
 
 extension PDF {
     /// Text element with automatic line wrapping
     public struct Text: PDF.View, Sendable {
         public typealias Content = Never
+        public typealias Context = PDF.Context
+        public typealias Output = PDF.Render.Operation
 
         /// The text to render
         public var text: String
@@ -36,10 +39,11 @@ extension PDF {
             fatalError("PDF.Text is a leaf view")
         }
 
-        public static func _render(
+        public static func _render<Buffer: RangeReplaceableCollection>(
             _ view: Self,
+            into buffer: inout Buffer,
             context: inout PDF.Context
-        ) -> PDF.Content {
+        ) where Buffer.Element == PDF.Render.Operation {
             let effectiveFont = view.font ?? context.font
             let effectiveSize = view.fontSize ?? context.fontSize
             let effectiveColor = view.color ?? context.color
@@ -56,17 +60,21 @@ extension PDF {
                 // Check for page break before each line
                 context.checkPageBreak(needing: context.lineHeightPoints)
 
-                context.addOperation(.text(PDF.Render.TextOperation(
+                let operation = PDF.Render.Operation.text(PDF.Render.TextOperation(
                     text: line,
                     position: PDF.Point(x: context.x, y: context.y),
                     font: effectiveFont,
                     size: effectiveSize,
                     color: effectiveColor
-                )))
+                ))
+
+                // Add to context for proper pagination
+                context.addOperation(operation)
+                // Also add to buffer for callers that use it
+                buffer.append(operation)
+
                 context.advanceLine()
             }
-
-            return PDF.Content()
         }
 
         /// Wrap text to fit within max width

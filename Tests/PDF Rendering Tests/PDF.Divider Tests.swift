@@ -43,9 +43,10 @@ struct `PDF.Divider Tests` {
         )
 
         let divider = PDF.Divider()
-        _ = PDF.render(divider, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(divider, into: &buffer, context: &context)
 
-        let graphicsOps = context.currentPageOperations.filter {
+        let graphicsOps = buffer.filter {
             if case .graphics = $0 { return true }
             return false
         }
@@ -63,9 +64,10 @@ struct `PDF.Divider Tests` {
         )
 
         let divider = PDF.Divider()
-        _ = PDF.render(divider, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(divider, into: &buffer, context: &context)
 
-        if case .graphics(let graphicsOp) = context.currentPageOperations[0] {
+        if case .graphics(let graphicsOp) = buffer[0] {
             if case .line(let from, let to, let color, let width) = graphicsOp {
                 #expect(from.x == 72)
                 #expect(to.x == 472)  // 72 + 400
@@ -90,7 +92,8 @@ struct `PDF.Divider Tests` {
 
         let divider = PDF.Divider(thickness: 2.0, padding: 10)
         let startY = context.y
-        _ = PDF.render(divider, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(divider, into: &buffer, context: &context)
 
         // padding before (10) + thickness (2) + padding after (10) = 22
         #expect(context.y == startY + 22)
@@ -106,9 +109,10 @@ struct `PDF.Divider Tests` {
         )
 
         let divider = PDF.Divider()
-        _ = PDF.render(divider, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(divider, into: &buffer, context: &context)
 
-        if case .graphics(let graphicsOp) = context.currentPageOperations[0] {
+        if case .graphics(let graphicsOp) = buffer[0] {
             if case .line(let from, let to, _, _) = graphicsOp {
                 #expect(from.x == 100)
                 #expect(to.x == 300)  // 100 + 200
@@ -126,9 +130,10 @@ struct `PDF.Divider Tests` {
         )
 
         let divider = PDF.Divider(color: .blue)
-        _ = PDF.render(divider, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(divider, into: &buffer, context: &context)
 
-        if case .graphics(let graphicsOp) = context.currentPageOperations[0] {
+        if case .graphics(let graphicsOp) = buffer[0] {
             if case .line(_, _, let color, _) = graphicsOp {
                 #expect(color == .blue)
             }

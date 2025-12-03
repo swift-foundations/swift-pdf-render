@@ -75,9 +75,10 @@ struct `PDF.Output Tests` {
         let margins = PDF.EdgeInsets(top: 72, left: 72, bottom: 72, right: 72)
         var context = PDF.Context(mediaBox: mediaBox, margins: margins)
 
-        // Render the document
+        // Render the document (operations are added to context.currentPageOperations automatically)
         let document = SampleDocument()
-        _ = PDF.render(document, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(document, into: &buffer, context: &context)
 
         // Build pages from context
         let allPages = context.getAllPages()
@@ -135,8 +136,10 @@ struct `PDF.Output Tests` {
         let margins = PDF.EdgeInsets(top: 72, left: 72, bottom: 72, right: 72)
         var context = PDF.Context(mediaBox: mediaBox, margins: margins)
 
+        // Render the document (operations are added to context.currentPageOperations automatically)
         let document = MultiPageDocument()
-        _ = PDF.render(document, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(document, into: &buffer, context: &context)
 
         let allPages = context.getAllPages()
         let allAnnotations = context.getAllAnnotations()

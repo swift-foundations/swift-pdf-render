@@ -10,19 +10,10 @@ struct `PDF.View Tests` {
     // MARK: - Protocol Conformance
 
     @Test
-    func `PDF.Content conforms to View`() {
-        var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 400,
-            availableHeight: 700
-        )
-
-        // ContentStream is a leaf view that returns itself
+    func `PDF.Content is created empty`() {
+        // ContentStream is a raw PDF content container
         let content = PDF.Content()
-        let rendered = PDF.Content._render(content, context: &context)
-
-        #expect(rendered.data.isEmpty)
+        #expect(content.data.isEmpty)
     }
 
     // MARK: - Custom View
@@ -46,10 +37,11 @@ struct `PDF.View Tests` {
         )
 
         let view = TwoLines()
-        _ = PDF.render(view, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(view, into: &buffer, context: &context)
 
-        // Operations should be added to context
-        let textOps = context.currentPageOperations.filter {
+        // Operations should be in the buffer
+        let textOps = buffer.filter {
             if case .text = $0 { return true }
             return false
         }
@@ -68,10 +60,11 @@ struct `PDF.View Tests` {
 
         // Render a simple text view
         let view = PDF.Text("Hello, World!")
-        _ = PDF.render(view, context: &context)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(view, into: &buffer, context: &context)
 
-        // Operations should be in context
-        #expect(!context.currentPageOperations.isEmpty)
+        // Operations should be in the buffer
+        #expect(!buffer.isEmpty)
     }
 }
 
@@ -82,26 +75,63 @@ struct `PDF.Builder Tests` {
 
     @Test
     func `Builds single view`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
         let stack = PDF.VStack {
             PDF.Text("Single")
         }
 
-        #expect(stack.children.count == 1)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack, into: &buffer, context: &context)
+
+        let textOps = buffer.filter {
+            if case .text = $0 { return true }
+            return false
+        }
+
+        #expect(textOps.count == 1)
     }
 
     @Test
     func `Builds multiple views`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
         let stack = PDF.VStack {
             PDF.Text("One")
             PDF.Text("Two")
             PDF.Text("Three")
         }
 
-        #expect(stack.children.count == 3)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack, into: &buffer, context: &context)
+
+        let textOps = buffer.filter {
+            if case .text = $0 { return true }
+            return false
+        }
+
+        #expect(textOps.count == 3)
     }
 
     @Test
     func `Handles optional views`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
         let includeOptional = true
 
         let stack = PDF.VStack {
@@ -111,11 +141,26 @@ struct `PDF.Builder Tests` {
             }
         }
 
-        #expect(stack.children.count == 2)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack, into: &buffer, context: &context)
+
+        let textOps = buffer.filter {
+            if case .text = $0 { return true }
+            return false
+        }
+
+        #expect(textOps.count == 2)
     }
 
     @Test
     func `Handles missing optional views`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
         let includeOptional = false
 
         let stack = PDF.VStack {
@@ -125,11 +170,26 @@ struct `PDF.Builder Tests` {
             }
         }
 
-        #expect(stack.children.count == 1)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack, into: &buffer, context: &context)
+
+        let textOps = buffer.filter {
+            if case .text = $0 { return true }
+            return false
+        }
+
+        #expect(textOps.count == 1)
     }
 
     @Test
     func `Handles if-else`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
         let useFirst = true
 
         let stack1 = PDF.VStack {
@@ -140,11 +200,26 @@ struct `PDF.Builder Tests` {
             }
         }
 
-        #expect(stack1.children.count == 1)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack1, into: &buffer, context: &context)
+
+        let textOps = buffer.filter {
+            if case .text = $0 { return true }
+            return false
+        }
+
+        #expect(textOps.count == 1)
     }
 
     @Test
     func `Handles for loops`() {
+        var context = PDF.Context(
+            x: 72,
+            y: 72,
+            availableWidth: 400,
+            availableHeight: 700
+        )
+
         let items = ["A", "B", "C", "D", "E"]
 
         let stack = PDF.VStack {
@@ -153,6 +228,14 @@ struct `PDF.Builder Tests` {
             }
         }
 
-        #expect(stack.children.count == 5)
+        var buffer: [PDF.Render.Operation] = []
+        PDF.render(stack, into: &buffer, context: &context)
+
+        let textOps = buffer.filter {
+            if case .text = $0 { return true }
+            return false
+        }
+
+        #expect(textOps.count == 5)
     }
 }
