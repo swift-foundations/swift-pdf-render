@@ -446,8 +446,12 @@ extension PDF.TextRun {
                   let color = currentColor else { return }
 
             let segmentWidth = font.stringWidth(currentSegment, atSize: size)
-            // Apply vertical offset (negative moves up in top-down coordinates)
-            let textY = context.y - currentVerticalOffset
+            // In top-left coordinates, context.y is the top of the line box.
+            // PDF text is positioned at the baseline, so we offset down by the
+            // ascender height (distance from baseline to top of tallest glyphs).
+            // The verticalOffset is used for sub/superscript (negative moves up).
+            let baselineY = context.y + font.metrics.ascender(atSize: size)
+            let textY = baselineY - currentVerticalOffset
 
             // Draw background first if present
             // In top-down coords: textY is baseline, text extends UP (smaller Y)

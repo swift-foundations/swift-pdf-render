@@ -60,9 +60,14 @@ extension PDF {
                 // Check for page break before each line
                 context.checkPageBreak(needing: context.lineHeightPoints)
 
+                // In top-left coordinates, context.y is the top of the line box.
+                // PDF text is positioned at the baseline, so we offset down by the
+                // ascender height (distance from baseline to top of tallest glyphs).
+                let baselineY = context.y + effectiveFont.metrics.ascender(atSize: effectiveSize)
+
                 let operation = PDF.Render.Operation.text(PDF.Render.TextOperation(
                     text: line,
-                    position: PDF.Point(x: context.x, y: context.y),
+                    position: PDF.Point(x: context.x, y: baselineY),
                     font: effectiveFont,
                     size: effectiveSize,
                     color: effectiveColor
