@@ -9,6 +9,9 @@ extension PDF {
     /// allowing Swift types to represent PDF content in a declarative, composable manner.
     /// Each conforming type produces PDF content operations with computed positions.
     ///
+    /// This protocol mirrors the `Renderable` protocol pattern from swift-renderable,
+    /// using static method dispatch for compile-time type safety and monomorphization.
+    ///
     /// Example:
     /// ```swift
     /// struct MyDocument: PDF.View {
@@ -22,44 +25,87 @@ extension PDF {
     /// }
     /// ```
     public protocol View: Sendable {
-        /// The type of content this view produces
-        associatedtype Body: PDF.View
+        /// The type of content this view's body produces.
+        /// For terminal types that implement their own `_render`, use `Never`.
+        associatedtype Content: PDF.View
 
-        /// The body of this view
-        var body: Body { get }
+        /// The body of this view, defining its structure and content.
+        var body: Content { get }
 
-        /// Render this view into PDF content operations
-        func render(context: inout PDF.Context) -> PDF.Content
+        /// Renders this view into PDF content operations.
+        ///
+        /// - Parameters:
+        ///   - view: The view to render
+        ///   - context: Mutable PDF context tracking position and state
+        /// - Returns: PDF content operations for this view
+        static func _render(
+            _ view: Self,
+            context: inout PDF.Context
+        ) -> PDF.Content
     }
 }
 
-extension PDF.View {
-    /// Default implementation delegates to body
-    public func render(context: inout PDF.Context) -> PDF.Content {
-        body.render(context: &context)
+// MARK: - Default Implementation
+
+extension PDF.View where Content: PDF.View {
+    /// Default implementation delegates to the body's render method.
+    @inlinable
+    @_disfavoredOverload
+    public static func _render(
+        _ view: Self,
+        context: inout PDF.Context
+    ) -> PDF.Content {
+        Content._render(view.body, context: &context)
     }
 }
 
 // MARK: - Never conformance for leaf views
 
 extension Never: PDF.View {
+    public typealias Content = Never
+
     public var body: Never {
         fatalError("Never has no body")
     }
 
-    public func render(context: inout PDF.Context) -> PDF.Content {
+    public static func _render(
+        _ view: Self,
+        context: inout PDF.Context
+    ) -> PDF.Content {
         fatalError("Never cannot be rendered")
     }
 }
 
-// MARK: - Content conformance
+// MARK: - Content conformance (PDF.Content is a leaf type)
 
 extension PDF.Content: PDF.View {
+    public typealias Content = Never
+
     public var body: Never {
         fatalError("PDF.Content is a leaf view")
     }
 
-    public func render(context: inout PDF.Context) -> PDF.Content {
-        self
+    public static func _render(
+        _ view: Self,
+        context: inout PDF.Context
+    ) -> PDF.Content {
+        view
+    }
+}
+
+// MARK: - Dynamic dispatch helper
+
+extension PDF {
+    /// Renders a view dynamically through existential dispatch.
+    /// Use this when you have `any PDF.View` and need to call `_render`.
+    @inlinable
+    public static func render(
+        _ view: some PDF.View,
+        context: inout PDF.Context
+    ) -> PDF.Content {
+        func callRender<V: PDF.View>(_ v: V) -> PDF.Content {
+            V._render(v, context: &context)
+        }
+        return callRender(view)
     }
 }

@@ -66,10 +66,16 @@ extension PDF {
         private var maxY: Double
 
         /// Operations for completed pages
-        public var completedPages: [[PDF.Operation]] = []
+        public var completedPages: [[PDF.Content.Operation]] = []
 
         /// Operations for current page
-        public var currentPageOperations: [PDF.Operation] = []
+        public var currentPageOperations: [PDF.Content.Operation] = []
+
+        /// Annotations for completed pages
+        public var completedPageAnnotations: [[PDF.Annotation]] = []
+
+        /// Annotations for current page
+        public var currentPageAnnotations: [PDF.Annotation] = []
 
         /// Create a render context
         public init(
@@ -202,11 +208,11 @@ extension PDF {
 
         /// Start a new page, saving current operations
         public mutating func startNewPage() {
-            // Save current page operations
-            if !currentPageOperations.isEmpty {
-                completedPages.append(currentPageOperations)
-                currentPageOperations = []
-            }
+            // Save current page operations and annotations
+            completedPages.append(currentPageOperations)
+            completedPageAnnotations.append(currentPageAnnotations)
+            currentPageOperations = []
+            currentPageAnnotations = []
 
             // Reset position to top of page
             y = initialY
@@ -214,22 +220,38 @@ extension PDF {
         }
 
         /// Add operation to current page
-        public mutating func addOperation(_ operation: PDF.Operation) {
+        public mutating func addOperation(_ operation: PDF.Content.Operation) {
             currentPageOperations.append(operation)
         }
 
         /// Add multiple operations to current page
-        public mutating func addOperations(_ operations: [PDF.Operation]) {
+        public mutating func addOperations(_ operations: [PDF.Content.Operation]) {
             currentPageOperations.append(contentsOf: operations)
         }
 
         /// Get all pages' operations (completed + current)
-        public func getAllPages() -> [[PDF.Operation]] {
+        public func getAllPages() -> [[PDF.Content.Operation]] {
             var allPages = completedPages
             if !currentPageOperations.isEmpty {
                 allPages.append(currentPageOperations)
             }
             return allPages
+        }
+
+        /// Get all pages' annotations (completed + current)
+        public func getAllAnnotations() -> [[PDF.Annotation]] {
+            var allAnnotations = completedPageAnnotations
+            // Ensure same count as pages
+            while allAnnotations.count < completedPages.count {
+                allAnnotations.append([])
+            }
+            allAnnotations.append(currentPageAnnotations)
+            return allAnnotations
+        }
+
+        /// Add a link annotation to the current page
+        public mutating func addLinkAnnotation(rect: PDF.Rect, uri: String) {
+            currentPageAnnotations.append(.link(PDF.LinkAnnotation(rect: rect, uri: uri)))
         }
 
         /// Check if we need a page break and start new page if so

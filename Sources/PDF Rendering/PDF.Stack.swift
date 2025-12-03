@@ -14,6 +14,8 @@ extension PDF.Stack {
     ///
     /// Arranges child views vertically with specified spacing.
     public struct Vertical: PDF.View, Sendable {
+        public typealias Content = Never
+
         /// Child views
         public var children: [any PDF.View]
 
@@ -36,15 +38,18 @@ extension PDF.Stack {
             fatalError("PDF.Stack.Vertical is a leaf view")
         }
 
-        public func render(context: inout PDF.Context) -> PDF.Content {
-            var allOperations: [PDF.Operation] = []
+        public static func _render(
+            _ view: Self,
+            context: inout PDF.Context
+        ) -> PDF.Content {
+            var allOperations: [PDF.Content.Operation] = []
 
-            for (index, child) in children.enumerated() {
-                let content = child.render(context: &context)
+            for (index, child) in view.children.enumerated() {
+                let content = PDF.render(child, context: &context)
                 allOperations.append(contentsOf: content.operations)
 
-                if index < children.count - 1 && spacing > 0 {
-                    context.advanceY(spacing)
+                if index < view.children.count - 1 && view.spacing > 0 {
+                    context.advanceY(view.spacing)
                 }
             }
 
@@ -60,6 +65,8 @@ extension PDF.Stack {
     ///
     /// Arranges child views horizontally with specified spacing.
     public struct Horizontal: PDF.View, Sendable {
+        public typealias Content = Never
+
         /// Child views
         public var children: [any PDF.View]
 
@@ -82,14 +89,17 @@ extension PDF.Stack {
             fatalError("PDF.Stack.Horizontal is a leaf view")
         }
 
-        public func render(context: inout PDF.Context) -> PDF.Content {
-            var allOperations: [PDF.Operation] = []
+        public static func _render(
+            _ view: Self,
+            context: inout PDF.Context
+        ) -> PDF.Content {
+            var allOperations: [PDF.Content.Operation] = []
             let startY = context.y
             var maxHeight: Double = 0
 
-            for (index, child) in children.enumerated() {
+            for (index, child) in view.children.enumerated() {
                 let childStartY = context.y
-                let content = child.render(context: &context)
+                let content = PDF.render(child, context: &context)
                 allOperations.append(contentsOf: content.operations)
 
                 let childHeight = context.y - childStartY
@@ -97,8 +107,8 @@ extension PDF.Stack {
 
                 context.y = startY
 
-                if index < children.count - 1 && spacing > 0 {
-                    context.x += spacing
+                if index < view.children.count - 1 && view.spacing > 0 {
+                    context.x += view.spacing
                 }
             }
 

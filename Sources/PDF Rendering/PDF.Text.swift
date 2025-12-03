@@ -5,6 +5,8 @@ public import PDF_Standard
 extension PDF {
     /// Text element with automatic line wrapping
     public struct Text: PDF.View, Sendable {
+        public typealias Content = Never
+
         /// The text to render
         public var text: String
 
@@ -34,23 +36,26 @@ extension PDF {
             fatalError("PDF.Text is a leaf view")
         }
 
-        public func render(context: inout PDF.Context) -> PDF.Content {
-            let effectiveFont = font ?? context.font
-            let effectiveSize = fontSize ?? context.fontSize
-            let effectiveColor = color ?? context.color
+        public static func _render(
+            _ view: Self,
+            context: inout PDF.Context
+        ) -> PDF.Content {
+            let effectiveFont = view.font ?? context.font
+            let effectiveSize = view.fontSize ?? context.fontSize
+            let effectiveColor = view.color ?? context.color
 
             // Word wrap the text
             let lines = wrapText(
-                text,
+                view.text,
                 font: effectiveFont,
                 size: effectiveSize,
                 maxWidth: context.availableWidth
             )
 
-            var operations: [PDF.Operation] = []
+            var operations: [PDF.Content.Operation] = []
 
             for line in lines {
-                operations.append(.text(PDF.TextOperation(
+                operations.append(.text(PDF.Content.Text.Operation(
                     text: line,
                     position: PDF.Point(x: context.x, y: context.y),
                     font: effectiveFont,
@@ -64,7 +69,7 @@ extension PDF {
         }
 
         /// Wrap text to fit within max width
-        private func wrapText(
+        private static func wrapText(
             _ text: String,
             font: PDF.Font,
             size: Double,

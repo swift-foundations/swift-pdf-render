@@ -5,6 +5,8 @@ public import PDF_Standard
 extension PDF {
     /// Horizontal divider line
     public struct Divider: PDF.View, Sendable {
+        public typealias Content = Never
+
         /// Line color
         public var color: PDF.Color
 
@@ -29,21 +31,24 @@ extension PDF {
             fatalError("PDF.Divider is a leaf view")
         }
 
-        public func render(context: inout PDF.Context) -> PDF.Content {
-            context.advanceY(padding)
+        public static func _render(
+            _ view: Self,
+            context: inout PDF.Context
+        ) -> PDF.Content {
+            context.advanceY(view.padding)
 
             let lineY = context.y
             let startX = context.x
             let endX = context.x + context.availableWidth
 
-            context.advanceY(thickness + padding)
+            context.advanceY(view.thickness + view.padding)
 
             return PDF.Content(operations: [
                 .graphics(.line(
                     from: PDF.Point(x: startX, y: lineY),
                     to: PDF.Point(x: endX, y: lineY),
-                    color: color,
-                    width: thickness
+                    color: view.color,
+                    width: view.thickness
                 ))
             ])
         }

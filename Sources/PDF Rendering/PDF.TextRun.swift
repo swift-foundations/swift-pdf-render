@@ -3,6 +3,13 @@
 public import PDF_Standard
 
 extension PDF {
+    /// Text decoration options
+    public enum TextDecoration: String, Sendable {
+        case none
+        case underline
+        case lineThrough
+    }
+
     /// A styled text segment for inline text flow.
     ///
     /// TextRuns accumulate in the context and are rendered together
@@ -21,18 +28,38 @@ extension PDF {
         /// Text color
         public let color: PDF.Color
 
+        /// Text decoration (underline, strikethrough, etc.)
+        public let textDecoration: TextDecoration
+
+        /// Background color for highlighting
+        public let backgroundColor: PDF.Color?
+
+        /// Vertical offset for subscript/superscript (positive = up, negative = down)
+        public let verticalOffset: Double
+
+        /// Optional link URL (makes this text a clickable link)
+        public let linkURL: String?
+
         /// Create a text run
         public init(
             text: String,
             font: PDF.Font,
             fontSize: Double,
-            color: PDF.Color
+            color: PDF.Color,
+            textDecoration: TextDecoration = .none,
+            backgroundColor: PDF.Color? = nil,
+            verticalOffset: Double = 0,
+            linkURL: String? = nil
         ) {
             // Sanitize text to replace unsupported Unicode characters
             self.text = Self.sanitizeForPDF(text)
             self.font = font
             self.fontSize = fontSize
             self.color = color
+            self.textDecoration = textDecoration
+            self.backgroundColor = backgroundColor
+            self.verticalOffset = verticalOffset
+            self.linkURL = linkURL
         }
 
         /// Sanitize text for PDF Standard 14 fonts (WinAnsiEncoding).
@@ -66,9 +93,9 @@ extension PDF {
                 // Horizontal ellipsis (…) → ...
                 case 0x2026:
                     result += "..."
-                // Bullet (•) → -
+                // Bullet (•) → hyphen for now (encoding issues with special chars)
                 case 0x2022:
-                    result += "-"
+                    result.append("-")
                 // Non-breaking space → regular space
                 case 0x00A0:
                     result += " "
@@ -160,6 +187,10 @@ extension PDF.TextRun {
         let font: PDF.Font
         let fontSize: Double
         let color: PDF.Color
+        let textDecoration: PDF.TextDecoration
+        let backgroundColor: PDF.Color?
+        let verticalOffset: Double
+        let linkURL: String?
 
         var width: Double {
             switch kind {
@@ -207,7 +238,11 @@ extension PDF.TextRun {
                                 kind: .word(currentWord),
                                 font: run.font,
                                 fontSize: run.fontSize,
-                                color: run.color
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                backgroundColor: run.backgroundColor,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL
                             ))
                             currentWord = ""
                         }
@@ -216,7 +251,11 @@ extension PDF.TextRun {
                             kind: .lineBreak,
                             font: run.font,
                             fontSize: run.fontSize,
-                            color: run.color
+                            color: run.color,
+                            textDecoration: run.textDecoration,
+                            backgroundColor: run.backgroundColor,
+                            verticalOffset: run.verticalOffset,
+                            linkURL: run.linkURL
                         ))
                     } else if char == " " || char == "\t" {
                         // In preformatted mode, each space/tab is its own token
@@ -225,7 +264,11 @@ extension PDF.TextRun {
                                 kind: .word(currentWord),
                                 font: run.font,
                                 fontSize: run.fontSize,
-                                color: run.color
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                backgroundColor: run.backgroundColor,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL
                             ))
                             currentWord = ""
                         }
@@ -235,7 +278,11 @@ extension PDF.TextRun {
                             kind: .word(spaceText),
                             font: run.font,
                             fontSize: run.fontSize,
-                            color: run.color
+                            color: run.color,
+                            textDecoration: run.textDecoration,
+                            backgroundColor: run.backgroundColor,
+                            verticalOffset: run.verticalOffset,
+                            linkURL: run.linkURL
                         ))
                     } else {
                         currentWord.append(char)
@@ -249,7 +296,11 @@ extension PDF.TextRun {
                                 kind: .word(currentWord),
                                 font: run.font,
                                 fontSize: run.fontSize,
-                                color: run.color
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                backgroundColor: run.backgroundColor,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL
                             ))
                             currentWord = ""
                         }
@@ -258,7 +309,11 @@ extension PDF.TextRun {
                             kind: .space,
                             font: run.font,
                             fontSize: run.fontSize,
-                            color: run.color
+                            color: run.color,
+                            textDecoration: run.textDecoration,
+                            backgroundColor: run.backgroundColor,
+                            verticalOffset: run.verticalOffset,
+                            linkURL: run.linkURL
                         ))
                     } else {
                         currentWord.append(char)
@@ -272,7 +327,11 @@ extension PDF.TextRun {
                     kind: .word(currentWord),
                     font: run.font,
                     fontSize: run.fontSize,
-                    color: run.color
+                    color: run.color,
+                    textDecoration: run.textDecoration,
+                    backgroundColor: run.backgroundColor,
+                    verticalOffset: run.verticalOffset,
+                    linkURL: run.linkURL
                 ))
             }
         }
@@ -362,8 +421,8 @@ extension PDF.TextRun {
 
 extension PDF.TextRun {
     /// Render a single line of tokens
-    static func renderLine(_ line: Line, context: inout PDF.Context) -> [PDF.Operation] {
-        var operations: [PDF.Operation] = []
+    static func renderLine(_ line: Line, context: inout PDF.Context) -> [PDF.Content.Operation] {
+        var operations: [PDF.Content.Operation] = []
         var currentX = context.x
 
         // Use trimmed tokens to avoid trailing spaces
@@ -374,6 +433,10 @@ extension PDF.TextRun {
         var currentFont: PDF.Font?
         var currentSize: Double?
         var currentColor: PDF.Color?
+        var currentDecoration: PDF.TextDecoration?
+        var currentBackground: PDF.Color?
+        var currentVerticalOffset: Double = 0
+        var currentLinkURL: String? = nil
         var segmentStartX = currentX
 
         func flushSegment() {
@@ -382,20 +445,81 @@ extension PDF.TextRun {
                   let size = currentSize,
                   let color = currentColor else { return }
 
-            operations.append(.text(PDF.TextOperation(
+            let segmentWidth = font.stringWidth(currentSegment, atSize: size)
+            // Apply vertical offset (negative moves up in top-down coordinates)
+            let textY = context.y - currentVerticalOffset
+
+            // Draw background first if present
+            // In top-down coords: textY is baseline, text extends UP (smaller Y)
+            // Need origin above the ascenders, height to cover down past descenders
+            if let bgColor = currentBackground {
+                let bgRect = PDF.Rect(
+                    origin: PDF.Point(x: segmentStartX, y: textY - size * 0.85),
+                    size: PDF.Size(width: segmentWidth, height: size * 1.15)
+                )
+                operations.append(.graphics(.rectangle(
+                    bgRect,
+                    fill: bgColor,
+                    stroke: nil,
+                    strokeWidth: 0
+                )))
+            }
+
+            // Draw text with vertical offset applied
+            operations.append(.text(PDF.Content.Text.Operation(
                 text: currentSegment,
-                position: PDF.Point(x: segmentStartX, y: context.y),
+                position: PDF.Point(x: segmentStartX, y: textY),
                 font: font,
                 size: size,
                 color: color
             )))
+
+            // Draw text decoration
+            // Note: In top-down coordinates, +Y is down, -Y is up
+            // Baseline is at textY (context.y with vertical offset applied)
+            if let decoration = currentDecoration, decoration != .none {
+                let lineY: Double
+                switch decoration {
+                case .underline:
+                    lineY = textY + size * 0.15  // Below baseline (positive = down)
+                case .lineThrough:
+                    lineY = textY - size * 0.3   // Through middle of text (negative = up)
+                case .none:
+                    lineY = 0  // Never reached
+                }
+
+                let startPoint = PDF.Point(x: segmentStartX, y: lineY)
+                let endPoint = PDF.Point(x: segmentStartX + segmentWidth, y: lineY)
+                let lineWidth = max(0.5, size * 0.05)  // Line thickness proportional to font
+
+                operations.append(.graphics(.line(
+                    from: startPoint,
+                    to: endPoint,
+                    color: color,
+                    width: lineWidth
+                )))
+            }
+
+            // Add link annotation if this segment has a URL
+            if let url = currentLinkURL {
+                let linkRect = PDF.Rect(
+                    origin: PDF.Point(x: segmentStartX, y: textY - size * 0.85),
+                    size: PDF.Size(width: segmentWidth, height: size * 1.15)
+                )
+                context.addLinkAnnotation(rect: linkRect, uri: url)
+            }
+
             currentSegment = ""
         }
 
         for token in tokens {
             let sameStyle = token.font == currentFont &&
                            token.fontSize == currentSize &&
-                           token.color == currentColor
+                           token.color == currentColor &&
+                           token.textDecoration == currentDecoration &&
+                           token.backgroundColor == currentBackground &&
+                           token.verticalOffset == currentVerticalOffset &&
+                           token.linkURL == currentLinkURL
 
             if sameStyle {
                 // Same style - append to current segment
@@ -410,6 +534,10 @@ extension PDF.TextRun {
                 currentFont = token.font
                 currentSize = token.fontSize
                 currentColor = token.color
+                currentDecoration = token.textDecoration
+                currentBackground = token.backgroundColor
+                currentVerticalOffset = token.verticalOffset
+                currentLinkURL = token.linkURL
             }
 
             currentX += token.width

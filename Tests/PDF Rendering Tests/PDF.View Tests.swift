@@ -19,7 +19,7 @@ struct `PDF.View Tests` {
         )
 
         let content = PDF.Content(operations: [
-            .text(PDF.TextOperation(
+            .text(PDF.Content.Text.Operation(
                 text: "Hello",
                 position: .zero,
                 font: .helvetica,
@@ -41,7 +41,7 @@ struct `PDF.View Tests` {
         )
 
         let original = PDF.Content(operations: [
-            .text(PDF.TextOperation(
+            .text(PDF.Content.Text.Operation(
                 text: "Test",
                 position: .zero,
                 font: .helvetica,
