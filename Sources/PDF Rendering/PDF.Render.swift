@@ -16,16 +16,16 @@ extension PDF.Render {
     /// Text rendering operation
     public struct TextOperation: Sendable {
         public var text: String
-        public var position: PDF.Point
+        public var position: PDF.UserSpace.Coordinate
         public var font: PDF.Font
-        public var size: Double
+        public var size: PDF.UserSpace.Unit
         public var color: PDF.Color
 
         public init(
             text: String,
-            position: PDF.Point,
+            position: PDF.UserSpace.Coordinate,
             font: PDF.Font,
-            size: Double,
+            size: PDF.UserSpace.Unit,
             color: PDF.Color
         ) {
             self.text = text
@@ -38,7 +38,7 @@ extension PDF.Render {
 
     /// Graphics rendering operation
     public enum GraphicsOperation: Sendable {
-        case line(from: PDF.Point, to: PDF.Point, color: PDF.Color, width: Double)
-        case rectangle(PDF.Rect, fill: PDF.Color?, stroke: PDF.Color?, strokeWidth: Double)
+        case line(from: PDF.UserSpace.Coordinate, to: PDF.UserSpace.Coordinate, color: PDF.Color, width: PDF.UserSpace.Width)
+        case rectangle(PDF.UserSpace.Rectangle, fill: PDF.Color?, stroke: PDF.Color?, strokeWidth: PDF.UserSpace.Width)
     }
 }

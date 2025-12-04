@@ -23,7 +23,7 @@ extension PDF {
         public let font: PDF.Font
 
         /// Font size in points
-        public let fontSize: Double
+        public let fontSize: PDF.UserSpace.Unit
 
         /// Text color
         public let color: PDF.Color
@@ -35,7 +35,7 @@ extension PDF {
         public let backgroundColor: PDF.Color?
 
         /// Vertical offset for subscript/superscript (positive = up, negative = down)
-        public let verticalOffset: Double
+        public let verticalOffset: PDF.UserSpace.Unit
 
         /// Optional link URL (makes this text a clickable link)
         public let linkURL: String?
@@ -44,11 +44,11 @@ extension PDF {
         public init(
             text: String,
             font: PDF.Font,
-            fontSize: Double,
+            fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
             textDecoration: TextDecoration = .none,
             backgroundColor: PDF.Color? = nil,
-            verticalOffset: Double = 0,
+            verticalOffset: PDF.UserSpace.Unit = 0,
             linkURL: String? = nil
         ) {
             // Sanitize text to replace unsupported Unicode characters
@@ -157,7 +157,7 @@ extension PDF {
             // Render lines with pagination support
             for line in lines {
                 // Check if this line would exceed the page
-                let lineHeight = context.lineHeightPoints
+                let lineHeight = PDF.UserSpace.Height(context.lineHeightPoints)
                 context.checkPageBreak(needing: lineHeight)
 
                 // Render the line and add operations to context
@@ -185,19 +185,19 @@ extension PDF.TextRun {
 
         let kind: Kind
         let font: PDF.Font
-        let fontSize: Double
+        let fontSize: PDF.UserSpace.Unit
         let color: PDF.Color
         let textDecoration: PDF.TextDecoration
         let backgroundColor: PDF.Color?
-        let verticalOffset: Double
+        let verticalOffset: PDF.UserSpace.Unit
         let linkURL: String?
 
-        var width: Double {
+        var width: PDF.UserSpace.Width {
             switch kind {
             case .word(let text):
-                return font.stringWidth(text, atSize: fontSize)
+                return PDF.UserSpace.Width(font.stringWidth(text, atSize: fontSize))
             case .space:
-                return font.stringWidth(" ", atSize: fontSize)
+                return PDF.UserSpace.Width(font.stringWidth(" ", atSize: fontSize))
             case .lineBreak:
                 return 0  // Line breaks have no width
             }
@@ -349,8 +349,8 @@ extension PDF.TextRun {
 
         var isEmpty: Bool { tokens.isEmpty }
 
-        var width: Double {
-            tokens.reduce(0) { $0 + $1.width }
+        var width: PDF.UserSpace.Width {
+            PDF.UserSpace.Width(PDF.UserSpace.Unit(tokens.reduce(0.0) { $0 + $1.width.value }))
         }
 
         /// Tokens with trailing spaces removed
@@ -364,10 +364,10 @@ extension PDF.TextRun {
     }
 
     /// Build lines from tokens respecting max width
-    static func buildLines(tokens: [Token], maxWidth: Double) -> [Line] {
+    static func buildLines(tokens: [Token], maxWidth: PDF.UserSpace.Width) -> [Line] {
         var lines: [Line] = []
         var currentLine = Line(tokens: [])
-        var currentWidth: Double = 0
+        var currentWidth: PDF.UserSpace.Width = 0
 
         for token in tokens {
             let tokenWidth = token.width
@@ -378,10 +378,10 @@ extension PDF.TextRun {
                     // First word on line - always add it
                     currentLine.tokens.append(token)
                     currentWidth = tokenWidth
-                } else if currentWidth + tokenWidth <= maxWidth {
+                } else if currentWidth.value + tokenWidth.value <= maxWidth.value {
                     // Word fits on current line
                     currentLine.tokens.append(token)
-                    currentWidth += tokenWidth
+                    currentWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(currentWidth.value + tokenWidth.value))
                 } else {
                     // Word doesn't fit - start new line
                     lines.append(currentLine)
@@ -392,9 +392,9 @@ extension PDF.TextRun {
             case .space:
                 if !currentLine.isEmpty {
                     // Only add space if we have content and it might fit
-                    if currentWidth + tokenWidth <= maxWidth {
+                    if currentWidth.value + tokenWidth.value <= maxWidth.value {
                         currentLine.tokens.append(token)
-                        currentWidth += tokenWidth
+                        currentWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(currentWidth.value + tokenWidth.value))
                     }
                     // Otherwise skip the space (will start new line on next word)
                 }
@@ -431,11 +431,11 @@ extension PDF.TextRun {
         // Group consecutive tokens with same styling
         var currentSegment = ""
         var currentFont: PDF.Font?
-        var currentSize: Double?
+        var currentSize: PDF.UserSpace.Unit?
         var currentColor: PDF.Color?
         var currentDecoration: PDF.TextDecoration?
         var currentBackground: PDF.Color?
-        var currentVerticalOffset: Double = 0
+        var currentVerticalOffset: PDF.UserSpace.Unit = 0
         var currentLinkURL: String? = nil
         var segmentStartX = currentX
 
@@ -445,21 +445,23 @@ extension PDF.TextRun {
                   let size = currentSize,
                   let color = currentColor else { return }
 
-            let segmentWidth = font.stringWidth(currentSegment, atSize: size)
+            let segmentWidth = PDF.UserSpace.Width(font.stringWidth(currentSegment, atSize: size))
             // In top-left coordinates, context.y is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
             // The verticalOffset is used for sub/superscript (negative moves up).
-            let baselineY = context.y + font.metrics.ascender(atSize: size)
-            let textY = baselineY - currentVerticalOffset
+            let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.y.value) + font.metrics.ascender(atSize: size))
+            let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(baselineY.value) - currentVerticalOffset)
 
             // Draw background first if present
             // In top-down coords: textY is baseline, text extends UP (smaller Y)
             // Need origin above the ascenders, height to cover down past descenders
             if let bgColor = currentBackground {
-                let bgRect = PDF.Rect(
-                    origin: PDF.Point(x: segmentStartX, y: textY - size * 0.85),
-                    size: PDF.Size(width: segmentWidth, height: size * 1.15)
+                let bgRect = PDF.UserSpace.Rectangle(
+                    x: segmentStartX,
+                    y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
+                    width: segmentWidth,
+                    height: PDF.UserSpace.Height(size.value * 1.15)
                 )
                 operations.append(.graphics(.rectangle(
                     bgRect,
@@ -472,7 +474,7 @@ extension PDF.TextRun {
             // Draw text with vertical offset applied
             operations.append(.text(PDF.Render.TextOperation(
                 text: currentSegment,
-                position: PDF.Point(x: segmentStartX, y: textY),
+                position: PDF.UserSpace.Coordinate(x: segmentStartX, y: textY),
                 font: font,
                 size: size,
                 color: color
@@ -482,33 +484,37 @@ extension PDF.TextRun {
             // Note: In top-down coordinates, +Y is down, -Y is up
             // Baseline is at textY (context.y with vertical offset applied)
             if let decoration = currentDecoration, decoration != .none {
-                let lineY: Double
+                let lineY: PDF.UserSpace.Y
                 switch decoration {
                 case .underline:
-                    lineY = textY + size * 0.15  // Below baseline (positive = down)
+                    lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value + size.value * 0.15))  // Below baseline (positive = down)
                 case .lineThrough:
-                    lineY = textY - size * 0.3   // Through middle of text (negative = up)
+                    lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value - size.value * 0.3))   // Through middle of text (negative = up)
                 case .none:
                     lineY = 0  // Never reached
                 }
 
-                let startPoint = PDF.Point(x: segmentStartX, y: lineY)
-                let endPoint = PDF.Point(x: segmentStartX + segmentWidth, y: lineY)
-                let lineWidth = max(0.5, size * 0.05)  // Line thickness proportional to font
+                let startPoint = PDF.UserSpace.Coordinate(x: segmentStartX, y: lineY)
+                let endPoint = PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(PDF.UserSpace.Unit(segmentStartX.value + segmentWidth.value)), y: lineY)
+                let lineWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(size.value * 0.05))  // Line thickness proportional to font
+                let minLineWidth: PDF.UserSpace.Width = 0.5
+                let effectiveLineWidth = lineWidth.value > minLineWidth.value ? lineWidth : minLineWidth
 
                 operations.append(.graphics(.line(
                     from: startPoint,
                     to: endPoint,
                     color: color,
-                    width: lineWidth
+                    width: effectiveLineWidth
                 )))
             }
 
             // Add link annotation if this segment has a URL
             if let url = currentLinkURL {
-                let linkRect = PDF.Rect(
-                    origin: PDF.Point(x: segmentStartX, y: textY - size * 0.85),
-                    size: PDF.Size(width: segmentWidth, height: size * 1.15)
+                let linkRect = PDF.UserSpace.Rectangle(
+                    x: segmentStartX,
+                    y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
+                    width: segmentWidth,
+                    height: PDF.UserSpace.Height(size.value * 1.15)
                 )
                 context.addLinkAnnotation(rect: linkRect, uri: url)
             }
@@ -544,7 +550,7 @@ extension PDF.TextRun {
                 currentLinkURL = token.linkURL
             }
 
-            currentX += token.width
+            currentX = PDF.UserSpace.X(PDF.UserSpace.Unit(currentX.value + token.width.value))
         }
 
         // Flush remaining segment

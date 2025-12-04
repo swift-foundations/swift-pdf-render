@@ -17,7 +17,7 @@ extension PDF {
         public var font: PDF.Font?
 
         /// Font size override (uses context size if nil)
-        public var fontSize: Double?
+        public var fontSize: PDF.UserSpace.Unit?
 
         /// Color override (uses context color if nil)
         public var color: PDF.Color?
@@ -26,7 +26,7 @@ extension PDF {
         public init(
             _ text: String,
             font: PDF.Font? = nil,
-            fontSize: Double? = nil,
+            fontSize: PDF.UserSpace.Unit? = nil,
             color: PDF.Color? = nil
         ) {
             self.text = text
@@ -58,16 +58,16 @@ extension PDF {
 
             for line in lines {
                 // Check for page break before each line
-                context.checkPageBreak(needing: context.lineHeightPoints)
+                context.checkPageBreak(needing: PDF.UserSpace.Height(context.lineHeightPoints))
 
                 // In top-left coordinates, context.y is the top of the line box.
                 // PDF text is positioned at the baseline, so we offset down by the
                 // ascender height (distance from baseline to top of tallest glyphs).
-                let baselineY = context.y + effectiveFont.metrics.ascender(atSize: effectiveSize)
+                let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.y.value) + effectiveFont.metrics.ascender(atSize: effectiveSize))
 
                 let operation = PDF.Render.Operation.text(PDF.Render.TextOperation(
                     text: line,
-                    position: PDF.Point(x: context.x, y: baselineY),
+                    position: PDF.UserSpace.Coordinate(x: context.x, y: baselineY),
                     font: effectiveFont,
                     size: effectiveSize,
                     color: effectiveColor
@@ -86,29 +86,29 @@ extension PDF {
         private static func wrapText(
             _ text: String,
             font: PDF.Font,
-            size: Double,
-            maxWidth: Double
+            size: PDF.UserSpace.Unit,
+            maxWidth: PDF.UserSpace.Width
         ) -> [String] {
             let words = text.split(separator: " ", omittingEmptySubsequences: false)
             var lines: [String] = []
             var currentLine = ""
-            let spaceWidth = font.stringWidth(" ", atSize: size)
+            let spaceWidth = PDF.UserSpace.Width(font.stringWidth(" ", atSize: size))
 
             for word in words {
                 let wordString = String(word)
-                let wordWidth = font.stringWidth(wordString, atSize: size)
+                let wordWidth = PDF.UserSpace.Width(font.stringWidth(wordString, atSize: size))
 
                 if currentLine.isEmpty {
-                    if wordWidth > maxWidth {
+                    if wordWidth.value > maxWidth.value {
                         lines.append(wordString)
                     } else {
                         currentLine = wordString
                     }
                 } else {
-                    let lineWidth = font.stringWidth(currentLine, atSize: size)
-                    let potentialWidth = lineWidth + spaceWidth + wordWidth
+                    let lineWidth = PDF.UserSpace.Width(font.stringWidth(currentLine, atSize: size))
+                    let potentialWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(lineWidth.value + spaceWidth.value + wordWidth.value))
 
-                    if potentialWidth <= maxWidth {
+                    if potentialWidth.value <= maxWidth.value {
                         currentLine += " " + wordString
                     } else {
                         lines.append(currentLine)

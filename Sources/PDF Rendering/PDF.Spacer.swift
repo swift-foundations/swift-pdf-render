@@ -27,7 +27,7 @@ extension PDF {
             into buffer: inout Buffer,
             context: inout PDF.Context
         ) where Buffer.Element == PDF.Render.Operation {
-            context.advanceY(view.height)
+            context.advanceY(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.height)))
             // Spacer produces no operations, just advances position
         }
     }

@@ -78,7 +78,7 @@ struct `PDF.Stack.Vertical Tests` {
         // TODO: Spacing between typed tuple elements not yet implemented
         // With spacing: 2 lines at 12pt + 20pt spacing between = 44pt
         // Currently without spacing: 2 lines at 12pt = 24pt
-        #expect(context.y == startY + 12 + 12)
+        #expect(context.y == startY + PDF.UserSpace.Y(12 + 12))
     }
 
     @Test
@@ -101,7 +101,7 @@ struct `PDF.Stack.Vertical Tests` {
         PDF.render(stack, into: &buffer, context: &context)
 
         // Single line, no spacing added
-        #expect(context.y == startY + 12)
+        #expect(context.y == startY + PDF.UserSpace.Y(12))
     }
 
     @Test
@@ -184,7 +184,7 @@ struct `PDF.Stack.Horizontal Tests` {
 
         // TODO: HStack should position children horizontally, not vertically
         // Currently each child advances Y by one line
-        #expect(context.y == startY + 12 + 12)
+        #expect(context.y == startY + PDF.UserSpace.Y(12 + 12))
     }
 
     @Test

@@ -73,7 +73,7 @@ struct `PDF.Text Tests` {
         var buffer: [PDF.Render.Operation] = []
         PDF.render(text, into: &buffer, context: &context)
 
-        #expect(context.y == startY + 14.4)
+        #expect(context.y == startY + PDF.UserSpace.Y(14.4))
     }
 
     @Test
@@ -158,9 +158,9 @@ struct `PDF.Text Tests` {
         PDF.render(text, into: &buffer, context: &context)
 
         let lineCount = buffer.count
-        let expectedY = startY + (Double(lineCount) * 14.4)
+        let expectedAdvance = PDF.UserSpace.Y(Double(lineCount) * 14.4)
 
-        #expect(abs(context.y - expectedY) < 0.01)
+        #expect(abs((context.y - startY - expectedAdvance).value) < 0.01)
     }
 
     @Test
@@ -196,7 +196,10 @@ struct `PDF.Text Tests` {
 
         if case .text(let op) = buffer[0] {
             #expect(op.position.x == 100)
-            #expect(op.position.y == 200)
+            // Y position is at baseline = context.y + ascender height
+            // Helvetica ascender at 12pt is ~8.616pt
+            let expectedBaselineY = PDF.UserSpace.Y(200) + PDF.UserSpace.Y(context.font.metrics.ascender(atSize: context.fontSize))
+            #expect(op.position.y == expectedBaselineY)
         } else {
             Issue.record("Expected text operation")
         }

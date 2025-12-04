@@ -16,19 +16,19 @@ extension PDF.Page {
     ///   - operations: Render operations (in top-left coordinates)
     ///   - annotations: Page annotations
     public init(
-        mediaBox: ISO_32000.Rectangle = .a4,
+        mediaBox: ISO_32000.UserSpace.Rectangle = .a4,
         operations: [PDF.Render.Operation],
         annotations: [PDF.Annotation] = []
     ) {
-        let pageHeight = mediaBox.height
+        let pageHeight: PDF.UserSpace.Height = mediaBox.height
 
         // Build content stream with coordinate conversion
-        let contentStream = ISO_32000.ContentStream { builder in
+        let contentStream: ISO_32000.ContentStream = .init { (builder: inout ISO_32000.ContentStream.Builder) in
             for op in operations {
                 switch op {
                 case .text(let textOp):
                     // Transform from top-left to bottom-left coordinates
-                    let pdfY = pageHeight - textOp.position.y
+                    let pdfY = ISO_32000.UserSpace.Y(PDF.UserSpace.Unit(pageHeight.value - textOp.position.y.value))
 
                     builder.beginText()
 
@@ -50,8 +50,8 @@ extension PDF.Page {
                 case .graphics(let graphicsOp):
                     switch graphicsOp {
                     case .line(let from, let to, let color, let width):
-                        let pdfFromY = pageHeight - from.y
-                        let pdfToY = pageHeight - to.y
+                        let pdfFromY = PDF.UserSpace.Y(PDF.UserSpace.Unit(pageHeight.value - from.y.value))
+                        let pdfToY = PDF.UserSpace.Y(PDF.UserSpace.Unit(pageHeight.value - to.y.value))
 
                         switch color {
                         case .gray(let g):
@@ -69,7 +69,7 @@ extension PDF.Page {
 
                     case .rectangle(let rect, let fill, let stroke, let strokeWidth):
                         // Transform Y coordinate (rect uses top-left origin, PDF uses bottom-left)
-                        let pdfY = pageHeight - rect.lower.left.y - rect.height
+                        let pdfY: PDF.UserSpace.Y = .init(pageHeight.value - rect.lly.value - rect.height.value)
 
                         if let fill = fill {
                             switch fill {
@@ -94,7 +94,7 @@ extension PDF.Page {
                             builder.setLineWidth(strokeWidth)
                         }
 
-                        builder.rectangle(x: rect.lower.left.x, y: pdfY, width: rect.width, height: rect.height)
+                        builder.rectangle(x: rect.llx, y: pdfY, width: rect.width, height: rect.height)
 
                         if fill != nil && stroke != nil {
                             builder.fillAndStroke()

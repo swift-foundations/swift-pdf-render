@@ -5,8 +5,11 @@ import PackageDescription
 let package = Package(
     name: "swift-pdf-rendering",
     platforms: [
-        .macOS(.v15),
-        .iOS(.v18),
+        .macOS(.v26),
+        .iOS(.v26),
+        .tvOS(.v26),
+        .watchOS(.v26),
+        .visionOS(.v26),
     ],
     products: [
         .library(name: "PDF Rendering", targets: ["PDF Rendering"]),
