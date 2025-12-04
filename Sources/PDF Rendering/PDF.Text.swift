@@ -74,7 +74,7 @@ extension PDF {
                 ))
 
                 // Add to context for proper pagination
-                context.addOperation(operation)
+                context.add(operation)
                 // Also add to buffer for callers that use it
                 buffer.append(operation)
 

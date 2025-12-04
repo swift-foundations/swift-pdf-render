@@ -40,9 +40,22 @@ extension PDF.Stack {
             into buffer: inout Buffer,
             context: inout PDF.Context
         ) where Buffer.Element == PDF.Render.Operation {
-            // Render content with spacing applied via context
-            // For typed content, the spacing is handled by the content's own layout
+            // Save previous spacing state
+            let previousSpacing = context.stackSpacing
+            let previousLastY = context.lastElementY
+
+            // Set spacing for this stack (only if non-zero)
+            if view.spacing > 0 {
+                context.stackSpacing = PDF.UserSpace.Y(PDF.UserSpace.Unit(view.spacing))
+            }
+            context.lastElementY = nil
+
+            // Render content - spacing is applied by _Tuple between elements
             C._render(view.content, into: &buffer, context: &context)
+
+            // Restore previous spacing state
+            context.stackSpacing = previousSpacing
+            context.lastElementY = previousLastY
         }
     }
 }

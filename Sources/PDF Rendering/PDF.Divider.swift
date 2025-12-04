@@ -43,13 +43,13 @@ extension PDF {
             let totalHeight = PDF.UserSpace.Height(PDF.UserSpace.Unit(view.padding.value + view.thickness.value + view.padding.value))
             context.checkPageBreak(needing: totalHeight)
 
-            context.advanceY(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.padding.value)))
+            context.advance(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.padding.value)))
 
             let lineY = context.y
             let startX = context.x
             let endX = PDF.UserSpace.X(PDF.UserSpace.Unit(context.x.value + context.availableWidth.value))
 
-            context.advanceY(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.thickness.value + view.padding.value)))
+            context.advance(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.thickness.value + view.padding.value)))
 
             let operation = PDF.Render.Operation.graphics(.line(
                 from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
@@ -59,7 +59,7 @@ extension PDF {
             ))
 
             // Add to context for proper pagination
-            context.addOperation(operation)
+            context.add(operation)
             // Also add to buffer for callers that use it
             buffer.append(operation)
         }

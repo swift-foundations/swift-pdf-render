@@ -162,7 +162,7 @@ extension PDF {
 
                 // Render the line and add operations to context
                 let lineOps = renderLine(line, context: &context)
-                context.addOperations(lineOps)
+                context.add(lineOps)
                 context.advanceLine()
             }
 

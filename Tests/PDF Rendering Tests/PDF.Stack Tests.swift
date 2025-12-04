@@ -74,10 +74,8 @@ struct `PDF.Stack.Vertical Tests` {
         var buffer: [PDF.Render.Operation] = []
         PDF.render(stack, into: &buffer, context: &context)
 
-        // TODO: Spacing between typed tuple elements not yet implemented
-        // With spacing: 2 lines at 12pt + 20pt spacing between = 44pt
-        // Currently without spacing: 72 + 2 lines at 12pt = 96
-        #expect(context.y == 96)
+        // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
+        #expect(context.y == 116)
     }
 
     @Test

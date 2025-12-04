@@ -130,7 +130,7 @@ struct `PDF.Context Tests` {
             availableHeight: 600
         )
 
-        context.advanceY(PDF.UserSpace.Y(50))
+        context.advance(PDF.UserSpace.Y(50))
 
         #expect(context.y == 50)
     }
@@ -143,9 +143,9 @@ struct `PDF.Context Tests` {
             availableHeight: 600
         )
 
-        context.advanceY(PDF.UserSpace.Y(10))
-        context.advanceY(PDF.UserSpace.Y(20))
-        context.advanceY(PDF.UserSpace.Y(30))
+        context.advance(PDF.UserSpace.Y(10))
+        context.advance(PDF.UserSpace.Y(20))
+        context.advance(PDF.UserSpace.Y(30))
 
         #expect(context.y == 160)
     }

@@ -46,6 +46,13 @@ extension PDF {
         /// Preformatted mode - preserves whitespace in `<pre>` blocks
         public var preserveWhitespace: Bool = false
 
+        /// Stack spacing - applied between elements in a VStack
+        /// When non-nil, elements should advance by this amount after rendering
+        public var stackSpacing: PDF.UserSpace.Y? = nil
+
+        /// Track Y position before last element rendered (for spacing logic)
+        internal var lastElementY: PDF.UserSpace.Y? = nil
+
         // MARK: - Pagination Support
 
         /// Initial X position (left margin)
@@ -141,7 +148,7 @@ extension PDF.Context {
     }
 
     /// Advance Y position by specified amount
-    public mutating func advanceY(_ amount: PDF.UserSpace.Y) {
+    public mutating func advance(_ amount: PDF.UserSpace.Y) {
         y = PDF.UserSpace.Y(y.value + amount.value)
     }
 
@@ -176,7 +183,7 @@ extension PDF.Context {
     // MARK: - List Context Management
 
     /// Push a new list onto the context stack
-    public mutating func pushList(_ type: ListType) {
+    public mutating func push(list type: ListType) {
         let startIndex: Int
         switch type {
         case .unordered:
@@ -222,12 +229,12 @@ extension PDF.Context {
     }
 
     /// Add operation to current page
-    public mutating func addOperation(_ operation: PDF.Render.Operation) {
+    public mutating func add(_ operation: PDF.Render.Operation) {
         currentPageOperations.append(operation)
     }
 
     /// Add multiple operations to current page
-    public mutating func addOperations(_ operations: [PDF.Render.Operation]) {
+    public mutating func add(_ operations: [PDF.Render.Operation]) {
         currentPageOperations.append(contentsOf: operations)
     }
 
