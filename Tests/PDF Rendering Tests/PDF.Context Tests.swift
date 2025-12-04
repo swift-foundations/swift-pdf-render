@@ -56,8 +56,8 @@ struct `PDF.Context Tests` {
 
         #expect(context.x == 72)
         #expect(context.y == 72)
-        #expect(context.availableWidth == PDF.UserSpace.Width(612 - 144))
-        #expect(context.availableHeight == PDF.UserSpace.Height(792 - 144))
+        #expect(context.availableWidth == 468)
+        #expect(context.availableHeight == 648)
     }
 
     @Test
@@ -83,7 +83,7 @@ struct `PDF.Context Tests` {
         )
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs((context.lineHeightPoints - PDF.UserSpace.Unit(14.4)).value) < 0.001)
+        #expect(abs((context.lineHeightPoints - 14.4).value) < 0.001)
     }
 
     @Test
@@ -130,10 +130,9 @@ struct `PDF.Context Tests` {
             availableHeight: 600
         )
 
-        let startY = context.y
         context.advanceY(PDF.UserSpace.Y(50))
 
-        #expect(context.y == startY + PDF.UserSpace.Y(50))
+        #expect(context.y == 50)
     }
 
     @Test
@@ -148,7 +147,7 @@ struct `PDF.Context Tests` {
         context.advanceY(PDF.UserSpace.Y(20))
         context.advanceY(PDF.UserSpace.Y(30))
 
-        #expect(context.y == PDF.UserSpace.Y(160))
+        #expect(context.y == 160)
     }
 
     // MARK: - Mutability

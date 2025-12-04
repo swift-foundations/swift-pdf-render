@@ -71,14 +71,13 @@ struct `PDF.Stack.Vertical Tests` {
             PDF.Text("Line 2")
         }
 
-        let startY = context.y
         var buffer: [PDF.Render.Operation] = []
         PDF.render(stack, into: &buffer, context: &context)
 
         // TODO: Spacing between typed tuple elements not yet implemented
         // With spacing: 2 lines at 12pt + 20pt spacing between = 44pt
-        // Currently without spacing: 2 lines at 12pt = 24pt
-        #expect(context.y == startY + PDF.UserSpace.Y(12 + 12))
+        // Currently without spacing: 72 + 2 lines at 12pt = 96
+        #expect(context.y == 96)
     }
 
     @Test
@@ -96,12 +95,11 @@ struct `PDF.Stack.Vertical Tests` {
             PDF.Text("Only one")
         }
 
-        let startY = context.y
         var buffer: [PDF.Render.Operation] = []
         PDF.render(stack, into: &buffer, context: &context)
 
-        // Single line, no spacing added
-        #expect(context.y == startY + PDF.UserSpace.Y(12))
+        // 72 + single line (12), no spacing added = 84
+        #expect(context.y == 84)
     }
 
     @Test
@@ -178,13 +176,12 @@ struct `PDF.Stack.Horizontal Tests` {
             PDF.Text("Also Short")
         }
 
-        let startY = context.y
         var buffer: [PDF.Render.Operation] = []
         PDF.render(stack, into: &buffer, context: &context)
 
         // TODO: HStack should position children horizontally, not vertically
-        // Currently each child advances Y by one line
-        #expect(context.y == startY + PDF.UserSpace.Y(12 + 12))
+        // Currently each child advances Y by one line: 72 + 12 + 12 = 96
+        #expect(context.y == 96)
     }
 
     @Test

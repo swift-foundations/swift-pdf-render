@@ -68,12 +68,12 @@ struct `PDF.Text Tests` {
             lineHeight: 1.2
         )
 
-        let startY = context.y
         let text = PDF.Text("Hello")
         var buffer: [PDF.Render.Operation] = []
         PDF.render(text, into: &buffer, context: &context)
 
-        #expect(context.y == startY + PDF.UserSpace.Y(14.4))
+        // 72 + 12 * 1.2 = 86.4 (tolerance for floating point)
+        #expect(abs(context.y.value.value - 86.4) < 0.001)
     }
 
     @Test
@@ -152,15 +152,15 @@ struct `PDF.Text Tests` {
             lineHeight: 1.2
         )
 
-        let startY = context.y
         let text = PDF.Text("This is a longer text that should wrap")
         var buffer: [PDF.Render.Operation] = []
         PDF.render(text, into: &buffer, context: &context)
 
+        // Each line advances by fontSize * lineHeight = 12 * 1.2 = 14.4
         let lineCount = buffer.count
-        let expectedAdvance = PDF.UserSpace.Y(Double(lineCount) * 14.4)
+        let expectedY = 72 + Double(lineCount) * 14.4
 
-        #expect(abs((context.y - startY - expectedAdvance).value) < 0.01)
+        #expect(abs(context.y.value.value - expectedY) < 0.01)
     }
 
     @Test

@@ -91,12 +91,11 @@ struct `PDF.Divider Tests` {
         )
 
         let divider = PDF.Divider(thickness: 2.0, padding: 10)
-        let startY = context.y
         var buffer: [PDF.Render.Operation] = []
         PDF.render(divider, into: &buffer, context: &context)
 
-        // padding before (10) + thickness (2) + padding after (10) = 22
-        #expect(context.y == startY + PDF.UserSpace.Y(22))
+        // 72 + padding before (10) + thickness (2) + padding after (10) = 94
+        #expect(context.y == 94)
     }
 
     @Test

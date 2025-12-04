@@ -104,11 +104,10 @@ struct `PDF.Spacer Tests` {
             PDF.Text("After")
         }
 
-        let startY = context.y
         var buffer: [PDF.Render.Operation] = []
         PDF.render(stack, into: &buffer, context: &context)
 
-        // "Before" (12) + Spacer (50) + "After" (12) = 74
-        #expect(context.y == startY + PDF.UserSpace.Y(74))
+        // 72 + "Before" (12) + Spacer (50) + "After" (12) = 146
+        #expect(context.y == 146)
     }
 }
