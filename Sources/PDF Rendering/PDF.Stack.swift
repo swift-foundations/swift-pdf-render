@@ -22,11 +22,11 @@ extension PDF.Stack {
         /// Child content
         public var content: C
 
-        /// Spacing between elements
-        public var spacing: Double
+        /// Spacing between elements in points
+        public var spacing: PDF.UserSpace.Unit
 
         /// Create a vertical stack
-        public init(spacing: Double = 0, @PDF.Builder _ build: () -> C) {
+        public init(spacing: PDF.UserSpace.Unit = 0, @PDF.Builder _ build: () -> C) {
             self.content = build()
             self.spacing = spacing
         }
@@ -46,7 +46,7 @@ extension PDF.Stack {
 
             // Set spacing for this stack (only if non-zero)
             if view.spacing > 0 {
-                context.stackSpacing = PDF.UserSpace.Y(PDF.UserSpace.Unit(view.spacing))
+                context.stackSpacing = PDF.UserSpace.Y(view.spacing)
             }
             context.lastElementY = nil
 
@@ -74,11 +74,11 @@ extension PDF.Stack {
         /// Child content
         public var content: C
 
-        /// Spacing between elements
-        public var spacing: Double
+        /// Spacing between elements in points
+        public var spacing: PDF.UserSpace.Unit
 
         /// Create a horizontal stack
-        public init(spacing: Double = 0, @PDF.Builder _ build: () -> C) {
+        public init(spacing: PDF.UserSpace.Unit = 0, @PDF.Builder _ build: () -> C) {
             self.content = build()
             self.spacing = spacing
         }
