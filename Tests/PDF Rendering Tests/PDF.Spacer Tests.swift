@@ -24,19 +24,20 @@ struct `PDF.Spacer Tests` {
     // MARK: - Rendering
 
     @Test
-    func `Does not add operations`() {
+    func `Does not add content to stream`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let spacer = PDF.Spacer(50)
-        var buffer: [PDF.Render.Operation] = []
-        PDF.Spacer._render(spacer, into: &buffer, context: &context)
+        PDF.Spacer._render(spacer, context: &context)
 
-        #expect(buffer.isEmpty)
+        // Spacer doesn't emit any content
+        #expect(context.currentPageBuilder.data.isEmpty)
     }
 
     @Test
@@ -45,12 +46,12 @@ struct `PDF.Spacer Tests` {
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let spacer = PDF.Spacer(50)
-        var buffer: [PDF.Render.Operation] = []
-        PDF.Spacer._render(spacer, into: &buffer, context: &context)
+        PDF.Spacer._render(spacer, context: &context)
 
         #expect(context.y == 122)
     }
@@ -61,12 +62,12 @@ struct `PDF.Spacer Tests` {
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let spacer = PDF.Spacer(0)
-        var buffer: [PDF.Render.Operation] = []
-        PDF.Spacer._render(spacer, into: &buffer, context: &context)
+        PDF.Spacer._render(spacer, context: &context)
 
         #expect(context.y == 72)
     }
@@ -77,12 +78,12 @@ struct `PDF.Spacer Tests` {
             x: 100,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let spacer = PDF.Spacer(50)
-        var buffer: [PDF.Render.Operation] = []
-        PDF.Spacer._render(spacer, into: &buffer, context: &context)
+        PDF.Spacer._render(spacer, context: &context)
 
         #expect(context.x == 100)
     }
@@ -94,6 +95,7 @@ struct `PDF.Spacer Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
+            pageHeight: 792,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -104,8 +106,7 @@ struct `PDF.Spacer Tests` {
             PDF.Text("After")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        PDF.VStack._render(stack, into: &buffer, context: &context)
+        PDF.VStack._render(stack, context: &context)
 
         // 72 + "Before" (12) + Spacer (50) + "After" (12) = 146
         #expect(context.y == 146)

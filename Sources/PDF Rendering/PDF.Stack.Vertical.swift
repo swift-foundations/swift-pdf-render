@@ -2,7 +2,6 @@
 // Vertical stack layout.
 
 public import PDF_Standard
-public import Renderable
 
 extension PDF.Stack {
     /// Vertical stack layout
@@ -10,8 +9,6 @@ extension PDF.Stack {
     /// Arranges child views vertically with specified spacing.
     public struct Vertical<C: PDF.View>: PDF.View, Sendable where C: Sendable {
         public typealias Content = C
-        public typealias Context = PDF.Context
-        public typealias Output = PDF.Render.Operation
 
         /// Child content
         public var content: C
@@ -29,11 +26,7 @@ extension PDF.Stack {
             content
         }
 
-        public static func _render<Buffer: RangeReplaceableCollection>(
-            _ view: Self,
-            into buffer: inout Buffer,
-            context: inout PDF.Context
-        ) where Buffer.Element == PDF.Render.Operation {
+        public static func _render(_ view: Self, context: inout PDF.Context) {
             // Save previous spacing state
             let previousSpacing = context.stackSpacing
             let previousLastY = context.lastElementY
@@ -45,7 +38,7 @@ extension PDF.Stack {
             context.lastElementY = nil
 
             // Render content - spacing is applied by _Tuple between elements
-            C._render(view.content, into: &buffer, context: &context)
+            C._render(view.content, context: &context)
 
             // Restore previous spacing state
             context.stackSpacing = previousSpacing

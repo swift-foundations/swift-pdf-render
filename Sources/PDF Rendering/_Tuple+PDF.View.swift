@@ -4,17 +4,12 @@
 public import Renderable
 public import PDF_Standard
 
-extension _Tuple: @retroactive Renderable where repeat each Content: PDF.View {
-    public typealias Context = PDF.Context
+extension _Tuple: PDF.View where repeat each Content: PDF.View {
     public typealias Content = Never
-    public typealias Output = PDF.Render.Operation
+
     public var body: Never { fatalError() }
 
-    public static func _render<Buffer: RangeReplaceableCollection>(
-        _ view: Self,
-        into buffer: inout Buffer,
-        context: inout PDF.Context
-    ) where Buffer.Element == PDF.Render.Operation {
+    public static func _render(_ view: Self, context: inout PDF.Context) {
         func render<T: PDF.View>(_ element: T) {
             // Apply spacing before this element if there was a previous element
             if let spacing = context.stackSpacing,
@@ -28,7 +23,7 @@ extension _Tuple: @retroactive Renderable where repeat each Content: PDF.View {
             let yBefore = context.y
 
             // Render the element
-            T._render(element, into: &buffer, context: &context)
+            T._render(element, context: &context)
 
             // Update lastElementY if this element advanced Y
             if context.y > yBefore {
@@ -38,5 +33,3 @@ extension _Tuple: @retroactive Renderable where repeat each Content: PDF.View {
         repeat render(each view.content)
     }
 }
-
-extension _Tuple: PDF.View where repeat each Content: PDF.View {}

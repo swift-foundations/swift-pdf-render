@@ -133,35 +133,31 @@ extension PDF.Text {
         /// This algorithm:
         /// 1. Tokenizes all runs into words with their styling
         /// 2. Builds lines by accumulating words until width exceeds available
-        /// 3. Emits TextOperations with precise X positions for each styled segment
+        /// 3. Emits content directly to context's content stream
         /// 4. Handles page breaks automatically when lines exceed page boundary
         public static func renderRuns(
             _ runs: [PDF.Text.Run],
             context: inout PDF.Context
-        ) -> PDF.Content {
-            guard !runs.isEmpty else { return PDF.Content() }
-            
+        ) {
+            guard !runs.isEmpty else { return }
+
             // Tokenize runs into styled words (preserve whitespace for preformatted text)
             let tokens = tokenize(runs, preserveWhitespace: context.preserveWhitespace)
-            guard !tokens.isEmpty else { return PDF.Content() }
-            
+            guard !tokens.isEmpty else { return }
+
             // Build lines from tokens
             let lines = buildLines(tokens: tokens, maxWidth: context.availableWidth)
-            
+
             // Render lines with pagination support
             for line in lines {
                 // Check if this line would exceed the page
                 let lineHeight = PDF.UserSpace.Height(context.lineHeightPoints)
                 context.checkPageBreak(needing: lineHeight)
-                
-                // Render the line and add operations to context
-                let lineOps = renderLine(line, context: &context)
-                context.add(lineOps)
+
+                // Render the line directly to context
+                renderLine(line, context: &context)
                 context.advanceLine()
             }
-            
-            // Return empty - operations are stored in context for pagination
-            return PDF.Content()
         }
     }
 }
@@ -406,31 +402,29 @@ extension PDF.Text.Run {
 // MARK: - Line Rendering
 
 extension PDF.Text.Run {
-    /// Render a single line of tokens
-    static func renderLine(_ line: Line, context: inout PDF.Context) -> [PDF.Render.Operation] {
-        var operations: [PDF.Render.Operation] = []
+    /// Render a single line of tokens directly to context.
+    static func renderLine(_ line: Line, context: inout PDF.Context) {
         var currentX = context.x
-        
+
         // Use trimmed tokens to avoid trailing spaces
         let tokens = line.trimmedTokens
-        
+
         // Group consecutive tokens with same styling
         var currentSegment = ""
         var currentFont: PDF.Font?
         var currentSize: PDF.UserSpace.Unit?
         var currentColor: PDF.Color?
         var currentDecoration: PDF.TextMarkup?
-        var currentBackground: PDF.Color?
         var currentVerticalOffset: PDF.UserSpace.Unit = 0
         var currentLinkURL: String? = nil
         var segmentStartX = currentX
-        
+
         func flushSegment() {
             guard !currentSegment.isEmpty,
                   let font = currentFont,
                   let size = currentSize,
                   let color = currentColor else { return }
-            
+
             let segmentWidth = PDF.UserSpace.Width(font.stringWidth(currentSegment, atSize: size))
             // In top-left coordinates, context.y is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
@@ -438,70 +432,52 @@ extension PDF.Text.Run {
             // The verticalOffset is used for sub/superscript (negative moves up).
             let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.y.value) + font.metrics.ascender(atSize: size))
             let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(baselineY.value) - currentVerticalOffset)
-            
-            
-            
-            // Draw text with vertical offset applied
-            operations.append(.text(PDF.Render.Operation.Text(
-                text: currentSegment,
-                position: PDF.UserSpace.Coordinate(x: segmentStartX, y: textY),
+
+            // Emit text directly to context
+            context.emitText(
+                currentSegment,
+                at: PDF.UserSpace.Coordinate(x: segmentStartX, y: textY),
                 font: font,
                 size: size,
                 color: color
-            )))
-            
-            // Draw text decoration
-            // Note: In top-down coordinates, +Y is down, -Y is up
-            // Baseline is at textY (context.y with vertical offset applied)
-            let lineY: PDF.UserSpace.Y
+            )
+
+            // Draw text decoration if present
             if let decoration = currentDecoration {
+                let lineY: PDF.UserSpace.Y
                 switch decoration {
                 case .underline:
                     lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value + size.value * 0.15))  // Below baseline (positive = down)
                 case .strikeout:
                     lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value - size.value * 0.3))   // Through middle of text (negative = up)
-                    //                case .none:
-                    
-                case let .highlight(color):
-                    // Draw background first if present
-                    // In top-down coords: textY is baseline, text extends UP (smaller Y)
-                    // Need origin above the ascenders, height to cover down past descenders
-                    if let bgColor = currentBackground {
-                        let bgRect = PDF.UserSpace.Rectangle(
-                            x: segmentStartX,
-                            y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
-                            width: segmentWidth,
-                            height: PDF.UserSpace.Height(size.value * 1.15)
-                        )
-                        operations.append(.graphics(.rectangle(
-                            bgRect,
-                            fill: bgColor,
-                            stroke: nil,
-                            strokeWidth: 0
-                        )))
-                    }
-                    // not sure if this is correct
-                    lineY = 0  // Never reached
+                case .highlight(_):
+                    // Draw background rectangle
+                    let bgRect = PDF.UserSpace.Rectangle(
+                        x: segmentStartX,
+                        y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
+                        width: segmentWidth,
+                        height: PDF.UserSpace.Height(size.value * 1.15)
+                    )
+                    context.emitRectangle(bgRect, fill: color, stroke: nil)
+                    return  // No line to draw for highlight
                 case .jagged:
                     fatalError("unimplemented")
                 }
-            } else {
-                lineY = 0  // Never reached
+
+                let startPoint = PDF.UserSpace.Coordinate(x: segmentStartX, y: lineY)
+                let endPoint = PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(PDF.UserSpace.Unit(segmentStartX.value + segmentWidth.value)), y: lineY)
+                let lineWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(size.value * 0.05))  // Line thickness proportional to font
+                let minLineWidth: PDF.UserSpace.Width = 0.5
+                let effectiveLineWidth = lineWidth.value > minLineWidth.value ? lineWidth : minLineWidth
+
+                context.emitLine(
+                    from: startPoint,
+                    to: endPoint,
+                    color: color,
+                    width: effectiveLineWidth
+                )
             }
-            
-            let startPoint = PDF.UserSpace.Coordinate(x: segmentStartX, y: lineY)
-            let endPoint = PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(PDF.UserSpace.Unit(segmentStartX.value + segmentWidth.value)), y: lineY)
-            let lineWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(size.value * 0.05))  // Line thickness proportional to font
-            let minLineWidth: PDF.UserSpace.Width = 0.5
-            let effectiveLineWidth = lineWidth.value > minLineWidth.value ? lineWidth : minLineWidth
-            
-            operations.append(.graphics(.line(
-                from: startPoint,
-                to: endPoint,
-                color: color,
-                width: effectiveLineWidth
-            )))
-            
+
             // Add link annotation if this segment has a URL
             if let url = currentLinkURL {
                 let linkRect = PDF.UserSpace.Rectangle(
@@ -512,10 +488,10 @@ extension PDF.Text.Run {
                 )
                 context.addLinkAnnotation(rect: linkRect, uri: url)
             }
-            
+
             currentSegment = ""
         }
-        
+
         for token in tokens {
             let sameStyle = token.font == currentFont &&
             token.fontSize == currentSize &&
@@ -523,14 +499,14 @@ extension PDF.Text.Run {
             token.textDecoration == currentDecoration &&
             token.verticalOffset == currentVerticalOffset &&
             token.linkURL == currentLinkURL
-            
+
             if sameStyle {
                 // Same style - append to current segment
                 currentSegment += token.text
             } else {
                 // Style changed - flush previous segment
                 flushSegment()
-                
+
                 // Start new segment
                 segmentStartX = currentX
                 currentSegment = token.text
@@ -541,13 +517,11 @@ extension PDF.Text.Run {
                 currentVerticalOffset = token.verticalOffset
                 currentLinkURL = token.linkURL
             }
-            
+
             currentX = PDF.UserSpace.X(PDF.UserSpace.Unit(currentX.value + token.width.value))
         }
-        
+
         // Flush remaining segment
         flushSegment()
-        
-        return operations
     }
 }

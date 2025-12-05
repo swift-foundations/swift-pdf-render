@@ -1,14 +1,11 @@
 // PDF.Divider.swift
 
 public import PDF_Standard
-public import Renderable
 
 extension PDF {
     /// Horizontal divider line
     public struct Divider: PDF.View, Sendable {
         public typealias Content = Never
-        public typealias Context = PDF.Context
-        public typealias Output = PDF.Render.Operation
 
         /// Line color
         public var color: PDF.Color
@@ -34,34 +31,26 @@ extension PDF {
             fatalError("PDF.Divider is a leaf view")
         }
 
-        public static func _render<Buffer: RangeReplaceableCollection>(
-            _ view: Self,
-            into buffer: inout Buffer,
-            context: inout PDF.Context
-        ) where Buffer.Element == PDF.Render.Operation {
+        public static func _render(_ view: Self, context: inout PDF.Context) {
             // Check for page break before rendering
-            let totalHeight = PDF.UserSpace.Height(PDF.UserSpace.Unit(view.padding.value + view.thickness.value + view.padding.value))
+            let totalHeight = PDF.UserSpace.Height(view.padding + view.thickness + view.padding)
             context.checkPageBreak(needing: totalHeight)
 
-            context.advance(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.padding.value)))
+            context.advance(PDF.UserSpace.Y(view.padding))
 
             let lineY = context.y
             let startX = context.x
-            let endX = PDF.UserSpace.X(PDF.UserSpace.Unit(context.x.value + context.availableWidth.value))
+            let endX = PDF.UserSpace.X(context.x.value + context.availableWidth.value)
 
-            context.advance(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.thickness.value + view.padding.value)))
+            context.advance(PDF.UserSpace.Y(view.thickness + view.padding))
 
-            let operation = PDF.Render.Operation.graphics(.line(
+            // Emit line directly to content stream
+            context.emitLine(
                 from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
                 to: PDF.UserSpace.Coordinate(x: endX, y: lineY),
                 color: view.color,
                 width: PDF.UserSpace.Width(view.thickness)
-            ))
-
-            // Add to context for proper pagination
-            context.add(operation)
-            // Also add to buffer for callers that use it
-            buffer.append(operation)
+            )
         }
     }
 }

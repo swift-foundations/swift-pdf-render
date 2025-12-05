@@ -2,7 +2,6 @@
 // Horizontal stack layout.
 
 public import PDF_Standard
-public import Renderable
 
 extension PDF.Stack {
     /// Horizontal stack layout
@@ -10,8 +9,6 @@ extension PDF.Stack {
     /// Arranges child views horizontally with specified spacing.
     public struct Horizontal<C: PDF.View>: PDF.View, Sendable where C: Sendable {
         public typealias Content = C
-        public typealias Context = PDF.Context
-        public typealias Output = PDF.Render.Operation
 
         /// Child content
         public var content: C
@@ -29,14 +26,10 @@ extension PDF.Stack {
             content
         }
 
-        public static func _render<Buffer: RangeReplaceableCollection>(
-            _ view: Self,
-            into buffer: inout Buffer,
-            context: inout PDF.Context
-        ) where Buffer.Element == PDF.Render.Operation {
+        public static func _render(_ view: Self, context: inout PDF.Context) {
             // Render content
             // For typed content, horizontal layout needs custom handling
-            C._render(view.content, into: &buffer, context: &context)
+            C._render(view.content, context: &context)
         }
     }
 }

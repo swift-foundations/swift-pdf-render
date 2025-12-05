@@ -1,14 +1,11 @@
 // PDF.Text.swift
 
 public import PDF_Standard
-public import Renderable
 
 extension PDF {
     /// Text element with automatic line wrapping
     public struct Text: PDF.View, Sendable {
         public typealias Content = Never
-        public typealias Context = PDF.Context
-        public typealias Output = PDF.Render.Operation
 
         /// The text to render
         public var text: String
@@ -39,11 +36,7 @@ extension PDF {
             fatalError("PDF.Text is a leaf view")
         }
 
-        public static func _render<Buffer: RangeReplaceableCollection>(
-            _ view: Self,
-            into buffer: inout Buffer,
-            context: inout PDF.Context
-        ) where Buffer.Element == PDF.Render.Operation {
+        public static func _render(_ view: Self, context: inout PDF.Context) {
             let effectiveFont = view.font ?? context.font
             let effectiveSize = view.fontSize ?? context.fontSize
             let effectiveColor = view.color ?? context.color
@@ -63,20 +56,16 @@ extension PDF {
                 // In top-left coordinates, context.y is the top of the line box.
                 // PDF text is positioned at the baseline, so we offset down by the
                 // ascender height (distance from baseline to top of tallest glyphs).
-                let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.y.value) + effectiveFont.metrics.ascender(atSize: effectiveSize))
+                let baselineY = PDF.UserSpace.Y(context.y.value + effectiveFont.metrics.ascender(atSize: effectiveSize))
 
-                let operation = PDF.Render.Operation.text(PDF.Render.Operation.Text(
-                    text: line,
-                    position: PDF.UserSpace.Coordinate(x: context.x, y: baselineY),
+                // Emit text directly to content stream
+                context.emitText(
+                    line,
+                    at: PDF.UserSpace.Coordinate(x: context.x, y: baselineY),
                     font: effectiveFont,
                     size: effectiveSize,
                     color: effectiveColor
-                ))
-
-                // Add to context for proper pagination
-                context.add(operation)
-                // Also add to buffer for callers that use it
-                buffer.append(operation)
+                )
 
                 context.advanceLine()
             }
@@ -106,7 +95,7 @@ extension PDF {
                     }
                 } else {
                     let lineWidth = PDF.UserSpace.Width(font.stringWidth(currentLine, atSize: size))
-                    let potentialWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(lineWidth.value + spaceWidth.value + wordWidth.value))
+                    let potentialWidth = PDF.UserSpace.Width(lineWidth.value + spaceWidth.value + wordWidth.value)
 
                     if potentialWidth.value <= maxWidth.value {
                         currentLine += " " + wordString

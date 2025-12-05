@@ -16,6 +16,7 @@ struct `PDF.Context Tests` {
             y: 200,
             availableWidth: 400,
             availableHeight: 600,
+            pageHeight: 792,
             font: .times,
             fontSize: 14,
             color: .blue,
@@ -36,7 +37,8 @@ struct `PDF.Context Tests` {
     func `Uses default values`() {
         let context = PDF.Context(
             availableWidth: 400,
-            availableHeight: 600
+            availableHeight: 600,
+            pageHeight: 792
         )
 
         #expect(context.x == 0)
@@ -78,6 +80,7 @@ struct `PDF.Context Tests` {
         let context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
+            pageHeight: 792,
             fontSize: 12,
             lineHeight: 1.2
         )
@@ -91,6 +94,7 @@ struct `PDF.Context Tests` {
         let small = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
+            pageHeight: 792,
             fontSize: 10,
             lineHeight: 1.2
         )
@@ -98,6 +102,7 @@ struct `PDF.Context Tests` {
         let large = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
+            pageHeight: 792,
             fontSize: 20,
             lineHeight: 1.2
         )
@@ -112,6 +117,7 @@ struct `PDF.Context Tests` {
         var context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
+            pageHeight: 792,
             fontSize: 12,
             lineHeight: 1.2
         )
@@ -127,7 +133,8 @@ struct `PDF.Context Tests` {
     func `Advance Y by specific amount`() {
         var context = PDF.Context(
             availableWidth: 400,
-            availableHeight: 600
+            availableHeight: 600,
+            pageHeight: 792
         )
 
         context.advance(PDF.UserSpace.Y(50))
@@ -140,7 +147,8 @@ struct `PDF.Context Tests` {
         var context = PDF.Context(
             y: 100,
             availableWidth: 400,
-            availableHeight: 600
+            availableHeight: 600,
+            pageHeight: 792
         )
 
         context.advance(PDF.UserSpace.Y(10))
@@ -156,7 +164,8 @@ struct `PDF.Context Tests` {
     func `Context is mutable`() {
         var context = PDF.Context(
             availableWidth: 400,
-            availableHeight: 600
+            availableHeight: 600,
+            pageHeight: 792
         )
 
         context.x = 100

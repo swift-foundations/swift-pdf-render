@@ -14,7 +14,9 @@ extension ISO_32000.Document {
     /// Example:
     /// ```swift
     /// let doc = ISO_32000.Document(title: "Report", author: "Jane") {
-    ///     ISO_32000.Page(mediaBox: .a4, operations: [...])
+    ///     PDF.VStack {
+    ///         PDF.Text("Hello, World!")
+    ///     }
     /// }
     /// ```
     public init(
@@ -24,17 +26,18 @@ extension ISO_32000.Document {
         edgeInsets: PDF.EdgeInsets = PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72),
         @PDF.Builder _ build: () -> some PDF.View
     ) {
-
         var context = PDF.Context(mediaBox: mediaBox, margins: edgeInsets)
-        
-        [PDF.Render.Operation].init(build(), context: &context)
-        
+
+        // Render the view into the context
+        let view = build()
+        type(of: view)._render(view, context: &context)
+
         self.init(
             version: version,
             info: info,
             pages: .init(
                 mediaBox: mediaBox,
-                operations: context.getAllPages(),
+                contentStreams: context.getAllPages(),
                 annotations: context.getAllAnnotations()
             )
         )
@@ -44,17 +47,25 @@ extension ISO_32000.Document {
 extension [PDF.Page] {
     public init(
         mediaBox: PDF.Rectangle<ISO_32000.UserSpace.Unit>,
-        operations: [[PDF.Render.Operation]],
-        annotations: [[PDF.Annotation]],
-    ){
+        contentStreams: [ISO_32000.ContentStream],
+        annotations: [[PDF.Annotation]]
+    ) {
         var pages: [PDF.Page] = []
-        for (i, operations) in operations.enumerated() {
-            let annotations = i < annotations.count ? annotations[i] : []
+        for (i, contentStream) in contentStreams.enumerated() {
+            let pageAnnotations = i < annotations.count ? annotations[i] : []
+
+            // Build font resources from content stream
+            var fontResources: [ISO_32000.COS.Name: ISO_32000.Font] = [:]
+            for font in contentStream.fontsUsed {
+                fontResources[font.resourceName] = font
+            }
+
             pages.append(
                 PDF.Page(
                     mediaBox: mediaBox,
-                    operations: operations,
-                    annotations: annotations
+                    content: contentStream,
+                    resources: ISO_32000.Resources(fonts: fontResources),
+                    annotations: pageAnnotations
                 )
             )
         }

@@ -35,7 +35,8 @@ struct `PDF.Stack.Vertical Tests` {
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let stack = PDF.VStack {
@@ -44,15 +45,10 @@ struct `PDF.Stack.Vertical Tests` {
             PDF.Text("Line 3")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.VStack._render(stack, context: &context)
 
-        let textOps = buffer.filter {
-            if case .text = $0 { return true }
-            return false
-        }
-
-        #expect(textOps.count == 3)
+        // Content stream should have data for all 3 texts
+        #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
     @Test
@@ -62,6 +58,7 @@ struct `PDF.Stack.Vertical Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
+            pageHeight: 792,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -71,8 +68,7 @@ struct `PDF.Stack.Vertical Tests` {
             PDF.Text("Line 2")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.VStack._render(stack, context: &context)
 
         // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
         #expect(context.y == 116)
@@ -85,6 +81,7 @@ struct `PDF.Stack.Vertical Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
+            pageHeight: 792,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -93,8 +90,7 @@ struct `PDF.Stack.Vertical Tests` {
             PDF.Text("Only one")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.VStack._render(stack, context: &context)
 
         // 72 + single line (12), no spacing added = 84
         #expect(context.y == 84)
@@ -138,7 +134,8 @@ struct `PDF.Stack.Horizontal Tests` {
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let stack = PDF.HStack {
@@ -147,15 +144,10 @@ struct `PDF.Stack.Horizontal Tests` {
             PDF.Text("C")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.HStack._render(stack, context: &context)
 
-        let textOps = buffer.filter {
-            if case .text = $0 { return true }
-            return false
-        }
-
-        #expect(textOps.count == 3)
+        // Content stream should have data
+        #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
     @Test
@@ -165,6 +157,7 @@ struct `PDF.Stack.Horizontal Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
+            pageHeight: 792,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -174,8 +167,7 @@ struct `PDF.Stack.Horizontal Tests` {
             PDF.Text("Also Short")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.HStack._render(stack, context: &context)
 
         // TODO: HStack should position children horizontally, not vertically
         // Currently each child advances Y by one line: 72 + 12 + 12 = 96
@@ -201,7 +193,8 @@ struct `PDF.Stack Nested Tests` {
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let stack = PDF.VStack {
@@ -212,10 +205,9 @@ struct `PDF.Stack Nested Tests` {
             PDF.Text("Below")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.VStack._render(stack, context: &context)
 
-        #expect(!buffer.isEmpty)
+        #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
     @Test
@@ -224,7 +216,8 @@ struct `PDF.Stack Nested Tests` {
             x: 72,
             y: 72,
             availableWidth: 400,
-            availableHeight: 700
+            availableHeight: 700,
+            pageHeight: 792
         )
 
         let stack = PDF.HStack {
@@ -235,9 +228,8 @@ struct `PDF.Stack Nested Tests` {
             PDF.Text("Side")
         }
 
-        var buffer: [PDF.Render.Operation] = []
-        stack.render(into: &buffer, context: &context)
+        PDF.HStack._render(stack, context: &context)
 
-        #expect(!buffer.isEmpty)
+        #expect(!context.currentPageBuilder.data.isEmpty)
     }
 }

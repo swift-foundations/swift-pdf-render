@@ -2,7 +2,6 @@
 // Stack layout namespace.
 
 public import PDF_Standard
-public import Renderable
 
 extension PDF {
     /// Stack layout namespace

@@ -84,11 +84,14 @@ extension PDF {
         /// Maximum Y position (bottom boundary).
         private var maxY: PDF.UserSpace.Y
 
-        /// Operations for completed pages.
-        public var completedPages: [[PDF.Render.Operation]] = []
+        /// Page height for coordinate conversion (top-left to bottom-left).
+        public var pageHeight: PDF.UserSpace.Height
 
-        /// Operations for current page.
-        public var currentPageOperations: [PDF.Render.Operation] = []
+        /// Completed pages' content streams.
+        public var completedPages: [ISO_32000.ContentStream] = []
+
+        /// Current page's content stream builder.
+        public var currentPageBuilder: ISO_32000.ContentStream.Builder = .init()
 
         /// Annotations for completed pages.
         public var completedPageAnnotations: [[PDF.Annotation]] = []
@@ -106,6 +109,7 @@ extension PDF.Context {
     /// Create a render context from primitives.
     public init(
         layoutBox: PDF.LayoutBox,
+        pageHeight: PDF.UserSpace.Height,
         style: PDF.Style.Resolved = .init(
             font: .helvetica,
             fontSize: 12,
@@ -115,6 +119,7 @@ extension PDF.Context {
         graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState> = .init(initial: .init())
     ) {
         self.layoutBox = layoutBox
+        self.pageHeight = pageHeight
         self.style = style
         self.graphicsStack = graphicsStack
         self.initialLayoutBox = layoutBox
@@ -127,6 +132,7 @@ extension PDF.Context {
         y: PDF.UserSpace.Y = 0,
         availableWidth: PDF.UserSpace.Width,
         availableHeight: PDF.UserSpace.Height,
+        pageHeight: PDF.UserSpace.Height,
         font: PDF.Font = .helvetica,
         fontSize: PDF.UserSpace.Unit = 12,
         color: PDF.Color = .black,
@@ -139,6 +145,7 @@ extension PDF.Context {
         )
         self.init(
             layoutBox: box,
+            pageHeight: pageHeight,
             style: .init(
                 font: font,
                 fontSize: fontSize,
@@ -159,7 +166,8 @@ extension PDF.Context {
             x: PDF.UserSpace.X(margins.leading),
             y: PDF.UserSpace.Y(margins.top),
             availableWidth: contentWidth,
-            availableHeight: contentHeight
+            availableHeight: contentHeight,
+            pageHeight: mediaBox.height
         )
     }
 }
@@ -260,13 +268,11 @@ extension PDF.Context {
     }
 
     /// Flush accumulated inline runs, rendering them as a wrapped block.
-    ///
-    /// - Returns: PDF content operations for the flushed text
-    public mutating func flushInlineRuns() -> PDF.Content {
-        guard !inlineRuns.isEmpty else { return PDF.Content() }
+    public mutating func flushInlineRuns() {
+        guard !inlineRuns.isEmpty else { return }
         let runs = inlineRuns
         inlineRuns = []
-        return PDF.Text.Run.renderRuns(runs, context: &self)
+        PDF.Text.Run.renderRuns(runs, context: &self)
     }
 
     /// Check if there are pending inline runs.
@@ -313,27 +319,22 @@ extension PDF.Context {
 // MARK: - Pagination
 
 extension PDF.Context {
-    /// Start a new page, saving current operations.
+    /// Start a new page, saving current content stream.
     public mutating func startNewPage() {
-        completedPages.append(currentPageOperations)
+        // Finalize current page
+        let currentStream = ISO_32000.ContentStream(
+            data: currentPageBuilder.data,
+            fontsUsed: currentPageBuilder.fontsUsed
+        )
+        completedPages.append(currentStream)
         completedPageAnnotations.append(currentPageAnnotations)
-        currentPageOperations = []
+
+        // Reset for new page
+        currentPageBuilder = .init()
         currentPageAnnotations = []
 
         // Reset to initial layout position
         layoutBox.origin = initialLayoutBox.origin
-    }
-
-    /// Add operation to current page.
-    public mutating func add(_ operation: PDF.Render.Operation) {
-        guard !measurementMode else { return }
-        currentPageOperations.append(operation)
-    }
-
-    /// Add multiple operations to current page.
-    public mutating func add(_ operations: [PDF.Render.Operation]) {
-        guard !measurementMode else { return }
-        currentPageOperations.append(contentsOf: operations)
     }
 
     /// Add a link annotation to the current page.
@@ -365,11 +366,15 @@ extension PDF.Context {
         return remaining.value > 0 ? remaining : .zero
     }
 
-    /// Get all pages' operations (completed + current).
-    public func getAllPages() -> [[PDF.Render.Operation]] {
+    /// Get all pages' content streams (completed + current).
+    public func getAllPages() -> [ISO_32000.ContentStream] {
         var allPages = completedPages
-        if !currentPageOperations.isEmpty {
-            allPages.append(currentPageOperations)
+        if !currentPageBuilder.data.isEmpty {
+            let currentStream = ISO_32000.ContentStream(
+                data: currentPageBuilder.data,
+                fontsUsed: currentPageBuilder.fontsUsed
+            )
+            allPages.append(currentStream)
         }
         return allPages
     }
@@ -420,5 +425,120 @@ extension PDF.Context {
         _ body: (inout PDF.Context) throws -> T
     ) rethrows -> T {
         try transform.scoped(in: &self, body)
+    }
+}
+
+// MARK: - Content Stream Emission
+
+extension PDF.Context {
+    /// Convert Y coordinate from top-left origin to PDF bottom-left origin.
+    @inlinable
+    public func convertY(_ y: PDF.UserSpace.Y) -> PDF.UserSpace.Y {
+        PDF.UserSpace.Y(pageHeight.value - y.value)
+    }
+
+    /// Emit a text string at a position.
+    ///
+    /// Handles coordinate conversion and font/color setup.
+    public mutating func emitText(
+        _ text: String,
+        at position: PDF.UserSpace.Coordinate,
+        font: PDF.Font,
+        size: PDF.UserSpace.Unit,
+        color: PDF.Color
+    ) {
+        guard !measurementMode else { return }
+
+        let pdfY = convertY(position.y)
+
+        currentPageBuilder.beginText()
+
+        // Set color
+        switch color {
+        case .gray(let g):
+            currentPageBuilder.setFillColorGray(g)
+        case .rgb(let r, let g, let b):
+            currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+        case .cmyk(let c, let m, let y, let k):
+            currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+        }
+
+        currentPageBuilder.setFont(font, size: size)
+        currentPageBuilder.moveText(x: position.x, y: pdfY)
+        currentPageBuilder.showText(text)
+        currentPageBuilder.endText()
+    }
+
+    /// Emit a line.
+    public mutating func emitLine(
+        from: PDF.UserSpace.Coordinate,
+        to: PDF.UserSpace.Coordinate,
+        color: PDF.Color,
+        width: PDF.UserSpace.Width
+    ) {
+        guard !measurementMode else { return }
+
+        let pdfFromY = convertY(from.y)
+        let pdfToY = convertY(to.y)
+
+        switch color {
+        case .gray(let g):
+            currentPageBuilder.setStrokeColorGray(g)
+        case .rgb(let r, let g, let b):
+            currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+        case .cmyk(let c, let m, let y, let k):
+            currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+        }
+
+        currentPageBuilder.setLineWidth(width)
+        currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
+        currentPageBuilder.lineTo(x: to.x, y: pdfToY)
+        currentPageBuilder.stroke()
+    }
+
+    /// Emit a rectangle.
+    public mutating func emitRectangle(
+        _ rect: PDF.UserSpace.Rectangle,
+        fill: PDF.Color?,
+        stroke: PDF.Color?,
+        strokeWidth: PDF.UserSpace.Width = .init(1)
+    ) {
+        guard !measurementMode else { return }
+
+        // Transform Y coordinate (rect uses top-left origin, PDF uses bottom-left)
+        let pdfY: PDF.UserSpace.Y = .init(pageHeight.value - rect.lly.value - rect.height.value)
+
+        if let fill = fill {
+            switch fill {
+            case .gray(let g):
+                currentPageBuilder.setFillColorGray(g)
+            case .rgb(let r, let g, let b):
+                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+            case .cmyk(let c, let m, let y, let k):
+                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+            }
+        }
+
+        if let stroke = stroke {
+            switch stroke {
+            case .gray(let g):
+                currentPageBuilder.setStrokeColorGray(g)
+            case .rgb(let r, let g, let b):
+                currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+            case .cmyk(let c, let m, let y, let k):
+                currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+            }
+            currentPageBuilder.setLineWidth(strokeWidth)
+        }
+
+        currentPageBuilder.rectangle(x: rect.llx, y: pdfY, width: rect.width, height: rect.height)
+
+        if fill != nil && stroke != nil {
+            currentPageBuilder.fillAndStroke()
+        } else if fill != nil {
+            currentPageBuilder.fill()
+        } else if stroke != nil {
+            currentPageBuilder.stroke()
+        }
     }
 }

@@ -4,21 +4,14 @@
 public import Renderable
 public import PDF_Standard
 
-extension _Array: @retroactive Renderable where Element: PDF.View {
-    public typealias Context = PDF.Context
+extension _Array: PDF.View where Element: PDF.View {
     public typealias Content = Never
-    public typealias Output = PDF.Render.Operation
+
     public var body: Never { fatalError() }
 
-    public static func _render<Buffer: RangeReplaceableCollection>(
-        _ view: Self,
-        into buffer: inout Buffer,
-        context: inout PDF.Context
-    ) where Buffer.Element == PDF.Render.Operation {
+    public static func _render(_ view: Self, context: inout PDF.Context) {
         for element in view.elements {
-            Element._render(element, into: &buffer, context: &context)
+            Element._render(element, context: &context)
         }
     }
 }
-
-extension _Array: PDF.View where Element: PDF.View {}
