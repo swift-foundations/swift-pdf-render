@@ -22,7 +22,7 @@ extension ISO_32000.Document {
     public init(
         version: ISO_32000.Version = .v1_7,
         info: ISO_32000.Document.Info? = nil,
-        mediaBox: PDF.Rectangle<ISO_32000.UserSpace.Unit> = .a4,
+        mediaBox: ISO_32000.UserSpace.Rectangle = .a4,
         edgeInsets: PDF.EdgeInsets = PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72),
         @PDF.Builder _ build: () -> some PDF.View
     ) {
@@ -46,7 +46,7 @@ extension ISO_32000.Document {
 
 extension [PDF.Page] {
     public init(
-        mediaBox: PDF.Rectangle<ISO_32000.UserSpace.Unit>,
+        mediaBox: ISO_32000.UserSpace.Rectangle,
         contentStreams: [ISO_32000.ContentStream],
         annotations: [[PDF.Annotation]]
     ) {

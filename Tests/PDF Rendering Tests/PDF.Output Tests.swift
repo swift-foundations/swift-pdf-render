@@ -150,10 +150,56 @@ struct `PDF.Output Tests` {
             PDF.VStack(spacing: 10) {
                 PDF.Text("Graphics Test", font: .Helvetica.bold, fontSize: 24)
                 PDF.Divider()
+
+                PDF.Text("RGB Colors:", fontSize: 12)
+                PDF.VStack(spacing: 5) {
+                    PDF.Text("Red", color: .red)
+                    PDF.Rectangle(width: 100, height: 30, fill: .red)
+
+                    PDF.Text("Green", color: .green)
+                    PDF.Rectangle(width: 100, height: 30, fill: .green)
+
+                    PDF.Text("Blue", color: .blue)
+                    PDF.Rectangle(width: 100, height: 30, fill: .blue)
+                }
+
                 PDF.Spacer(20)
-                PDF.Text("RGB Colors", fontSize: 10)
+
+                PDF.Text("Grayscale:", fontSize: 12)
+                PDF.VStack(spacing: 5) {
+                    PDF.Text("Black")
+                    PDF.Rectangle(width: 100, height: 30, fill: .black)
+
+                    PDF.Text("Gray 50%")
+                    PDF.Rectangle(width: 100, height: 30, fill: .gray50)
+
+                    PDF.Text("Light Gray")
+                    PDF.Rectangle(width: 100, height: 30, fill: .lightGray)
+                }
+
+                PDF.Spacer(20)
+
+                PDF.Text("CMYK Colors:", fontSize: 12)
+                PDF.VStack(spacing: 5) {
+                    PDF.Text("Cyan")
+                    PDF.Rectangle(width: 100, height: 30, fill: .cmyk(c: 1, m: 0, y: 0, k: 0))
+
+                    PDF.Text("Magenta")
+                    PDF.Rectangle(width: 100, height: 30, fill: .cmyk(c: 0, m: 1, y: 0, k: 0))
+
+                    PDF.Text("Yellow")
+                    PDF.Rectangle(width: 100, height: 30, fill: .cmyk(c: 0, m: 0, y: 1, k: 0))
+                }
+
+                PDF.Spacer(20)
+
+                PDF.Text("Stroked Rectangle:", fontSize: 12)
+                PDF.Rectangle(width: 150, height: 50, stroke: .black, strokeWidth: 2)
+
                 PDF.Spacer(10)
-                PDF.Text("CMYK Colors", fontSize: 10)
+
+                PDF.Text("Filled and Stroked:", fontSize: 12)
+                PDF.Rectangle(width: 150, height: 50, fill: .rgb(r: 0.9, g: 0.9, b: 1.0), stroke: .blue, strokeWidth: 1)
             }
         }
 
