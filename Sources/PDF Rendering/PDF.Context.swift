@@ -34,6 +34,12 @@ extension PDF {
         /// Line height multiplier
         public var lineHeight: Double
 
+        /// Current text decoration (underline, strikethrough)
+        public var textDecoration: PDF.TextDecoration = .none
+
+        /// Current text background color for highlighting
+        public var textBackgroundColor: PDF.Color? = nil
+
         /// Accumulated inline text runs (for inline flow)
         ///
         /// Block elements flush this buffer to render accumulated inline content
@@ -75,6 +81,16 @@ extension PDF {
 
         /// Annotations for current page
         public var currentPageAnnotations: [PDF.Annotation] = []
+
+        // MARK: - Measurement Mode
+
+        /// When true, add() operations are suppressed (for measuring content height).
+        ///
+        /// In measurement mode, the context still tracks Y position advancement
+        /// but doesn't commit operations to `currentPageOperations`. This allows
+        /// measuring how much vertical space content would consume without
+        /// actually rendering it.
+        public var measurementMode: Bool = false
     }
 }
 
@@ -229,12 +245,18 @@ extension PDF.Context {
     }
 
     /// Add operation to current page
+    ///
+    /// When `measurementMode` is true, operations are not added (for height measurement).
     public mutating func add(_ operation: PDF.Render.Operation) {
+        guard !measurementMode else { return }
         currentPageOperations.append(operation)
     }
 
     /// Add multiple operations to current page
+    ///
+    /// When `measurementMode` is true, operations are not added (for height measurement).
     public mutating func add(_ operations: [PDF.Render.Operation]) {
+        guard !measurementMode else { return }
         currentPageOperations.append(contentsOf: operations)
     }
 
@@ -292,5 +314,24 @@ extension PDF.Context {
         }
         allAnnotations.append(currentPageAnnotations)
         return allAnnotations
+    }
+
+    // MARK: - Measurement
+
+    /// Execute a closure in measurement mode, returning the height consumed.
+    ///
+    /// In measurement mode, Y position advances but operations are not added to
+    /// `currentPageOperations`. This allows measuring content height without rendering.
+    ///
+    /// - Parameter work: The work to execute in measurement mode
+    /// - Returns: The height consumed during the measurement
+    public mutating func measure(_ work: (inout PDF.Context) -> Void) -> PDF.UserSpace.Height {
+        let startY = y
+        measurementMode = true
+        work(&self)
+        measurementMode = false
+        let height = PDF.UserSpace.Height(y.value - startY.value)
+        y = startY  // Reset Y position
+        return height
     }
 }
