@@ -47,85 +47,13 @@ extension PDF.Text {
             linkURL: String? = nil
         ) {
             // Sanitize text to replace unsupported Unicode characters
-            self.text = Self.sanitizeForPDF(text)
+            self.text = ISO_32000.WinAnsiEncoding.sanitize(text)
             self.font = font
             self.fontSize = fontSize
             self.color = color
             self.textDecoration = textDecoration
             self.verticalOffset = verticalOffset
             self.linkURL = linkURL
-        }
-        
-        /// Sanitize text for PDF Standard 14 fonts (WinAnsiEncoding).
-        ///
-        /// Replaces Unicode characters that aren't in WinAnsiEncoding
-        /// with ASCII equivalents.
-        private static func sanitizeForPDF(_ text: String) -> String {
-            var result = ""
-            result.reserveCapacity(text.count)
-            
-            for scalar in text.unicodeScalars {
-                switch scalar.value {
-                    // Em-dash (—) → --
-                case 0x2014:
-                    result += "--"
-                    // En-dash (–) → -
-                case 0x2013:
-                    result += "-"
-                    // Left double quote (") → "
-                case 0x201C:
-                    result += "\""
-                    // Right double quote (") → "
-                case 0x201D:
-                    result += "\""
-                    // Left single quote (') → '
-                case 0x2018:
-                    result += "'"
-                    // Right single quote (') → '
-                case 0x2019:
-                    result += "'"
-                    // Horizontal ellipsis (…) → ...
-                case 0x2026:
-                    result += "..."
-                    // Bullet (•) → hyphen for now (encoding issues with special chars)
-                case 0x2022:
-                    result.append("-")
-                    // Non-breaking space → regular space
-                case 0x00A0:
-                    result += " "
-                    // Minus sign (−) → -
-                case 0x2212:
-                    result += "-"
-                    // Multiplication sign (×) → x
-                case 0x00D7:
-                    result += "x"
-                    // Division sign (÷) → /
-                case 0x00F7:
-                    result += "/"
-                    // Copyright sign (©) → (c) for safety
-                case 0x00A9:
-                    result += "(c)"
-                    // Trademark (™) → (TM)
-                case 0x2122:
-                    result += "(TM)"
-                    // Registered trademark (®) → (R) for safety
-                case 0x00AE:
-                    result += "(R)"
-                    // Check if in WinAnsiEncoding range (Basic Latin + Latin-1 Supplement)
-                case 0x0020...0x007E, 0x00A1...0x00FF:
-                    result.append(Character(scalar))
-                    // Other characters → ?
-                default:
-                    // For characters outside WinAnsiEncoding, use replacement
-                    if scalar.value < 0x0100 {
-                        result.append(Character(scalar))
-                    } else {
-                        result += "?"
-                    }
-                }
-            }
-            
-            return result
         }
         
         /// Render multiple text runs with proper line wrapping.
@@ -146,12 +74,12 @@ extension PDF.Text {
             guard !tokens.isEmpty else { return }
 
             // Build lines from tokens
-            let lines = buildLines(tokens: tokens, maxWidth: context.availableWidth)
+            let lines = buildLines(tokens: tokens, maxWidth: context.layoutBox.width)
 
             // Render lines with pagination support
             for line in lines {
                 // Check if this line would exceed the page
-                let lineHeight = PDF.UserSpace.Height(context.lineHeightPoints)
+                let lineHeight = context.style.lineHeightPoints
                 context.checkPageBreak(needing: lineHeight)
 
                 // Render the line directly to context
@@ -404,7 +332,7 @@ extension PDF.Text.Run {
 extension PDF.Text.Run {
     /// Render a single line of tokens directly to context.
     static func renderLine(_ line: Line, context: inout PDF.Context) {
-        var currentX = context.x
+        var currentX = context.layoutBox.llx
 
         // Use trimmed tokens to avoid trailing spaces
         let tokens = line.trimmedTokens
@@ -430,7 +358,7 @@ extension PDF.Text.Run {
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
             // The verticalOffset is used for sub/superscript (negative moves up).
-            let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.y.value) + font.metrics.ascender(atSize: size))
+            let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.layoutBox.lly.value) + font.metrics.ascender(atSize: size))
             let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(baselineY.value) - currentVerticalOffset)
 
             // Emit text directly to context

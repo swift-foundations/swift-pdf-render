@@ -1,74 +1,66 @@
 // PDF.Document.swift
+//
+// Categorical decomposition:
+//
+//   View ──render──▶ Context ──finalize──▶ Context.Output ──map(Page.init)──▶ [Page] ──▶ Document
+//
+// Primitives:
+//   - Context.finalize() → Context.Output   (extraction morphism)
+//   - Page.init(mediaBox:contentStream:annotations:)  (product construction)
+//   - Document.init(version:info:pages:)    (final assembly)
+//
+// This file provides the composition as a convenience init.
 
 public import PDF_Standard
 import ISO_32000_Flate
 
-extension PDF {
-    /// PDF Document - typealias to ISO_32000.Document
-    public typealias Document = ISO_32000.Document
-}
-
-extension ISO_32000.Document {
-    /// Create a document with builder syntax and metadata
+extension PDF.Document {
+    /// Create a document with builder syntax.
+    ///
+    /// Full pipeline: `View ──render──▶ Context ──finalize──▶ Output ──▶ Document`
     ///
     /// Example:
     /// ```swift
-    /// let doc = ISO_32000.Document(title: "Report", author: "Jane") {
+    /// let doc = PDF.Document {
     ///     PDF.VStack {
     ///         PDF.Text("Hello, World!")
     ///     }
     /// }
     /// ```
-    public init(
+    public init<View: PDF.View>(
         version: ISO_32000.Version = .v1_7,
         info: ISO_32000.Document.Info? = nil,
         mediaBox: ISO_32000.UserSpace.Rectangle = .a4,
         edgeInsets: PDF.EdgeInsets = PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72),
-        @PDF.Builder _ build: () -> some PDF.View
+        @PDF.Builder _ build: () -> View
     ) {
         var context = PDF.Context(mediaBox: mediaBox, margins: edgeInsets)
-
-        // Render the view into the context
         let view = build()
-        type(of: view)._render(view, context: &context)
+        View._render(view, context: &context)
 
         self.init(
             version: version,
             info: info,
-            pages: .init(
-                mediaBox: mediaBox,
-                contentStreams: context.getAllPages(),
-                annotations: context.getAllAnnotations()
-            )
+            mediaBox: mediaBox,
+            output: context.finalize()
         )
     }
 }
 
-extension [PDF.Page] {
+extension PDF.Document {
+    /// Create a document from context output.
+    ///
+    /// Composes: `Context.Output ──map(Page.init)──▶ [Page] ──▶ Document`
     public init(
-        mediaBox: ISO_32000.UserSpace.Rectangle,
-        contentStreams: [ISO_32000.ContentStream],
-        annotations: [[PDF.Annotation]]
+        version: ISO_32000.Version = .v1_7,
+        info: ISO_32000.Document.Info? = nil,
+        mediaBox: ISO_32000.UserSpace.Rectangle = .a4,
+        output: PDF.Context.Output
     ) {
-        var pages: [PDF.Page] = []
-        for (i, contentStream) in contentStreams.enumerated() {
-            let pageAnnotations = i < annotations.count ? annotations[i] : []
-
-            // Build font resources from content stream
-            var fontResources: [ISO_32000.COS.Name: ISO_32000.Font] = [:]
-            for font in contentStream.fontsUsed {
-                fontResources[font.resourceName] = font
-            }
-
-            pages.append(
-                PDF.Page(
-                    mediaBox: mediaBox,
-                    content: contentStream,
-                    resources: ISO_32000.Resources(fonts: fontResources),
-                    annotations: pageAnnotations
-                )
-            )
+        let pages = zip(output.contentStreams, output.annotations).map { stream, annotations in
+            PDF.Page(mediaBox: mediaBox, contentStream: stream, annotations: annotations)
         }
-        self = pages
+        
+        self.init(version: version, info: info, pages: pages)
     }
 }

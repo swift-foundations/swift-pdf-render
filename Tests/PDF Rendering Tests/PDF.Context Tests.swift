@@ -86,7 +86,7 @@ struct `PDF.Context Tests` {
         )
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs((context.lineHeightPoints - 14.4).value) < 0.001)
+        #expect(abs((context.lineHeightPoints.value - 14.4).value) < 0.001)
     }
 
     @Test

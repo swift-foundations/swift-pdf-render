@@ -2,6 +2,7 @@
 // Fully resolved style with concrete values.
 
 public import PDF_Standard
+import Geometry
 
 extension PDF.Style {
     /// A style with all properties resolved to concrete values.
@@ -11,7 +12,7 @@ extension PDF.Style {
         public var font: PDF.Font
         public var fontSize: PDF.UserSpace.Unit
         public var color: PDF.Color
-        public var lineHeight: Double
+        public var lineHeight: Scale<1>
         public var textMarkup: PDF.TextMarkup?
         public var verticalOffset: PDF.UserSpace.Unit
 
@@ -19,7 +20,7 @@ extension PDF.Style {
             font: PDF.Font,
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
-            lineHeight: Double,
+            lineHeight: Scale<1>,
             textMarkup: PDF.TextMarkup? = nil,
             verticalOffset: PDF.UserSpace.Unit = 0
         ) {
@@ -30,10 +31,12 @@ extension PDF.Style {
             self.textMarkup = textMarkup
             self.verticalOffset = verticalOffset
         }
+    }
+}
 
-        /// Line height in points
-        public var lineHeightPoints: PDF.UserSpace.Unit {
-            fontSize * lineHeight
-        }
+extension PDF.Style.Resolved {
+    /// Line height in points
+    public var lineHeightPoints: PDF.UserSpace.Height {
+        .init(fontSize * lineHeight.value)
     }
 }

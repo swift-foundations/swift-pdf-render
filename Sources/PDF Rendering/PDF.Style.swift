@@ -2,6 +2,7 @@
 // Text styling as a product type with monoid structure.
 
 public import PDF_Standard
+import Geometry
 
 extension PDF {
     /// Text styling configuration.
@@ -36,7 +37,7 @@ extension PDF {
         public var color: PDF.Color?
 
         /// Line height multiplier (e.g., 1.2 for 120% line height)
-        public var lineHeight: Double?
+        public var lineHeight: Scale<1>?
 
         /// Text decoration (underline, strikethrough)
         public var textMarkup: PDF.TextMarkup?
@@ -51,7 +52,7 @@ extension PDF {
             font: PDF.Font? = nil,
             fontSize: PDF.UserSpace.Unit? = nil,
             color: PDF.Color? = nil,
-            lineHeight: Double? = nil,
+            lineHeight: Scale<1>? = nil,
             textMarkup: PDF.TextMarkup? = nil,
             verticalOffset: PDF.UserSpace.Unit? = nil
         ) {
@@ -157,7 +158,7 @@ extension PDF.Style {
 
     /// Return a new style with the line height changed.
     @inlinable
-    public func with(lineHeight: Double) -> PDF.Style {
+    public func with(lineHeight: Scale<1>) -> PDF.Style {
         var copy = self
         copy.lineHeight = lineHeight
         return copy

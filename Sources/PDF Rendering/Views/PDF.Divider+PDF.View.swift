@@ -38,9 +38,9 @@ extension PDF {
 
             context.advance(PDF.UserSpace.Y(view.padding))
 
-            let lineY = context.y
-            let startX = context.x
-            let endX = PDF.UserSpace.X(context.x.value + context.availableWidth.value)
+            let lineY = context.layoutBox.lly
+            let startX = context.layoutBox.llx
+            let endX = PDF.UserSpace.X(context.layoutBox.llx.value + context.layoutBox.width.value)
 
             context.advance(PDF.UserSpace.Y(view.thickness + view.padding))
 

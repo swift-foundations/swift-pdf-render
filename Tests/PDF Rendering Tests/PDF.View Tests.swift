@@ -98,7 +98,7 @@ struct `PDF.Builder Tests` {
         PDF.VStack._render(stack, context: &context)
 
         // Y should have advanced for 3 lines
-        #expect(context.y.value > 72)
+        #expect(context.layoutBox.lly.value > 72)
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 

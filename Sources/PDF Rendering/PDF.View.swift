@@ -29,7 +29,7 @@ extension PDF {
     ///     }
     /// }
     /// ```
-    public protocol View: Sendable {
+    public protocol View {
         associatedtype Content: PDF.View
 
         /// The body of this view, defining its structure and content.

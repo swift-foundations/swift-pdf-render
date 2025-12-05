@@ -73,7 +73,7 @@ struct `PDF.Text Tests` {
         PDF.Text._render(text, context: &context)
 
         // 72 + 12 * 1.2 = 86.4 (tolerance for floating point)
-        #expect(abs(context.y.value.value - 86.4) < 0.001)
+        #expect(abs(context.y.value - 86.4) < 0.001)
     }
 
     @Test
@@ -130,7 +130,7 @@ struct `PDF.Text Tests` {
 
         // Y should have advanced by more than one line
         let lineHeight = context.lineHeightPoints
-        #expect(context.y.value.value - startY.value.value > lineHeight.value)
+        #expect(context.y.value - startY.value > lineHeight.value)
     }
 
     @Test
@@ -146,12 +146,12 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("This is a longer text that should wrap")
-        let startY = context.y.value.value
+        let startY = context.y.value
         PDF.Text._render(text, context: &context)
 
         // Each line advances by fontSize * lineHeight = 12 * 1.2 = 14.4
         // The final Y should be startY + (lineCount * 14.4)
-        let linesRendered = (context.y.value.value - startY) / 14.4
+        let linesRendered = (context.y.value - startY) / 14.4
         #expect(linesRendered >= 1)
     }
 

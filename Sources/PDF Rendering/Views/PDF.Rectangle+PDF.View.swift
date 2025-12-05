@@ -15,8 +15,8 @@ extension PDF.Rectangle: PDF.View {
         
         // Emit rectangle at current position + rectangle's offset
         let renderRect = PDF.UserSpace.Rectangle(
-            x: context.x + view.rect.llx,
-            y: context.y + view.rect.lly,
+            x: context.layoutBox.llx + view.rect.llx,
+            y: context.layoutBox.lly + view.rect.lly,
             width: view.rect.width,
             height: view.rect.height
         )
