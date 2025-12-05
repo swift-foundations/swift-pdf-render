@@ -114,16 +114,6 @@ extension PDF.UserSpace.Rectangle {
     @inlinable
     public var constrain: Constrain { Constrain(self) }
 
-    /// Access to layout lattice operations.
-    ///
-    /// Usage:
-    /// ```swift
-    /// let meet = rect.layout.intersection(other)
-    /// let join = rect.layout.union(other)
-    /// ```
-    @inlinable
-    public var layout: Layout { Layout(self) }
-
     /// Set the width explicitly.
     ///
     /// - Parameter newWidth: The new width
@@ -237,70 +227,3 @@ extension PDF.UserSpace.Rectangle {
     }
 }
 
-// MARK: - Layout Namespace
-
-extension PDF.UserSpace.Rectangle {
-    /// Namespace for layout lattice operations.
-    public struct Layout: Sendable {
-        @usableFromInline
-        let rect: PDF.UserSpace.Rectangle
-
-        @usableFromInline
-        init(_ rect: PDF.UserSpace.Rectangle) {
-            self.rect = rect
-        }
-
-        /// Intersection of two layout boxes (lattice meet ∧).
-        ///
-        /// Returns the largest box contained in both boxes.
-        /// If the boxes don't overlap, returns an empty box.
-        ///
-        /// - Parameter other: The box to intersect with
-        /// - Returns: The intersection, or `.empty` if disjoint
-        @inlinable
-        public func intersection(_ other: PDF.UserSpace.Rectangle) -> PDF.UserSpace.Rectangle {
-            let newMinX = Swift.max(rect.llx.value, other.llx.value)
-            let newMinY = Swift.max(rect.lly.value, other.lly.value)
-            let newMaxX = Swift.min(rect.maxX.value, other.maxX.value)
-            let newMaxY = Swift.min(rect.maxY.value, other.maxY.value)
-
-            let newWidth = newMaxX - newMinX
-            let newHeight = newMaxY - newMinY
-
-            guard newWidth > 0, newHeight > 0 else {
-                return .empty
-            }
-
-            return PDF.UserSpace.Rectangle(
-                x: .init(newMinX),
-                y: .init(newMinY),
-                width: .init(newWidth),
-                height: .init(newHeight)
-            )
-        }
-
-        /// Union bounding box (lattice join ∨).
-        ///
-        /// Returns the smallest box containing both boxes.
-        ///
-        /// - Parameter other: The box to union with
-        /// - Returns: The bounding box containing both
-        @inlinable
-        public func union(_ other: PDF.UserSpace.Rectangle) -> PDF.UserSpace.Rectangle {
-            guard !rect.isEmpty else { return other }
-            guard !other.isEmpty else { return rect }
-
-            let newMinX = Swift.min(rect.llx.value, other.llx.value)
-            let newMinY = Swift.min(rect.lly.value, other.lly.value)
-            let newMaxX = Swift.max(rect.maxX.value, other.maxX.value)
-            let newMaxY = Swift.max(rect.maxY.value, other.maxY.value)
-
-            return PDF.UserSpace.Rectangle(
-                x: .init(newMinX),
-                y: .init(newMinY),
-                width: .init(newMaxX - newMinX),
-                height: .init(newMaxY - newMinY)
-            )
-        }
-    }
-}
