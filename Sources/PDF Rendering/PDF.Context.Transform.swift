@@ -182,7 +182,7 @@ extension PDF.Context.Transform {
     public static func constrainWidth(_ maxWidth: PDF.UserSpace.Width) -> PDF.Context.Transform {
         PDF.Context.Transform { context in
             var ctx = context
-            ctx.layoutBox = ctx.layoutBox.constrainingWidth(to: maxWidth)
+            ctx.layoutBox = ctx.layoutBox.constrain.width(to: maxWidth)
             return ctx
         }
     }
@@ -194,7 +194,7 @@ extension PDF.Context.Transform {
     public static func constrainHeight(_ maxHeight: PDF.UserSpace.Height) -> PDF.Context.Transform {
         PDF.Context.Transform { context in
             var ctx = context
-            ctx.layoutBox = ctx.layoutBox.constrainingHeight(to: maxHeight)
+            ctx.layoutBox = ctx.layoutBox.constrain.height(to: maxHeight)
             return ctx
         }
     }
