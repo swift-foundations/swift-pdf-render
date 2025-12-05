@@ -33,6 +33,36 @@ extension PDF {
     }
 }
 
+extension PDF.View {
+    func render<Buffer>(
+        into buffer: inout Buffer,
+        context: inout PDF.Context
+    ) where Buffer: RangeReplaceableCollection, Buffer.Element == PDF.Render.Operation {
+        Self._render(self, into: &buffer, context: &context)
+    }
+    
+    func render<Buffer>(
+        context: inout PDF.Context
+    ) -> Buffer
+    where Buffer: RangeReplaceableCollection, Buffer.Element == PDF.Render.Operation {
+        var buffer = Buffer()
+        Self._render(self, into: &buffer, context: &context)
+        return buffer
+    }
+}
+
+extension RangeReplaceableCollection where Element == PDF.Render.Operation {
+    @discardableResult
+    public init<P: PDF.View>(
+        _ pdf: P,
+        context: inout PDF.Context
+    ){
+        var buffer = Self()
+        P._render(pdf, into: &buffer, context: &context)
+        self = buffer
+    }
+}
+
 // MARK: - Default Implementation
 
 extension PDF.View where Content: PDF.View {
@@ -68,24 +98,24 @@ extension Never: PDF.View {
     }
 }
 
-// Note: PDF.Content (ISO_32000.ContentStream) does NOT conform to PDF.View.
-// PDF.Content is the final low-level format (raw bytes), not an intermediate view.
-// The rendering pipeline is: PDF.View → [PDF.Render.Operation] → PDF.Page → PDF.Content
-
-// MARK: - Dynamic dispatch helper
-
-extension PDF {
-    /// Renders a view dynamically through existential dispatch.
-    /// Use this when you have `any PDF.View` and need to call `_render`.
-    @inlinable
-    public static func render<Buffer: RangeReplaceableCollection>(
-        _ view: some PDF.View,
-        into buffer: inout Buffer,
-        context: inout PDF.Context
-    ) where Buffer.Element == PDF.Render.Operation {
-        func callRender<V: PDF.View>(_ v: V) {
-            V._render(v, into: &buffer, context: &context)
-        }
-        callRender(view)
-    }
-}
+//// Note: PDF.Content (ISO_32000.ContentStream) does NOT conform to PDF.View.
+//// PDF.Content is the final low-level format (raw bytes), not an intermediate view.
+//// The rendering pipeline is: PDF.View → [PDF.Render.Operation] → PDF.Page → PDF.Content
+//
+//// MARK: - Dynamic dispatch helper
+//
+//extension PDF {
+//    /// Renders a view dynamically through existential dispatch.
+//    /// Use this when you have `any PDF.View` and need to call `_render`.
+//    @inlinable
+//    package static func _render<Buffer: RangeReplaceableCollection>(
+//        _ view: some PDF.View,
+//        into buffer: inout Buffer,
+//        context: inout PDF.Context
+//    ) where Buffer.Element == PDF.Render.Operation {
+//        func callRender<V: PDF.View>(_ v: V) {
+//            V._render(v, into: &buffer, context: &context)
+//        }
+//        callRender(view)
+//    }
+//}

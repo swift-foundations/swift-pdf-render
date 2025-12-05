@@ -8,8 +8,6 @@ extension PDF {
     public typealias Document = ISO_32000.Document
 }
 
-// MARK: - Convenience Initializers
-
 extension ISO_32000.Document {
     /// Create a document with builder syntax and metadata
     ///
@@ -22,37 +20,44 @@ extension ISO_32000.Document {
     public init(
         version: ISO_32000.Version = .v1_7,
         info: ISO_32000.Document.Info? = nil,
-        @PDF.Page.Builder pages build: () -> [ISO_32000.Page]
+        mediaBox: PDF.Rectangle<ISO_32000.UserSpace.Unit> = .a4,
+        edgeInsets: PDF.EdgeInsets = PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72),
+        @PDF.Builder _ build: () -> some PDF.View
     ) {
+
+        var context = PDF.Context(mediaBox: mediaBox, margins: edgeInsets)
+        
+        [PDF.Render.Operation].init(build(), context: &context)
+        
         self.init(
             version: version,
-            pages: build(),
-            info: info
+            info: info,
+            pages: .init(
+                mediaBox: mediaBox,
+                operations: context.getAllPages(),
+                annotations: context.getAllAnnotations()
+            )
         )
     }
 }
 
-// MARK: - Serialization
-
-extension Array where Element == UInt8 {
-    /// Create PDF bytes from a document
-    ///
-    /// Example:
-    /// ```swift
-    /// let document = ISO_32000.Document(...)
-    /// let bytes = [UInt8](document)
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - document: The PDF document to serialize
-    ///   - compress: Whether to use FlateDecode compression (default: true)
+extension [PDF.Page] {
     public init(
-        _ document: ISO_32000.Document,
-        compress: Bool = true
-    ) {
-        var writer = compress
-        ? ISO_32000.Writer.flate()
-        : ISO_32000.Writer()
-        self = writer.write(document)
+        mediaBox: PDF.Rectangle<ISO_32000.UserSpace.Unit>,
+        operations: [[PDF.Render.Operation]],
+        annotations: [[PDF.Annotation]],
+    ){
+        var pages: [PDF.Page] = []
+        for (i, operations) in operations.enumerated() {
+            let annotations = i < annotations.count ? annotations[i] : []
+            pages.append(
+                PDF.Page(
+                    mediaBox: mediaBox,
+                    operations: operations,
+                    annotations: annotations
+                )
+            )
+        }
+        self = pages
     }
 }

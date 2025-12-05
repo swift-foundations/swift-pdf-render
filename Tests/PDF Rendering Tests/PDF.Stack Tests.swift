@@ -45,7 +45,7 @@ struct `PDF.Stack.Vertical Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -72,7 +72,7 @@ struct `PDF.Stack.Vertical Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
         #expect(context.y == 116)
@@ -94,7 +94,7 @@ struct `PDF.Stack.Vertical Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         // 72 + single line (12), no spacing added = 84
         #expect(context.y == 84)
@@ -148,7 +148,7 @@ struct `PDF.Stack.Horizontal Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -175,7 +175,7 @@ struct `PDF.Stack.Horizontal Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         // TODO: HStack should position children horizontally, not vertically
         // Currently each child advances Y by one line: 72 + 12 + 12 = 96
@@ -213,7 +213,7 @@ struct `PDF.Stack Nested Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         #expect(!buffer.isEmpty)
     }
@@ -236,7 +236,7 @@ struct `PDF.Stack Nested Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        stack.render(into: &buffer, context: &context)
 
         #expect(!buffer.isEmpty)
     }

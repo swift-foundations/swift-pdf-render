@@ -65,7 +65,7 @@ extension PDF {
                 // ascender height (distance from baseline to top of tallest glyphs).
                 let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.y.value) + effectiveFont.metrics.ascender(atSize: effectiveSize))
 
-                let operation = PDF.Render.Operation.text(PDF.Render.TextOperation(
+                let operation = PDF.Render.Operation.text(PDF.Render.Operation.Text(
                     text: line,
                     position: PDF.UserSpace.Coordinate(x: context.x, y: baselineY),
                     font: effectiveFont,

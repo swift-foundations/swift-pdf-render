@@ -52,7 +52,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("Hello, World!")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         #expect(buffer.count == 1)
     }
@@ -70,7 +70,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("Hello")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         // 72 + 12 * 1.2 = 86.4 (tolerance for floating point)
         #expect(abs(context.y.value.value - 86.4) < 0.001)
@@ -88,7 +88,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("Hello")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         if case .text(let op) = buffer[0] {
             #expect(op.font == .courier.bold)
@@ -109,7 +109,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("Hello", font: .times)
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         if case .text(let op) = buffer[0] {
             #expect(op.font == .times)
@@ -131,7 +131,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("This is a longer text that should wrap to multiple lines")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -154,7 +154,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("This is a longer text that should wrap")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         // Each line advances by fontSize * lineHeight = 12 * 1.2 = 14.4
         let lineCount = buffer.count
@@ -174,7 +174,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("Supercalifragilisticexpialidocious")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         #expect(!buffer.isEmpty)
     }
@@ -192,7 +192,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("Hello")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         if case .text(let op) = buffer[0] {
             #expect(op.position.x == 100)
@@ -218,7 +218,7 @@ struct `PDF.Text Tests` {
 
         let text = PDF.Text("")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(text, into: &buffer, context: &context)
+        text.render(into: &buffer, context: &context)
 
         #expect(buffer.count == 1)
     }

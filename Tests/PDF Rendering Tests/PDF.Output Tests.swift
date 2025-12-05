@@ -8,7 +8,6 @@ import PDF_Standard
 
 @Suite
 struct `PDF.Output Tests` {
-    
     @Test
     func `Writes sample PDF to tmp`() throws {
         // Create a document with various elements
@@ -70,39 +69,24 @@ struct `PDF.Output Tests` {
             }
         }
         
-        // Set up context with margins
-        let mediaBox = ISO_32000.Rectangle.a4
-        let margins = PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
-        var context = PDF.Context(mediaBox: mediaBox, margins: margins)
-        
-        // Render the document (operations are added to context.currentPageOperations automatically)
-        let document = SampleDocument()
-        var buffer: [PDF.Render.Operation] = []
-        PDF.render(document, into: &buffer, context: &context)
-        
-        // Build pages from context
-        let allPages = context.getAllPages()
-        let allAnnotations = context.getAllAnnotations()
-        
-        var pages: [PDF.Page] = []
-        for (i, ops) in allPages.enumerated() {
-            let annotations = i < allAnnotations.count ? allAnnotations[i] : []
-            pages.append(PDF.Page(mediaBox: mediaBox, operations: ops, annotations: annotations))
-        }
         
         // Create document
-        let pdfDocument = ISO_32000.Document(
+        let pdfDocument = ISO_32000.Document.init(
             version: .v1_7,
-            pages: pages,
             info: ISO_32000.Document.Info(
                 title: "PDF Rendering Test",
                 author: "swift-pdf-rendering",
                 creator: "PDF.Output Tests"
             )
-        )
+        ) {
+            SampleDocument()
+            PDF.Text("Hello, World!")
+            PDF.Spacer(20)
+            SampleDocument()
+        }
         
         // Serialize to bytes
-        let bytes = [UInt8](pdfDocument, compress: true)
+        let bytes = [UInt8](pdfDocument)
         
         // Write to /tmp
         let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-test.pdf")
@@ -138,8 +122,8 @@ struct `PDF.Output Tests` {
         
         // Render the document (operations are added to context.currentPageOperations automatically)
         let document = MultiPageDocument()
-        var buffer: [PDF.Render.Operation] = []
-        PDF.render(document, into: &buffer, context: &context)
+            
+        let buffer = [PDF.Render.Operation](document, context: &context)
         
         let allPages = context.getAllPages()
         let allAnnotations = context.getAllAnnotations()
@@ -152,14 +136,14 @@ struct `PDF.Output Tests` {
         
         let pdfDocument = ISO_32000.Document(
             version: .v1_7,
-            pages: pages,
             info: ISO_32000.Document.Info(
                 title: "Multi-Page Test",
                 author: "swift-pdf-rendering"
-            )
+            ),
+            pages: pages
         )
         
-        let bytes = [UInt8](pdfDocument, compress: true)
+        let bytes = [UInt8](pdfDocument)
         
         let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-multipage.pdf")
         try Data(bytes).write(to: url)
@@ -180,7 +164,7 @@ struct `PDF.Output Tests` {
         var operations: [PDF.Render.Operation] = []
         
         // Title
-        operations.append(.text(PDF.Render.TextOperation(
+        operations.append(.text(PDF.Render.Operation.Text(
             text: "Graphics Test",
             position: PDF.Point(x: 72, y: 72),
             font: .Helvetica.bold,
@@ -241,7 +225,7 @@ struct `PDF.Output Tests` {
         )))
         
         // Labels
-        operations.append(.text(PDF.Render.TextOperation(
+        operations.append(.text(PDF.Render.Operation.Text(
             text: "RGB Colors",
             position: PDF.Point(x: 72, y: 190),
             font: .helvetica,
@@ -249,7 +233,7 @@ struct `PDF.Output Tests` {
             color: .black
         )))
         
-        operations.append(.text(PDF.Render.TextOperation(
+        operations.append(.text(PDF.Render.Operation.Text(
             text: "CMYK Colors",
             position: PDF.Point(x: 72, y: 260),
             font: .helvetica,
@@ -261,14 +245,14 @@ struct `PDF.Output Tests` {
         
         let pdfDocument = ISO_32000.Document(
             version: .v1_7,
-            pages: [page],
             info: ISO_32000.Document.Info(
                 title: "Graphics Test",
                 author: "swift-pdf-rendering"
-            )
+            ),
+            pages: [page],
         )
         
-        let bytes = [UInt8](pdfDocument, compress: true)
+        let bytes = [UInt8].init(pdfDocument)
         
         let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-graphics.pdf")
         try Data(bytes).write(to: url)

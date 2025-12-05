@@ -1,111 +1,127 @@
 // PDF.Context.swift
+// Rendering context decomposed into categorical primitives.
 
 public import PDF_Standard
 
 extension PDF {
-    /// Rendering context for PDF layout
+    /// Rendering context for PDF layout.
     ///
-    /// Tracks current position, available dimensions, and styling
-    /// for layout views to use when generating content operations.
+    /// `Context` is the central state for PDF rendering, decomposed into
+    /// orthogonal categorical primitives:
     ///
-    /// Uses top-left origin with y increasing downward (matching HTML/CSS).
+    /// - **LayoutBox**: Bounded region for content (lattice)
+    /// - **Style.Resolved**: Typography and color (product)
+    /// - **GraphicsState.Stack**: Save/restore state (state monad)
+    /// - **Pagination**: Page management and output accumulation
+    ///
+    /// ## Coordinate System
+    ///
+    /// Uses top-left origin with Y increasing downward (matching HTML/CSS).
+    /// This is transformed to PDF's bottom-left origin during page creation.
+    ///
+    /// ## Category-Theoretic Structure
+    ///
+    /// Context supports composable transformations via `PDF.Context.Transform`:
+    /// ```swift
+    /// let transform = PDF.Context.Transform
+    ///     .font(.helveticaBold)
+    ///     .then(.inset(10))
+    ///
+    /// transform.scoped(in: &context) { ctx in
+    ///     // Render with bold font and inset
+    /// }
+    /// ```
     public struct Context: Sendable {
-        /// Current X position (from left edge)
-        public var x: UserSpace.X
+        // MARK: - Categorical Primitives
 
-        /// Current Y position (from top edge)
-        public var y: UserSpace.Y
+        /// The layout box (position + available size).
+        ///
+        /// Forms a bounded lattice under intersection.
+        public var layoutBox: PDF.LayoutBox
 
-        /// Available width for content
-        public var availableWidth: UserSpace.Width
+        /// Resolved text style.
+        ///
+        /// Forms a monoid under combination.
+        public var style: PDF.Style.Resolved
 
-        /// Available height for content
-        public var availableHeight: UserSpace.Height
+        /// Graphics state stack for save/restore operations.
+        ///
+        /// Mirrors ISO 32000's q/Q operators.
+        public var graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
 
-        /// Current font
-        public var font: PDF.Font
+        // MARK: - Inline Text Flow
 
-        /// Current font size in points
-        public var fontSize: UserSpace.Unit
-
-        /// Current text color
-        public var color: PDF.Color
-
-        /// Line height multiplier
-        public var lineHeight: Double
-
-        /// Current text decoration (underline, strikethrough)
-        public var textDecoration: PDF.TextDecoration = .none
-
-        /// Current text background color for highlighting
-        public var textBackgroundColor: PDF.Color? = nil
-
-        /// Accumulated inline text runs (for inline flow)
+        /// Accumulated inline text runs.
         ///
         /// Block elements flush this buffer to render accumulated inline content
-        /// as a single wrapped unit. Inline elements append to it without rendering.
-        public var inlineRuns: [PDF.TextRun] = []
+        /// as a single wrapped unit. Inline elements append without rendering.
+        public var inlineRuns: [PDF.Text.Run] = []
 
-        /// Stack of active lists (for nested list support)
+        // MARK: - List State
+
+        /// Stack of active lists (for nested list support).
         public var listStack: [(type: ListType, currentIndex: Int)] = []
 
-        /// Preformatted mode - preserves whitespace in `<pre>` blocks
+        // MARK: - Modes
+
+        /// Preformatted mode - preserves whitespace in `<pre>` blocks.
         public var preserveWhitespace: Bool = false
 
-        /// Stack spacing - applied between elements in a VStack
-        /// When non-nil, elements should advance by this amount after rendering
+        /// Stack spacing - applied between elements in a VStack.
         public var stackSpacing: PDF.UserSpace.Y? = nil
 
-        /// Track Y position before last element rendered (for spacing logic)
+        /// Track Y position before last element rendered (for spacing logic).
         internal var lastElementY: PDF.UserSpace.Y? = nil
 
-        // MARK: - Pagination Support
+        /// Measurement mode - when true, operations are not added.
+        public var measurementMode: Bool = false
 
-        /// Initial X position (left margin)
-        private var initialX: UserSpace.X
+        // MARK: - Pagination
 
-        /// Initial Y position (top margin)
-        private var initialY: UserSpace.Y
+        /// Initial layout box (for page reset).
+        private var initialLayoutBox: PDF.LayoutBox
 
-        /// Maximum Y position (bottom boundary = top margin + content height)
-        private var maxY: UserSpace.Y
+        /// Maximum Y position (bottom boundary).
+        private var maxY: PDF.UserSpace.Y
 
-        /// Operations for completed pages
+        /// Operations for completed pages.
         public var completedPages: [[PDF.Render.Operation]] = []
 
-        /// Operations for current page
+        /// Operations for current page.
         public var currentPageOperations: [PDF.Render.Operation] = []
 
-        /// Annotations for completed pages
+        /// Annotations for completed pages.
         public var completedPageAnnotations: [[PDF.Annotation]] = []
 
-        /// Annotations for current page
+        /// Annotations for current page.
         public var currentPageAnnotations: [PDF.Annotation] = []
-
-        // MARK: - Measurement Mode
-
-        /// When true, add() operations are suppressed (for measuring content height).
-        ///
-        /// In measurement mode, the context still tracks Y position advancement
-        /// but doesn't commit operations to `currentPageOperations`. This allows
-        /// measuring how much vertical space content would consume without
-        /// actually rendering it.
-        public var measurementMode: Bool = false
     }
 }
 
-extension PDF.Context {
-    // MARK: - List Context
 
-    /// Type of list being rendered
-    public enum ListType: Sendable {
-        case unordered
-        case ordered(startNumber: Int)
+
+// MARK: - Initializers
+
+extension PDF.Context {
+    /// Create a render context from primitives.
+    public init(
+        layoutBox: PDF.LayoutBox,
+        style: PDF.Style.Resolved = .init(
+            font: .helvetica,
+            fontSize: 12,
+            color: .black,
+            lineHeight: 1.2
+        ),
+        graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState> = .init(initial: .init())
+    ) {
+        self.layoutBox = layoutBox
+        self.style = style
+        self.graphicsStack = graphicsStack
+        self.initialLayoutBox = layoutBox
+        self.maxY = layoutBox.maxY
     }
-}
 
-extension PDF.Context {
-    /// Create a render context
+    /// Create a render context from explicit values.
     public init(
         x: PDF.UserSpace.X = 0,
         y: PDF.UserSpace.Y = 0,
@@ -116,89 +132,153 @@ extension PDF.Context {
         color: PDF.Color = .black,
         lineHeight: Double = 1.2
     ) {
-        self.x = x
-        self.y = y
-        self.initialX = x
-        self.initialY = y
-        self.maxY = .init(y.value + availableHeight.value)
-        self.availableWidth = availableWidth
-        self.availableHeight = availableHeight
-        self.font = font
-        self.fontSize = fontSize
-        self.color = color
-        self.lineHeight = lineHeight
+        let box = PDF.LayoutBox(
+            x: x, y: y,
+            width: availableWidth,
+            height: availableHeight
+        )
+        self.init(
+            layoutBox: box,
+            style: .init(
+                font: font,
+                fontSize: fontSize,
+                color: color,
+                lineHeight: lineHeight
+            )
+        )
     }
 
-    /// Create context for a page's content area
+    /// Create context for a page's content area.
     public init(
         mediaBox: ISO_32000.UserSpace.Rectangle,
         margins: PDF.UserSpace.EdgeInsets
     ) {
         let contentWidth = PDF.UserSpace.Width(mediaBox.width.value - margins.horizontal)
         let contentHeight = PDF.UserSpace.Height(mediaBox.height.value - margins.vertical)
-        self.x = PDF.UserSpace.X(margins.leading)
-        self.y = PDF.UserSpace.Y(margins.top)
-        self.initialX = PDF.UserSpace.X(margins.leading)
-        self.initialY = PDF.UserSpace.Y(margins.top)
-        self.maxY = PDF.UserSpace.Y(margins.top + contentHeight.value)
-        self.availableWidth = contentWidth
-        self.availableHeight = contentHeight
-        self.font = .helvetica
-        self.fontSize = 12
-        self.color = .black
-        self.lineHeight = 1.2
+        self.init(
+            x: PDF.UserSpace.X(margins.leading),
+            y: PDF.UserSpace.Y(margins.top),
+            availableWidth: contentWidth,
+            availableHeight: contentHeight
+        )
     }
 }
 
+// MARK: - Backward-Compatible Accessors
+
 extension PDF.Context {
-    /// Line height in points
+    /// Current X position (from left edge).
+    @inlinable
+    public var x: PDF.UserSpace.X {
+        get { layoutBox.x }
+        set { layoutBox.x = newValue }
+    }
+
+    /// Current Y position (from top edge).
+    @inlinable
+    public var y: PDF.UserSpace.Y {
+        get { layoutBox.y }
+        set { layoutBox.y = newValue }
+    }
+
+    /// Available width for content.
+    @inlinable
+    public var availableWidth: PDF.UserSpace.Width {
+        get { layoutBox.width }
+        set { layoutBox.width = newValue }
+    }
+
+    /// Available height for content.
+    @inlinable
+    public var availableHeight: PDF.UserSpace.Height {
+        get { layoutBox.height }
+        set { layoutBox.height = newValue }
+    }
+
+    /// Current font.
+    @inlinable
+    public var font: PDF.Font {
+        get { style.font }
+        set { style.font = newValue }
+    }
+
+    /// Current font size in points.
+    @inlinable
+    public var fontSize: PDF.UserSpace.Unit {
+        get { style.fontSize }
+        set { style.fontSize = newValue }
+    }
+
+    /// Current text color.
+    @inlinable
+    public var color: PDF.Color {
+        get { style.color }
+        set { style.color = newValue }
+    }
+
+    /// Line height multiplier.
+    @inlinable
+    public var lineHeight: Double {
+        get { style.lineHeight }
+        set { style.lineHeight = newValue }
+    }
+
+    /// Current text decoration.
+    @inlinable
+    public var textMarkup: PDF.TextMarkup? {
+        get { style.textMarkup }
+        set { style.textMarkup = newValue }
+    }
+
+    /// Line height in points.
+    @inlinable
     public var lineHeightPoints: PDF.UserSpace.Unit {
-        fontSize * lineHeight
+        style.lineHeightPoints
     }
 }
 
+// MARK: - Position Operations
+
 extension PDF.Context {
-    /// Advance Y position by one line
+    /// Advance Y position by one line.
     public mutating func advanceLine() {
-        y = PDF.UserSpace.Y(PDF.UserSpace.Unit(y.value) + lineHeightPoints)
+        layoutBox.y = PDF.UserSpace.Y(PDF.UserSpace.Unit(layoutBox.y.value.value + lineHeightPoints.value))
     }
 
-    /// Advance Y position by specified amount
+    /// Advance Y position by specified amount.
     public mutating func advance(_ amount: PDF.UserSpace.Y) {
-        y = PDF.UserSpace.Y(y.value + amount.value)
+        layoutBox.y = PDF.UserSpace.Y(layoutBox.y.value + amount.value)
     }
+}
 
-    // MARK: - Inline Text Flow
+// MARK: - Inline Text Flow
 
+extension PDF.Context {
     /// Append a text run to the inline buffer.
-    ///
-    /// Text runs accumulate until a block element flushes them.
-    /// This enables proper inline flow with mixed styling.
-    public mutating func appendInlineRun(_ run: PDF.TextRun) {
+    public mutating func append(inline run: PDF.Text.Run) {
         inlineRuns.append(run)
     }
 
     /// Flush accumulated inline runs, rendering them as a wrapped block.
-    ///
-    /// Call this at the end of block elements (p, div, h1-h6, etc.)
-    /// to render accumulated inline content with proper line wrapping.
     ///
     /// - Returns: PDF content operations for the flushed text
     public mutating func flushInlineRuns() -> PDF.Content {
         guard !inlineRuns.isEmpty else { return PDF.Content() }
         let runs = inlineRuns
         inlineRuns = []
-        return PDF.TextRun.renderRuns(runs, context: &self)
+        return PDF.Text.Run.renderRuns(runs, context: &self)
     }
 
-    /// Check if there are pending inline runs
+    /// Check if there are pending inline runs.
     public var hasInlineRuns: Bool {
         !inlineRuns.isEmpty
     }
+}
 
-    // MARK: - List Context Management
+// MARK: - List Context
 
-    /// Push a new list onto the context stack
+extension PDF.Context {
+    /// Push a new list onto the context stack.
     public mutating func push(list type: ListType) {
         let startIndex: Int
         switch type {
@@ -210,14 +290,12 @@ extension PDF.Context {
         listStack.append((type: type, currentIndex: startIndex))
     }
 
-    /// Pop the current list from the stack
+    /// Pop the current list from the stack.
     public mutating func popList() {
         _ = listStack.popLast()
     }
 
-    /// Get the next list marker and advance the counter
-    ///
-    /// Returns `-` for unordered lists, `1.`, `2.`, etc. for ordered lists.
+    /// Get the next list marker and advance the counter.
     public mutating func nextListMarker() -> String {
         guard !listStack.isEmpty else { return "-" }
         let index = listStack.count - 1
@@ -230,37 +308,35 @@ extension PDF.Context {
             return "\(num)."
         }
     }
+}
 
-    /// Start a new page, saving current operations
+// MARK: - Pagination
+
+extension PDF.Context {
+    /// Start a new page, saving current operations.
     public mutating func startNewPage() {
-        // Save current page operations and annotations
         completedPages.append(currentPageOperations)
         completedPageAnnotations.append(currentPageAnnotations)
         currentPageOperations = []
         currentPageAnnotations = []
 
-        // Reset position to top of page
-        y = initialY
-        x = initialX
+        // Reset to initial layout position
+        layoutBox.origin = initialLayoutBox.origin
     }
 
-    /// Add operation to current page
-    ///
-    /// When `measurementMode` is true, operations are not added (for height measurement).
+    /// Add operation to current page.
     public mutating func add(_ operation: PDF.Render.Operation) {
         guard !measurementMode else { return }
         currentPageOperations.append(operation)
     }
 
-    /// Add multiple operations to current page
-    ///
-    /// When `measurementMode` is true, operations are not added (for height measurement).
+    /// Add multiple operations to current page.
     public mutating func add(_ operations: [PDF.Render.Operation]) {
         guard !measurementMode else { return }
         currentPageOperations.append(contentsOf: operations)
     }
 
-    /// Add a link annotation to the current page
+    /// Add a link annotation to the current page.
     public mutating func addLinkAnnotation(
         rect: PDF.UserSpace.Rectangle,
         uri: String
@@ -268,10 +344,7 @@ extension PDF.Context {
         currentPageAnnotations.append(.link(ISO_32000.LinkAnnotation(rect: rect, uri: uri)))
     }
 
-    /// Check if we need a page break and start new page if so
-    ///
-    /// Call this before rendering content that requires `height` space.
-    /// Returns true if a new page was started.
+    /// Check if we need a page break and start new page if so.
     @discardableResult
     public mutating func checkPageBreak(needing height: PDF.UserSpace.Height) -> Bool {
         if wouldExceedPage(adding: height) {
@@ -280,23 +353,19 @@ extension PDF.Context {
         }
         return false
     }
-}
 
-extension PDF.Context {
-    // MARK: - Pagination
-
-    /// Check if adding the given height would exceed the page boundary
+    /// Check if adding the given height would exceed the page boundary.
     public func wouldExceedPage(adding height: PDF.UserSpace.Height) -> Bool {
-        y.value + height.value > maxY.value
+        layoutBox.y.value + height.value > maxY.value
     }
 
-    /// Remaining space on current page
+    /// Remaining space on current page.
     public var remainingHeight: PDF.UserSpace.Height {
-        let remaining = PDF.UserSpace.Height(maxY.value - y.value)
+        let remaining = PDF.UserSpace.Height(maxY.value - layoutBox.y.value)
         return remaining.value > 0 ? remaining : .zero
     }
 
-    /// Get all pages' operations (completed + current)
+    /// Get all pages' operations (completed + current).
     public func getAllPages() -> [[PDF.Render.Operation]] {
         var allPages = completedPages
         if !currentPageOperations.isEmpty {
@@ -305,33 +374,51 @@ extension PDF.Context {
         return allPages
     }
 
-    /// Get all pages' annotations (completed + current)
+    /// Get all pages' annotations (completed + current).
     public func getAllAnnotations() -> [[PDF.Annotation]] {
         var allAnnotations = completedPageAnnotations
-        // Ensure same count as pages
         while allAnnotations.count < completedPages.count {
             allAnnotations.append([])
         }
         allAnnotations.append(currentPageAnnotations)
         return allAnnotations
     }
+}
 
-    // MARK: - Measurement
+// MARK: - Measurement
 
+extension PDF.Context {
     /// Execute a closure in measurement mode, returning the height consumed.
-    ///
-    /// In measurement mode, Y position advances but operations are not added to
-    /// `currentPageOperations`. This allows measuring content height without rendering.
-    ///
-    /// - Parameter work: The work to execute in measurement mode
-    /// - Returns: The height consumed during the measurement
     public mutating func measure(_ work: (inout PDF.Context) -> Void) -> PDF.UserSpace.Height {
-        let startY = y
+        let startY = layoutBox.y
         measurementMode = true
         work(&self)
         measurementMode = false
-        let height = PDF.UserSpace.Height(y.value - startY.value)
-        y = startY  // Reset Y position
+        let height = PDF.UserSpace.Height(layoutBox.y.value - startY.value)
+        layoutBox.y = startY
         return height
+    }
+}
+
+// MARK: - Transform Application
+
+extension PDF.Context {
+    /// Apply a transform to this context, returning the result.
+    public func applying(_ transform: Transform) -> PDF.Context {
+        transform.apply(to: self)
+    }
+
+    /// Apply a transform to this context in-place.
+    public mutating func apply(_ transform: Transform) {
+        transform.apply(to: &self)
+    }
+
+    /// Execute a closure with a transform applied, then restore original state.
+    @discardableResult
+    public mutating func withTransform<T>(
+        _ transform: Transform,
+        _ body: (inout PDF.Context) throws -> T
+    ) rethrows -> T {
+        try transform.scoped(in: &self, body)
     }
 }

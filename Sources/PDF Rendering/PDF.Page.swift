@@ -21,7 +21,7 @@ extension PDF.Page {
         annotations: [PDF.Annotation] = []
     ) {
         let pageHeight: PDF.UserSpace.Height = mediaBox.height
-
+        
         // Build content stream with coordinate conversion
         let contentStream: ISO_32000.ContentStream = .init { (builder: inout ISO_32000.ContentStream.Builder) in
             for op in operations {
@@ -29,9 +29,9 @@ extension PDF.Page {
                 case .text(let textOp):
                     // Transform from top-left to bottom-left coordinates
                     let pdfY = ISO_32000.UserSpace.Y(PDF.UserSpace.Unit(pageHeight.value - textOp.position.y.value))
-
+                    
                     builder.beginText()
-
+                    
                     // Set color
                     switch textOp.color {
                     case .gray(let g):
@@ -41,18 +41,18 @@ extension PDF.Page {
                     case .cmyk(let c, let m, let y, let k):
                         builder.setFillColorCMYK(c: c, m: m, y: y, k: k)
                     }
-
+                    
                     builder.setFont(textOp.font, size: textOp.size)
                     builder.moveText(x: textOp.position.x, y: pdfY)
                     builder.showText(textOp.text)
                     builder.endText()
-
+                    
                 case .graphics(let graphicsOp):
                     switch graphicsOp {
                     case .line(let from, let to, let color, let width):
                         let pdfFromY = PDF.UserSpace.Y(PDF.UserSpace.Unit(pageHeight.value - from.y.value))
                         let pdfToY = PDF.UserSpace.Y(PDF.UserSpace.Unit(pageHeight.value - to.y.value))
-
+                        
                         switch color {
                         case .gray(let g):
                             builder.setStrokeColorGray(g)
@@ -61,16 +61,16 @@ extension PDF.Page {
                         case .cmyk(let c, let m, let y, let k):
                             builder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
                         }
-
+                        
                         builder.setLineWidth(width)
                         builder.moveTo(x: from.x, y: pdfFromY)
                         builder.lineTo(x: to.x, y: pdfToY)
                         builder.stroke()
-
+                        
                     case .rectangle(let rect, let fill, let stroke, let strokeWidth):
                         // Transform Y coordinate (rect uses top-left origin, PDF uses bottom-left)
                         let pdfY: PDF.UserSpace.Y = .init(pageHeight.value - rect.lly.value - rect.height.value)
-
+                        
                         if let fill = fill {
                             switch fill {
                             case .gray(let g):
@@ -81,7 +81,7 @@ extension PDF.Page {
                                 builder.setFillColorCMYK(c: c, m: m, y: y, k: k)
                             }
                         }
-
+                        
                         if let stroke = stroke {
                             switch stroke {
                             case .gray(let g):
@@ -93,9 +93,9 @@ extension PDF.Page {
                             }
                             builder.setLineWidth(strokeWidth)
                         }
-
+                        
                         builder.rectangle(x: rect.llx, y: pdfY, width: rect.width, height: rect.height)
-
+                        
                         if fill != nil && stroke != nil {
                             builder.fillAndStroke()
                         } else if fill != nil {
@@ -107,13 +107,13 @@ extension PDF.Page {
                 }
             }
         }
-
+        
         // Build font resources from content stream
         var fontResources: [ISO_32000.COS.Name: ISO_32000.Font] = [:]
         for font in contentStream.fontsUsed {
             fontResources[font.resourceName] = font
         }
-
+        
         self.init(
             mediaBox: mediaBox,
             content: contentStream,

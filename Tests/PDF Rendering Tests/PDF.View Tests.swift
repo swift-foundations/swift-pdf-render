@@ -37,8 +37,8 @@ struct `PDF.View Tests` {
         )
 
         let view = TwoLines()
-        var buffer: [PDF.Render.Operation] = []
-        PDF.render(view, into: &buffer, context: &context)
+
+        let buffer: [PDF.Render.Operation] = view.render(context: &context)
 
         // Operations should be in the buffer
         let textOps = buffer.filter {
@@ -61,7 +61,7 @@ struct `PDF.View Tests` {
         // Render a simple text view
         let view = PDF.Text("Hello, World!")
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(view, into: &buffer, context: &context)
+        PDF.Text._render(view, into: &buffer, context: &context)
 
         // Operations should be in the buffer
         #expect(!buffer.isEmpty)
@@ -87,7 +87,7 @@ struct `PDF.Builder Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        PDF.VStack._render(stack, into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -113,7 +113,7 @@ struct `PDF.Builder Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        PDF.VStack._render(stack, into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -142,7 +142,7 @@ struct `PDF.Builder Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        PDF.VStack._render(stack, into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -171,7 +171,7 @@ struct `PDF.Builder Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        PDF.VStack._render(stack, into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -201,7 +201,7 @@ struct `PDF.Builder Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack1, into: &buffer, context: &context)
+        PDF.VStack._render(stack1, into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
@@ -229,7 +229,7 @@ struct `PDF.Builder Tests` {
         }
 
         var buffer: [PDF.Render.Operation] = []
-        PDF.render(stack, into: &buffer, context: &context)
+        PDF.VStack._render(stack, into: &buffer, context: &context)
 
         let textOps = buffer.filter {
             if case .text = $0 { return true }
