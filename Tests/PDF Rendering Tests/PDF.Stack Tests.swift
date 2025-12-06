@@ -71,7 +71,7 @@ struct `PDF.Stack.Vertical Tests` {
         PDF.VStack._render(stack, context: &context)
 
         // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
-        #expect(context.y == 116)
+        #expect(context.layoutBox.lly == 116)
     }
 
     @Test
@@ -93,7 +93,7 @@ struct `PDF.Stack.Vertical Tests` {
         PDF.VStack._render(stack, context: &context)
 
         // 72 + single line (12), no spacing added = 84
-        #expect(context.y == 84)
+        #expect(context.layoutBox.lly == 84)
     }
 
     @Test
@@ -171,7 +171,7 @@ struct `PDF.Stack.Horizontal Tests` {
 
         // TODO: HStack should position children horizontally, not vertically
         // Currently each child advances Y by one line: 72 + 12 + 12 = 96
-        #expect(context.y == 96)
+        #expect(context.layoutBox.lly == 96)
     }
 
     @Test

@@ -30,7 +30,7 @@ extension PDF.Text: PDF.View {
             // Check for page break before each line
             context.checkPageBreak(needing: context.style.lineHeightPoints)
             
-            // In top-left coordinates, context.y is the top of the line box.
+            // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
             let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + effectiveFont.metrics.ascender(atSize: effectiveSize))

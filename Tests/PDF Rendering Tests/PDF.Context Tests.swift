@@ -23,14 +23,14 @@ struct `PDF.Context Tests` {
             lineHeight: 1.5
         )
 
-        #expect(context.x == 100)
-        #expect(context.y == 200)
-        #expect(context.availableWidth == 400)
-        #expect(context.availableHeight == 600)
-        #expect(context.font == .times)
-        #expect(context.fontSize == 14)
-        #expect(context.color == .blue)
-        #expect(context.lineHeight == 1.5)
+        #expect(context.layoutBox.llx == 100)
+        #expect(context.layoutBox.lly == 200)
+        #expect(context.layoutBox.width == 400)
+        #expect(context.layoutBox.height == 600)
+        #expect(context.style.font == .times)
+        #expect(context.style.fontSize == 14)
+        #expect(context.style.color == .blue)
+        #expect(context.style.lineHeight == 1.5)
     }
 
     @Test
@@ -41,12 +41,12 @@ struct `PDF.Context Tests` {
             pageHeight: 792
         )
 
-        #expect(context.x == 0)
-        #expect(context.y == 0)
-        #expect(context.font == .helvetica)
-        #expect(context.fontSize == 12)
-        #expect(context.color == .black)
-        #expect(context.lineHeight == 1.2)
+        #expect(context.layoutBox.llx == 0)
+        #expect(context.layoutBox.lly == 0)
+        #expect(context.style.font == .helvetica)
+        #expect(context.style.fontSize == 12)
+        #expect(context.style.color == .black)
+        #expect(context.style.lineHeight == 1.2)
     }
 
     @Test
@@ -56,10 +56,10 @@ struct `PDF.Context Tests` {
             margins: PDF.UserSpace.EdgeInsets(all: 72)
         )
 
-        #expect(context.x == 72)
-        #expect(context.y == 72)
-        #expect(context.availableWidth == 468)
-        #expect(context.availableHeight == 648)
+        #expect(context.layoutBox.llx == 72)
+        #expect(context.layoutBox.lly == 72)
+        #expect(context.layoutBox.width == 468)
+        #expect(context.layoutBox.height == 648)
     }
 
     @Test
@@ -69,8 +69,8 @@ struct `PDF.Context Tests` {
             margins: PDF.UserSpace.EdgeInsets(all: 72)
         )
 
-        #expect(context.x == 72)
-        #expect(context.y == 72)
+        #expect(context.layoutBox.llx == 72)
+        #expect(context.layoutBox.lly == 72)
     }
 
     // MARK: - Line Height
@@ -86,7 +86,7 @@ struct `PDF.Context Tests` {
         )
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs((context.lineHeightPoints.value - 14.4).value) < 0.001)
+        #expect(abs((context.style.lineHeightPoints.value - 14.4).value) < 0.001)
     }
 
     @Test
@@ -107,7 +107,7 @@ struct `PDF.Context Tests` {
             lineHeight: 1.2
         )
 
-        #expect(large.lineHeightPoints == small.lineHeightPoints * 2)
+        #expect(large.style.lineHeightPoints == small.style.lineHeightPoints * 2)
     }
 
     // MARK: - Advance Methods
@@ -122,11 +122,11 @@ struct `PDF.Context Tests` {
             lineHeight: 1.2
         )
 
-        let startY = context.y
+        let startY = context.layoutBox.lly
         context.advanceLine()
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs((context.y - startY).value - 14.4) < 0.001)
+        #expect(abs((context.layoutBox.lly - startY).value - 14.4) < 0.001)
     }
 
     @Test
@@ -139,7 +139,7 @@ struct `PDF.Context Tests` {
 
         context.advance(PDF.UserSpace.Y(50))
 
-        #expect(context.y == 50)
+        #expect(context.layoutBox.lly == 50)
     }
 
     @Test
@@ -155,7 +155,7 @@ struct `PDF.Context Tests` {
         context.advance(PDF.UserSpace.Y(20))
         context.advance(PDF.UserSpace.Y(30))
 
-        #expect(context.y == 160)
+        #expect(context.layoutBox.lly == 160)
     }
 
     // MARK: - Mutability
@@ -168,16 +168,16 @@ struct `PDF.Context Tests` {
             pageHeight: 792
         )
 
-        context.x = 100
-        context.y = 200
-        context.font = .courier.bold
-        context.fontSize = 16
-        context.color = .red
+        context.layoutBox.llx = 100
+        context.layoutBox.lly = 200
+        context.style.font = .courier.bold
+        context.style.fontSize = 16
+        context.style.color = .red
 
-        #expect(context.x == 100)
-        #expect(context.y == 200)
-        #expect(context.font == .courier.bold)
-        #expect(context.fontSize == 16)
-        #expect(context.color == .red)
+        #expect(context.layoutBox.llx == 100)
+        #expect(context.layoutBox.lly == 200)
+        #expect(context.style.font == .courier.bold)
+        #expect(context.style.fontSize == 16)
+        #expect(context.style.color == .red)
     }
 }

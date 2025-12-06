@@ -63,6 +63,6 @@ struct `PDF.Divider Tests` {
         PDF.Divider._render(divider, context: &context)
 
         // 72 + padding before (10) + thickness (2) + padding after (10) = 94
-        #expect(context.y == 94)
+        #expect(context.layoutBox.lly == 94)
     }
 }

@@ -354,7 +354,7 @@ extension PDF.Text.Run {
                   let color = currentColor else { return }
 
             let segmentWidth = PDF.UserSpace.Width(font.stringWidth(currentSegment, atSize: size))
-            // In top-left coordinates, context.y is the top of the line box.
+            // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
             // The verticalOffset is used for sub/superscript (negative moves up).
