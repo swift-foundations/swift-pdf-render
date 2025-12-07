@@ -25,18 +25,29 @@ struct `PDF.Text Tests` {
         )
 
         #expect(text.text == "Custom text")
-        #expect(text.font == .times)
-        #expect(text.fontSize == 18)
-        #expect(text.color == .blue)
+        #expect(text.style.font == .times)
+        #expect(text.style.fontSize == 18)
+        #expect(text.style.color == .blue)
     }
 
     @Test
     func `Optional parameters default to nil`() {
         let text = PDF.Text("Simple")
 
-        #expect(text.font == nil)
-        #expect(text.fontSize == nil)
-        #expect(text.color == nil)
+        #expect(text.style.font == nil)
+        #expect(text.style.fontSize == nil)
+        #expect(text.style.color == nil)
+    }
+
+    @Test
+    func `Creates text with style`() {
+        let style = PDF.Style(font: .courier, fontSize: 14, color: .red)
+        let text = PDF.Text("Styled text", style: style)
+
+        #expect(text.text == "Styled text")
+        #expect(text.style.font == .courier)
+        #expect(text.style.fontSize == 14)
+        #expect(text.style.color == .red)
     }
 
     // MARK: - Single Line Rendering

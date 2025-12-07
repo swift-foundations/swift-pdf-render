@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  PDF.Text+PDF.View.swift
 //  swift-pdf-rendering
 //
 //  Created by Coen ten Thije Boonkkamp on 05/12/2025.
@@ -8,15 +8,17 @@
 import PDF_Standard
 
 extension PDF.Text: PDF.View {
-    
+
     public var body: Never {
         fatalError("PDF.Text is a leaf view")
     }
-    
+
     public static func _render(_ view: Self, context: inout PDF.Context) {
-        let effectiveFont = view.font ?? context.style.font
-        let effectiveSize = view.fontSize ?? context.style.fontSize
-        let effectiveColor = view.color ?? context.style.color
+        // Resolve style: view's partial style combined with context's resolved style
+        let effectiveStyle = PDF.Style(context.style).combined(with: view.style).resolved()
+        let effectiveFont = effectiveStyle.font
+        let effectiveSize = effectiveStyle.fontSize
+        let effectiveColor = effectiveStyle.color
         
         // Word wrap the text
         let lines = wrapText(

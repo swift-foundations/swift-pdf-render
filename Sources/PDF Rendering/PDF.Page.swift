@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  PDF.Page.swift
 //  swift-pdf-rendering
 //
 //  Created by Coen ten Thije Boonkkamp on 06/12/2025.

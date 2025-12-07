@@ -68,8 +68,7 @@ struct `PDF.Output Tests` {
                 }
             }
         }
-
-
+        
         // Create document
         let pdfDocument = ISO_32000.Document.init(
             version: .v1_7,
@@ -79,9 +78,6 @@ struct `PDF.Output Tests` {
                 creator: "PDF.Output Tests"
             )
         ) {
-            SampleDocument()
-            PDF.Text("Hello, World!")
-            PDF.Spacer(20)
             SampleDocument()
         }
 
