@@ -15,7 +15,7 @@ extension PDF.Text: PDF.View {
 
     public static func _render(_ view: Self, context: inout PDF.Context) {
         // Resolve style: view's partial style combined with context's resolved style
-        let effectiveStyle = PDF.Style(context.style).combined(with: view.style).resolved()
+        let effectiveStyle = PDF.Context.Style(context.style).combined(with: view.style).resolved()
         let effectiveFont = effectiveStyle.font
         let effectiveSize = effectiveStyle.fontSize
         let effectiveColor = effectiveStyle.color

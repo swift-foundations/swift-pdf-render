@@ -1,11 +1,11 @@
-// PDF.Style.swift
+// PDF.Context.Style.swift
 // Text styling as a product type with monoid structure.
 
 public import PDF_Standard
 import Geometry
 
-extension PDF {
-    /// Text styling configuration.
+extension PDF.Context {
+    /// Text styling configuration for rendering.
     ///
     /// `Style` is a **product type** representing the styling dimensions of text rendering.
     /// It forms a **monoid** under the `combined(with:)` operation, allowing styles to be
@@ -20,7 +20,7 @@ extension PDF {
     /// ## Usage
     ///
     /// ```swift
-    /// let base = PDF.Style.default
+    /// let base = PDF.Context.Style.default
     /// let heading = base
     ///     .with(font: .helveticaBold)
     ///     .with(fontSize: 24)
@@ -68,7 +68,7 @@ extension PDF {
 
 // MARK: - Monoid Identity
 
-extension PDF.Style {
+extension PDF.Context.Style {
     /// The empty style (monoid identity).
     ///
     /// When combined with any style `s`, returns `s` unchanged:
@@ -76,12 +76,12 @@ extension PDF.Style {
     /// Style.empty.combined(with: s) == s
     /// s.combined(with: .empty) == s
     /// ```
-    public static let empty = PDF.Style()
+    public static let empty = PDF.Context.Style()
 
     /// Default style with concrete values for rendering.
     ///
     /// Unlike `empty`, this provides actual defaults for all properties.
-    public static let `default` = PDF.Style(
+    public static let `default` = PDF.Context.Style(
         font: .helvetica,
         fontSize: 12,
         color: .black,
@@ -93,7 +93,7 @@ extension PDF.Style {
 
 // MARK: - Monoid Operation
 
-extension PDF.Style {
+extension PDF.Context.Style {
     /// Combine two styles, with `other`'s defined values taking precedence.
     ///
     /// This is the monoid binary operation. It satisfies:
@@ -102,8 +102,8 @@ extension PDF.Style {
     ///
     /// - Parameter other: The style to overlay on top of this style
     /// - Returns: A new style with `other`'s non-nil values overriding this style's values
-    public func combined(with other: PDF.Style) -> PDF.Style {
-        PDF.Style(
+    public func combined(with other: PDF.Context.Style) -> PDF.Context.Style {
+        PDF.Context.Style(
             font: other.font ?? self.font,
             fontSize: other.fontSize ?? self.fontSize,
             color: other.color ?? self.color,
@@ -119,22 +119,22 @@ extension PDF.Style {
     ///
     /// - Parameter styles: Styles to combine
     /// - Returns: The combined style
-    public static func combined(_ styles: [PDF.Style]) -> PDF.Style {
+    public static func combined(_ styles: [PDF.Context.Style]) -> PDF.Context.Style {
         styles.reduce(.empty) { $0.combined(with: $1) }
     }
 
     /// Combine multiple styles from left to right.
-    public static func combined(_ styles: PDF.Style...) -> PDF.Style {
+    public static func combined(_ styles: PDF.Context.Style...) -> PDF.Context.Style {
         combined(styles)
     }
 }
 
 // MARK: - Fluent Modifiers (Endomorphisms)
 
-extension PDF.Style {
+extension PDF.Context.Style {
     /// Return a new style with the font changed.
     @inlinable
-    public func with(font: PDF.Font) -> PDF.Style {
+    public func with(font: PDF.Font) -> PDF.Context.Style {
         var copy = self
         copy.font = font
         return copy
@@ -142,7 +142,7 @@ extension PDF.Style {
 
     /// Return a new style with the font size changed.
     @inlinable
-    public func with(fontSize: PDF.UserSpace.Unit) -> PDF.Style {
+    public func with(fontSize: PDF.UserSpace.Unit) -> PDF.Context.Style {
         var copy = self
         copy.fontSize = fontSize
         return copy
@@ -150,7 +150,7 @@ extension PDF.Style {
 
     /// Return a new style with the color changed.
     @inlinable
-    public func with(color: PDF.Color) -> PDF.Style {
+    public func with(color: PDF.Color) -> PDF.Context.Style {
         var copy = self
         copy.color = color
         return copy
@@ -158,7 +158,7 @@ extension PDF.Style {
 
     /// Return a new style with the line height changed.
     @inlinable
-    public func with(lineHeight: Scale<1>) -> PDF.Style {
+    public func with(lineHeight: Scale<1>) -> PDF.Context.Style {
         var copy = self
         copy.lineHeight = lineHeight
         return copy
@@ -166,7 +166,7 @@ extension PDF.Style {
 
     /// Return a new style with text markup changed.
     @inlinable
-    public func with(textMarkup: PDF.TextMarkup?) -> PDF.Style {
+    public func with(textMarkup: PDF.TextMarkup?) -> PDF.Context.Style {
         var copy = self
         copy.textMarkup = textMarkup
         return copy
@@ -174,7 +174,7 @@ extension PDF.Style {
 
     /// Return a new style with vertical offset changed.
     @inlinable
-    public func with(verticalOffset: PDF.UserSpace.Unit) -> PDF.Style {
+    public func with(verticalOffset: PDF.UserSpace.Unit) -> PDF.Context.Style {
         var copy = self
         copy.verticalOffset = verticalOffset
         return copy
@@ -183,7 +183,7 @@ extension PDF.Style {
 
 // MARK: - Resolution
 
-extension PDF.Style {
+extension PDF.Context.Style {
     /// Resolve this style against defaults, producing a fully-specified style.
     ///
     /// - Parameter defaults: The default values to use for any nil properties
@@ -209,7 +209,7 @@ extension PDF.Style {
 
 // MARK: - Conversion from Resolved
 
-extension PDF.Style {
+extension PDF.Context.Style {
     /// Create a partial style from a resolved style.
     public init(_ resolved: Resolved) {
         self.init(

@@ -1,10 +1,10 @@
-// PDF.Style.Resolved.swift
+// PDF.Context.Style.Resolved.swift
 // Fully resolved style with concrete values.
 
 public import PDF_Standard
 import Geometry
 
-extension PDF.Style {
+extension PDF.Context.Style {
     /// A style with all properties resolved to concrete values.
     ///
     /// Unlike `Style`, this cannot have nil values and is ready for rendering.
@@ -34,7 +34,7 @@ extension PDF.Style {
     }
 }
 
-extension PDF.Style.Resolved {
+extension PDF.Context.Style.Resolved {
     /// Line height in points
     public var lineHeightPoints: PDF.UserSpace.Height {
         .init(fontSize * lineHeight.value)

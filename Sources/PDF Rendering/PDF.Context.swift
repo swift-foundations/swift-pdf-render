@@ -43,7 +43,7 @@ extension PDF {
         /// Resolved text style.
         ///
         /// Forms a monoid under combination.
-        public var style: PDF.Style.Resolved
+        public var style: Style.Resolved
         
         /// Graphics state stack for save/restore operations.
         ///
@@ -109,7 +109,7 @@ extension PDF.Context {
     public init(
         layoutBox: PDF.UserSpace.Rectangle,
         pageHeight: PDF.UserSpace.Height,
-        style: PDF.Style.Resolved = .init(
+        style: Style.Resolved = .init(
             font: .helvetica,
             fontSize: 12,
             color: .black,

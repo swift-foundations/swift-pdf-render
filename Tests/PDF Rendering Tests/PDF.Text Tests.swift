@@ -41,7 +41,7 @@ struct `PDF.Text Tests` {
 
     @Test
     func `Creates text with style`() {
-        let style = PDF.Style(font: .courier, fontSize: 14, color: .red)
+        let style = PDF.Context.Style(font: .courier, fontSize: 14, color: .red)
         let text = PDF.Text("Styled text", style: style)
 
         #expect(text.text == "Styled text")

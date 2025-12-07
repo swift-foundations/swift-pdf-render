@@ -5,7 +5,7 @@ public import PDF_Standard
 extension PDF {
     /// Text element with automatic line wrapping.
     ///
-    /// Style overrides are specified via a partial `PDF.Style`. Properties set in
+    /// Style overrides are specified via a partial `PDF.Context.Style`. Properties set in
     /// the style override the context's style; nil properties inherit from context.
     ///
     /// ```swift
@@ -25,21 +25,21 @@ extension PDF {
         public var text: String
 
         /// Partial style overrides (nil properties inherit from context).
-        public var style: PDF.Style
+        public var style: PDF.Context.Style
 
         /// Create a text element with a partial style.
         ///
         /// - Parameters:
         ///   - text: The text to render.
         ///   - style: Partial style overrides. Defaults to `.empty` (inherit all from context).
-        public init(_ text: String, style: PDF.Style = .empty) {
+        public init(_ text: String, style: PDF.Context.Style = .empty) {
             self.text = text
             self.style = style
         }
 
         /// Create a text element with individual style properties.
         ///
-        /// Convenience initializer for common styling without constructing a `PDF.Style`.
+        /// Convenience initializer for common styling without constructing a `PDF.Context.Style`.
         ///
         /// - Parameters:
         ///   - text: The text to render.
@@ -53,7 +53,7 @@ extension PDF {
             color: PDF.Color? = nil
         ) {
             self.text = text
-            self.style = PDF.Style(font: font, fontSize: fontSize, color: color)
+            self.style = PDF.Context.Style(font: font, fontSize: fontSize, color: color)
         }
     }
 }
