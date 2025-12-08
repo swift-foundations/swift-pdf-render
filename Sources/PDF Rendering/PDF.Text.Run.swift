@@ -390,7 +390,9 @@ extension PDF.Text.Run {
                 case .underline:
                     lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value + size.value * 0.15))  // Below baseline (positive = down)
                 case .strikeout:
-                    lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value - size.value * 0.3))   // Through middle of text (negative = up)
+                    // Position at half the x-height (middle of lowercase letters)
+                    let xHeightHalf = font.metrics.xHeight(atSize: size).value / 2.0
+                    lineY = PDF.UserSpace.Y(textY.value - .init(xHeightHalf))
                 case .highlight:
                     return  // Already drawn above, no line needed
                 case .jagged:
