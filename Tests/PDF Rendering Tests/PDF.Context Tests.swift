@@ -16,7 +16,7 @@ struct `PDF.Context Tests` {
             y: 200,
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792,
+            mediaBox: .letter,
             font: .times,
             fontSize: 14,
             color: .blue,
@@ -38,7 +38,7 @@ struct `PDF.Context Tests` {
         let context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         #expect(context.layoutBox.llx == 0)
@@ -80,7 +80,7 @@ struct `PDF.Context Tests` {
         let context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.2
         )
@@ -94,7 +94,7 @@ struct `PDF.Context Tests` {
         let small = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 10,
             lineHeight: 1.2
         )
@@ -102,7 +102,7 @@ struct `PDF.Context Tests` {
         let large = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 20,
             lineHeight: 1.2
         )
@@ -117,7 +117,7 @@ struct `PDF.Context Tests` {
         var context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.2
         )
@@ -134,7 +134,7 @@ struct `PDF.Context Tests` {
         var context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         context.advance(PDF.UserSpace.Y(50))
@@ -148,7 +148,7 @@ struct `PDF.Context Tests` {
             y: 100,
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         context.advance(PDF.UserSpace.Y(10))
@@ -165,7 +165,7 @@ struct `PDF.Context Tests` {
         var context = PDF.Context(
             availableWidth: 400,
             availableHeight: 600,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         context.layoutBox.llx = 100

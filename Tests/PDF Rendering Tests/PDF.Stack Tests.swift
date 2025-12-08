@@ -36,7 +36,7 @@ struct `PDF.Stack.Vertical Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let stack = PDF.VStack {
@@ -58,7 +58,7 @@ struct `PDF.Stack.Vertical Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -81,7 +81,7 @@ struct `PDF.Stack.Vertical Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -135,7 +135,7 @@ struct `PDF.Stack.Horizontal Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let stack = PDF.HStack {
@@ -157,7 +157,7 @@ struct `PDF.Stack.Horizontal Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.0
         )
@@ -194,7 +194,7 @@ struct `PDF.Stack Nested Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let stack = PDF.VStack {
@@ -217,7 +217,7 @@ struct `PDF.Stack Nested Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let stack = PDF.HStack {

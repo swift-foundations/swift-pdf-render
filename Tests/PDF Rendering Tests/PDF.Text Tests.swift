@@ -59,7 +59,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let text = PDF.Text("Hello, World!")
@@ -75,7 +75,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.2
         )
@@ -94,7 +94,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             font: .courier.bold
         )
 
@@ -112,7 +112,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             font: .helvetica
         )
 
@@ -132,7 +132,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 100,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let text = PDF.Text("This is a longer text that should wrap to multiple lines")
@@ -151,7 +151,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 100,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.2
         )
@@ -173,7 +173,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 50,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let text = PDF.Text("Supercalifragilisticexpialidocious")
@@ -191,7 +191,7 @@ struct `PDF.Text Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let text = PDF.Text("")

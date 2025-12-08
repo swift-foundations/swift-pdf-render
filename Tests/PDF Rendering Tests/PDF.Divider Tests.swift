@@ -40,7 +40,7 @@ struct `PDF.Divider Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let divider = PDF.Divider()
@@ -56,7 +56,7 @@ struct `PDF.Divider Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let divider = PDF.Divider(thickness: 2.0, padding: 10)

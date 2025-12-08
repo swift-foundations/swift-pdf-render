@@ -30,7 +30,7 @@ struct `PDF.Spacer Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let spacer = PDF.Spacer(50)
@@ -47,7 +47,7 @@ struct `PDF.Spacer Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let spacer = PDF.Spacer(50)
@@ -63,7 +63,7 @@ struct `PDF.Spacer Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let spacer = PDF.Spacer(0)
@@ -79,7 +79,7 @@ struct `PDF.Spacer Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let spacer = PDF.Spacer(50)
@@ -95,7 +95,7 @@ struct `PDF.Spacer Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792,
+            mediaBox: .letter,
             fontSize: 12,
             lineHeight: 1.0
         )

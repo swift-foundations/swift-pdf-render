@@ -2,11 +2,10 @@
 //
 // Categorical decomposition:
 //
-//   View ──render──▶ Context ──finalize──▶ Context.Output ──map(Page.init)──▶ [Page] ──▶ Document
+//   View ──render──▶ Context ──pages──▶ [Page] ──▶ Document
 //
 // Primitives:
-//   - Context.finalize() → Context.Output   (extraction morphism)
-//   - Page.init(mediaBox:contentStream:annotations:)  (product construction)
+//   - Context.pages: [PDF.Page]   (page extraction)
 //   - Document.init(version:info:pages:)    (final assembly)
 //
 // This file provides the composition as a convenience init.
@@ -17,7 +16,7 @@ import ISO_32000_Flate
 extension PDF.Document {
     /// Create a document with builder syntax.
     ///
-    /// Full pipeline: `View ──render──▶ Context ──finalize──▶ Output ──▶ Document`
+    /// Full pipeline: `View ──render──▶ Context ──pages──▶ [Page] ──▶ Document`
     ///
     /// Example:
     /// ```swift
@@ -38,29 +37,6 @@ extension PDF.Document {
         let view = build()
         View._render(view, context: &context)
 
-        self.init(
-            version: version,
-            info: info,
-            mediaBox: mediaBox,
-            output: context.finalize()
-        )
-    }
-}
-
-extension PDF.Document {
-    /// Create a document from context output.
-    ///
-    /// Composes: `Context.Output ──map(Page.init)──▶ [Page] ──▶ Document`
-    public init(
-        version: ISO_32000.Version = .v1_7,
-        info: ISO_32000.Document.Info? = nil,
-        mediaBox: ISO_32000.UserSpace.Rectangle = .a4,
-        output: PDF.Context.Output
-    ) {
-        let pages = zip(output.contentStreams, output.annotations).map { stream, annotations in
-            PDF.Page(mediaBox: mediaBox, contentStream: stream, annotations: annotations)
-        }
-        
-        self.init(version: version, info: info, pages: pages)
+        self.init(version: version, info: info, pages: context.pages)
     }
 }

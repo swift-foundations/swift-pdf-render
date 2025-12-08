@@ -25,7 +25,7 @@ struct `PDF.View Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792  // Letter height
+            mediaBox: .letter
         )
 
         let view = TwoLines()
@@ -42,7 +42,7 @@ struct `PDF.View Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         // Render a simple text view
@@ -66,7 +66,7 @@ struct `PDF.Builder Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let stack = PDF.VStack {
@@ -86,7 +86,7 @@ struct `PDF.Builder Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let stack = PDF.VStack {
@@ -109,7 +109,7 @@ struct `PDF.Builder Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let includeOptional = true
@@ -133,7 +133,7 @@ struct `PDF.Builder Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let includeOptional = false
@@ -157,7 +157,7 @@ struct `PDF.Builder Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let useFirst = true
@@ -182,7 +182,7 @@ struct `PDF.Builder Tests` {
             y: 72,
             availableWidth: 400,
             availableHeight: 700,
-            pageHeight: 792
+            mediaBox: .letter
         )
 
         let items = ["A", "B", "C", "D", "E"]

@@ -78,25 +78,28 @@ extension PDF {
         public var measurementMode: Bool = false
         
         // MARK: - Pagination
-        
+
         /// Initial layout box (for page reset).
         private var initialLayoutBox: PDF.UserSpace.Rectangle
-        
+
         /// Maximum Y position (bottom boundary).
         private var maxY: PDF.UserSpace.Y
-        
+
+        /// The page's media box (defines page geometry).
+        public var mediaBox: ISO_32000.UserSpace.Rectangle
+
         /// Page height for coordinate conversion (top-left to bottom-left).
-        public var pageHeight: PDF.UserSpace.Height
-        
-        /// Completed pages' content streams.
-        public var completedPages: [ISO_32000.ContentStream] = []
-        
+        /// Computed from mediaBox.
+        public var pageHeight: PDF.UserSpace.Height {
+            mediaBox.height
+        }
+
+        /// Completed pages (fully built).
+        public var completedPages: [PDF.Page] = []
+
         /// Current page's content stream builder.
         public var currentPageBuilder: ISO_32000.ContentStream.Builder = .init()
-        
-        /// Annotations for completed pages.
-        public var completedPageAnnotations: [[PDF.Annotation]] = []
-        
+
         /// Annotations for current page.
         public var currentPageAnnotations: [PDF.Annotation] = []
     }
@@ -108,7 +111,7 @@ extension PDF.Context {
     /// Create a render context from primitives.
     public init(
         layoutBox: PDF.UserSpace.Rectangle,
-        pageHeight: PDF.UserSpace.Height,
+        mediaBox: ISO_32000.UserSpace.Rectangle,
         style: Style.Resolved = .init(
             font: .helvetica,
             fontSize: 12,
@@ -118,20 +121,20 @@ extension PDF.Context {
         graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState> = .init(initial: .init())
     ) {
         self.layoutBox = layoutBox
-        self.pageHeight = pageHeight
+        self.mediaBox = mediaBox
         self.style = style
         self.graphicsStack = graphicsStack
         self.initialLayoutBox = layoutBox
         self.maxY = layoutBox.maxY
     }
-    
+
     /// Create a render context from explicit values.
     public init(
         x: PDF.UserSpace.X = 0,
         y: PDF.UserSpace.Y = 0,
         availableWidth: PDF.UserSpace.Width,
         availableHeight: PDF.UserSpace.Height,
-        pageHeight: PDF.UserSpace.Height,
+        mediaBox: ISO_32000.UserSpace.Rectangle,
         font: PDF.Font = .helvetica,
         fontSize: PDF.UserSpace.Unit = 12,
         color: PDF.Color = .black,
@@ -144,7 +147,7 @@ extension PDF.Context {
         )
         self.init(
             layoutBox: box,
-            pageHeight: pageHeight,
+            mediaBox: mediaBox,
             style: .init(
                 font: font,
                 fontSize: fontSize,
@@ -153,7 +156,7 @@ extension PDF.Context {
             )
         )
     }
-    
+
     /// Create context for a page's content area.
     public init(
         mediaBox: ISO_32000.UserSpace.Rectangle,
@@ -166,7 +169,7 @@ extension PDF.Context {
             y: PDF.UserSpace.Y(margins.top),
             availableWidth: contentWidth,
             availableHeight: contentHeight,
-            pageHeight: mediaBox.height
+            mediaBox: mediaBox
         )
     }
 }
@@ -245,24 +248,28 @@ extension PDF.Context {
 // MARK: - Pagination
 
 extension PDF.Context {
-    /// Start a new page, saving current content stream.
+    /// Start a new page, building the current page and resetting state.
     public mutating func startNewPage() {
-        // Finalize current page
+        // Build current page
         let currentStream = ISO_32000.ContentStream(
             data: currentPageBuilder.data,
             fontsUsed: currentPageBuilder.fontsUsed
         )
-        completedPages.append(currentStream)
-        completedPageAnnotations.append(currentPageAnnotations)
-        
+        let page = PDF.Page(
+            mediaBox: mediaBox,
+            contentStream: currentStream,
+            annotations: currentPageAnnotations
+        )
+        completedPages.append(page)
+
         // Reset for new page
         currentPageBuilder = .init()
         currentPageAnnotations = []
-        
+
         // Reset to initial layout position
         layoutBox.origin = initialLayoutBox.origin
     }
-    
+
     /// Add a link annotation to the current page.
     public mutating func addLinkAnnotation(
         rect: PDF.UserSpace.Rectangle,
@@ -270,7 +277,7 @@ extension PDF.Context {
     ) {
         currentPageAnnotations.append(.link(ISO_32000.LinkAnnotation(rect: rect, uri: uri)))
     }
-    
+
     /// Check if we need a page break and start new page if so.
     @discardableResult
     public mutating func checkPageBreak(needing height: PDF.UserSpace.Height) -> Bool {
@@ -280,39 +287,36 @@ extension PDF.Context {
         }
         return false
     }
-    
+
     /// Check if adding the given height would exceed the page boundary.
     public func wouldExceedPage(adding height: PDF.UserSpace.Height) -> Bool {
         layoutBox.lly.value + height.value > maxY.value
     }
-    
+
     /// Remaining space on current page.
     public var remainingHeight: PDF.UserSpace.Height {
         let remaining = PDF.UserSpace.Height(maxY.value - layoutBox.lly.value)
         return remaining.value > 0 ? remaining : .zero
     }
-    
-    /// Get all pages' content streams (completed + current).
-    public func getAllPages() -> [ISO_32000.ContentStream] {
+
+    /// All pages (completed + current).
+    ///
+    /// This is the final output of rendering: `[PDF.Page]`
+    public var pages: [PDF.Page] {
         var allPages = completedPages
         if !currentPageBuilder.data.isEmpty {
             let currentStream = ISO_32000.ContentStream(
                 data: currentPageBuilder.data,
                 fontsUsed: currentPageBuilder.fontsUsed
             )
-            allPages.append(currentStream)
+            let currentPage = PDF.Page(
+                mediaBox: mediaBox,
+                contentStream: currentStream,
+                annotations: currentPageAnnotations
+            )
+            allPages.append(currentPage)
         }
         return allPages
-    }
-    
-    /// Get all pages' annotations (completed + current).
-    public func getAllAnnotations() -> [[PDF.Annotation]] {
-        var allAnnotations = completedPageAnnotations
-        while allAnnotations.count < completedPages.count {
-            allAnnotations.append([])
-        }
-        allAnnotations.append(currentPageAnnotations)
-        return allAnnotations
     }
 }
 
@@ -446,14 +450,3 @@ extension PDF.Context {
     }
 }
 
-extension PDF.Context {
-    /// Finalize the context, extracting accumulated content.
-    ///
-    /// Extraction morphism: `Context → Output`
-    public func finalize() -> Output {
-        Output(
-            contentStreams: getAllPages(),
-            annotations: getAllAnnotations()
-        )
-    }
-}
