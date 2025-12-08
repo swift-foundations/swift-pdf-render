@@ -337,6 +337,12 @@ extension PDF.Text.Run {
         // Use trimmed tokens to avoid trailing spaces
         let tokens = line.trimmedTokens
 
+        // Calculate line baseline from context's base style (not per-segment font)
+        // This ensures consistent baseline alignment across different fonts (e.g., Helvetica and Courier)
+        let baseFont = context.style.font ?? .helvetica
+        let baseFontSize = context.style.fontSize ?? 12
+        let lineBaselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.layoutBox.lly.value) + baseFont.metrics.ascender(atSize: baseFontSize))
+
         // Group consecutive tokens with same styling
         var currentSegment = ""
         var currentFont: PDF.Font?
@@ -354,12 +360,19 @@ extension PDF.Text.Run {
                   let color = currentColor else { return }
 
             let segmentWidth = PDF.UserSpace.Width(font.stringWidth(currentSegment, atSize: size))
-            // In top-left coordinates, context.layoutBox.lly is the top of the line box.
-            // PDF text is positioned at the baseline, so we offset down by the
-            // ascender height (distance from baseline to top of tallest glyphs).
-            // The verticalOffset is used for sub/superscript (negative moves up).
-            let baselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.layoutBox.lly.value) + font.metrics.ascender(atSize: size))
-            let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(baselineY.value) - currentVerticalOffset)
+            // Use the line's consistent baseline, adjusted for vertical offset (sub/superscript)
+            let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(lineBaselineY.value) - currentVerticalOffset)
+
+            // Draw highlight background BEFORE text (so text appears on top)
+            if case .highlight(let highlightColor) = currentDecoration {
+                let bgRect = PDF.UserSpace.Rectangle(
+                    x: segmentStartX,
+                    y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
+                    width: segmentWidth,
+                    height: PDF.UserSpace.Height(size.value * 1.15)
+                )
+                context.emitRectangle(bgRect, fill: highlightColor, stroke: nil)
+            }
 
             // Emit text directly to context
             context.emitText(
@@ -370,7 +383,7 @@ extension PDF.Text.Run {
                 color: color
             )
 
-            // Draw text decoration if present
+            // Draw text decoration if present (underline, strikethrough)
             if let decoration = currentDecoration {
                 let lineY: PDF.UserSpace.Y
                 switch decoration {
@@ -378,24 +391,17 @@ extension PDF.Text.Run {
                     lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value + size.value * 0.15))  // Below baseline (positive = down)
                 case .strikeout:
                     lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value - size.value * 0.3))   // Through middle of text (negative = up)
-                case .highlight(_):
-                    // Draw background rectangle
-                    let bgRect = PDF.UserSpace.Rectangle(
-                        x: segmentStartX,
-                        y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
-                        width: segmentWidth,
-                        height: PDF.UserSpace.Height(size.value * 1.15)
-                    )
-                    context.emitRectangle(bgRect, fill: color, stroke: nil)
-                    return  // No line to draw for highlight
+                case .highlight:
+                    return  // Already drawn above, no line needed
                 case .jagged:
                     fatalError("unimplemented")
                 }
 
                 let startPoint = PDF.UserSpace.Coordinate(x: segmentStartX, y: lineY)
                 let endPoint = PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(PDF.UserSpace.Unit(segmentStartX.value + segmentWidth.value)), y: lineY)
-                let lineWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(size.value * 0.05))  // Line thickness proportional to font
-                let minLineWidth: PDF.UserSpace.Width = 0.5
+                // WebKit uses approximately 1px line thickness, which at 72dpi is about 0.07-0.08 of font size
+                let lineWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(size.value * 0.07))
+                let minLineWidth: PDF.UserSpace.Width = 0.75
                 let effectiveLineWidth = lineWidth.value > minLineWidth.value ? lineWidth : minLineWidth
 
                 context.emitLine(
