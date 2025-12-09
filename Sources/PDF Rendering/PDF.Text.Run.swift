@@ -122,10 +122,12 @@ extension PDF.Text {
                         )
 
                     case .strokedCircle(let circle, let strokeWidth):
-                        // Position circle vertically centered on x-height (middle of lowercase letters)
-                        // x-height is measured from the baseline, so we offset from baselineY
+                        // Position circle vertically centered at middle of x-height
+                        // In top-left coordinates (Y increases downward), subtracting moves up
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let centerYValue = baselineY.value - xHeight  // baseline minus x-height (going up in top-left coords)
+                        // Center at 60% of x-height above baseline for better optical alignment
+                        // (slightly higher than mathematical center looks better with hollow circles)
+                        let centerYValue = baselineY.value - xHeight * 0.6
                         let centerY = PDF.UserSpace.Y(centerYValue)
                         // Center circle horizontally at marker position
                         let centerXValue = pending.x.value + circle.radius.value

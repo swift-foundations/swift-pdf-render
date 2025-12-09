@@ -255,20 +255,21 @@ extension PDF.Context {
             let totalDepth = listStack.count
             switch totalDepth {
             case 1:
-                // Level 1: bullet • (disc) - WinAnsi encoding
+                // Level 1: • (disc) - use the bullet glyph from the font
+                // This produces a properly designed bullet character
                 return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
             case 2:
                 // Level 2: ○ (circle) - hollow circle drawn with PDF graphics
-                // Radius sized to match typical bullet character (about 0.25em)
-                let radius = Geometry<PDF.UserSpace.Unit>.Length(style.fontSize * 0.15)
-                // Circle center will be set when marker is positioned
+                // Diameter ~0.28em (~80% of level 1) for visual hierarchy
+                let radius = Geometry<PDF.UserSpace.Unit>.Length(style.fontSize * 0.14)
                 let circle = Geometry<PDF.UserSpace.Unit>.Circle(radius: radius)
-                // Stroke width proportional to font size
-                let strokeWidth = style.fontSize * 0.08
+                // Stroke width proportional to font size (thin stroke for hollow appearance)
+                let strokeWidth = style.fontSize * 0.05
                 return .strokedCircle(circle, strokeWidth: strokeWidth)
             default:
                 // Level 3+: ■ (square) - filled square using PDF graphics
-                let size = style.fontSize * 0.3
+                // Side ~0.22em (~63% of level 1 diameter) for visual hierarchy
+                let size = style.fontSize * 0.22
                 // Rectangle will be positioned when marker is rendered
                 let rect = Geometry<PDF.UserSpace.Unit>.Rectangle(
                     llx: .init(0), lly: .init(0),
