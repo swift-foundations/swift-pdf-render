@@ -41,8 +41,10 @@ extension PDF.Text {
             verticalOffset: PDF.UserSpace.Unit = 0,
             linkURL: String? = nil
         ) {
-            // Encode to WinAnsi immediately at the boundary
-            self.bytes = [UInt8](winAnsi: text, withFallback: true)
+            // Encode to WinAnsi, preserving control characters for tokenizer.
+            // Control chars (newline, tab, etc.) are handled specially by the tokenizer
+            // and must remain as their raw byte values, not be converted to '?'.
+            self.bytes = [UInt8](winAnsi: text, withFallback: true, preservingControlChars: true)
             self.font = font
             self.fontSize = fontSize
             self.color = color
@@ -99,13 +101,14 @@ extension PDF.Text {
 
                 // Emit pending list marker on the first line
                 if isFirstLine, let pending = context.pendingListMarker {
-                    // Calculate baseline Y for the marker (same as text line)
+                    // Calculate baseline Y for the marker using line box model (CSS half-leading)
+                    // This ensures the marker aligns with text that is centered within its line box.
+                    let lineBox = context.style.lineBox
+                    let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + lineBox.baselineOffset)
+
+                    // For circle/square markers, we need font metrics for x-height positioning
                     let baseFont = context.style.font
                     let baseFontSize = context.style.fontSize
-                    let baselineY = PDF.UserSpace.Y(
-                        context.layoutBox.lly.value +
-                        baseFont.metrics.ascender(atSize: baseFontSize)
-                    )
 
                     // Emit marker based on its type
                     switch pending.marker {
@@ -120,9 +123,9 @@ extension PDF.Text {
 
                     case .strokedCircle(let circle, let strokeWidth):
                         // Position circle vertically centered on x-height (middle of lowercase letters)
+                        // x-height is measured from the baseline, so we offset from baselineY
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let ascender = baseFont.metrics.ascender(atSize: baseFontSize)
-                        let centerYValue = context.layoutBox.lly.value + ascender - xHeight / 2
+                        let centerYValue = baselineY.value - xHeight  // baseline minus x-height (going up in top-left coords)
                         let centerY = PDF.UserSpace.Y(centerYValue)
                         // Center circle horizontally at marker position
                         let centerXValue = pending.x.value + circle.radius.value
@@ -138,8 +141,7 @@ extension PDF.Text {
                     case .filledCircle(let circle):
                         // Position circle vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let ascender = baseFont.metrics.ascender(atSize: baseFontSize)
-                        let centerYValue = context.layoutBox.lly.value + ascender - xHeight / 2
+                        let centerYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2)
                         let centerY = PDF.UserSpace.Y(centerYValue)
                         let centerXValue = pending.x.value + circle.radius.value
                         let centerX = PDF.UserSpace.X(centerXValue)
@@ -153,8 +155,7 @@ extension PDF.Text {
                     case .filledSquare(let rect):
                         // Position square vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let ascender = baseFont.metrics.ascender(atSize: baseFontSize)
-                        let squareYValue = context.layoutBox.lly.value + ascender - xHeight / 2 - rect.height.value / 2
+                        let squareYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2) - rect.height.value / ISO_32000.UserSpace.Unit(2)
                         let squareY = PDF.UserSpace.Y(squareYValue)
                         let squareRect = PDF.UserSpace.Rectangle(
                             x: pending.x,
@@ -426,11 +427,12 @@ extension PDF.Text.Run {
         // Use trimmed tokens to avoid trailing spaces
         let tokens = line.trimmedTokens
 
-        // Calculate line baseline from context's base style (not per-segment font)
-        // This ensures consistent baseline alignment across different fonts (e.g., Helvetica and Courier)
-        let baseFont = context.style.font
-        let baseFontSize = context.style.fontSize
-        let lineBaselineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(context.layoutBox.lly.value) + baseFont.metrics.ascender(atSize: baseFontSize))
+        // Calculate line baseline using line box model (CSS half-leading)
+        // This ensures symmetric spacing above and below text within the line box.
+        // The baselineOffset includes halfLeading + ascender, positioning text
+        // centered within the line height rather than anchored at the top.
+        let lineBox = context.style.lineBox
+        let lineBaselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + lineBox.baselineOffset)
 
         // Group consecutive tokens with same styling
         var currentSegment: [UInt8] = []

@@ -250,12 +250,10 @@ extension PDF.Context {
         let index = listStack.count - 1
         switch listStack[index].type {
         case .unordered:
-            // Count nesting depth of unordered lists only
-            let unorderedDepth = listStack.filter {
-                if case .unordered = $0.type { return true }
-                return false
-            }.count
-            switch unorderedDepth {
+            // WebKit uses TOTAL list depth for marker style, not just unordered depth.
+            // This means a <ul> nested inside an <ol> at depth 2 gets circle markers.
+            let totalDepth = listStack.count
+            switch totalDepth {
             case 1:
                 // Level 1: bullet • (disc) - WinAnsi encoding
                 return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
@@ -284,6 +282,11 @@ extension PDF.Context {
             // WinAnsi encoding for ordered list numbers
             return .text(bytes: [UInt8](winAnsi: "\(num).", withFallback: true), font: style.font)
         }
+    }
+
+    /// Returns the current list nesting depth (0 = not in a list).
+    public var listDepth: Int {
+        listStack.count
     }
 }
 

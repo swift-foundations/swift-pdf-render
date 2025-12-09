@@ -35,8 +35,28 @@ extension PDF.Context.Style {
 }
 
 extension PDF.Context.Style.Resolved {
-    /// Line height in points
+    /// Line box for current style using CSS half-leading model.
+    ///
+    /// This computes proper line box geometry that distributes extra space
+    /// symmetrically above and below text, following CSS inline formatting.
+    ///
+    /// The line box provides:
+    /// - `height`: Total line box height
+    /// - `baselineOffset`: Distance from line box top to baseline (halfLeading + ascender)
+    /// - `halfLeading`: Space distributed symmetrically above/below text
+    public var lineBox: ISO_32000.LineBox {
+        ISO_32000.LineBox(
+            metrics: font.metrics,
+            fontSize: fontSize,
+            lineHeightMultiplier: lineHeight.value
+        )
+    }
+
+    /// Line height in points (total line box height)
+    ///
+    /// This property is preserved for backwards compatibility.
+    /// Consider using `lineBox.height` for more explicit semantics.
     public var lineHeightPoints: PDF.UserSpace.Height {
-        .init(fontSize * lineHeight.value)
+        lineBox.height
     }
 }
