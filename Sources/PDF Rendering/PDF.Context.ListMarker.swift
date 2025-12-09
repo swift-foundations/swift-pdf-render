@@ -1,0 +1,29 @@
+//
+//  PDF.Context.ListMarker.swift
+//  swift-pdf-rendering
+//
+
+public import PDF_Standard
+public import Geometry
+
+// MARK: - List Marker
+
+extension PDF.Context {
+    /// A list marker that can be either text-based or graphic.
+    ///
+    /// Text markers (bullet, numbers) use font glyphs.
+    /// Graphic markers (circle for Level 2) are drawn using PDF path operators.
+    public enum ListMarker: Sendable {
+        /// Text-based marker (bullet, number, square)
+        case text(bytes: [UInt8], font: PDF.Font)
+
+        /// Stroked circle marker (hollow circle for Level 2)
+        case strokedCircle(Geometry<PDF.UserSpace.Unit>.Circle, strokeWidth: PDF.UserSpace.Unit)
+
+        /// Filled disc marker (solid circle for Level 1)
+        case filledCircle(Geometry<PDF.UserSpace.Unit>.Circle)
+
+        /// Filled square marker (for Level 3+)
+        case filledSquare(Geometry<PDF.UserSpace.Unit>.Rectangle)
+    }
+}

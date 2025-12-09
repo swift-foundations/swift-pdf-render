@@ -107,14 +107,64 @@ extension PDF.Text {
                         baseFont.metrics.ascender(atSize: baseFontSize)
                     )
 
-                    // Emit marker using pre-encoded bytes
-                    context.emitText(
-                        pending.markerBytes,
-                        at: PDF.UserSpace.Coordinate(x: pending.x, y: baselineY),
-                        font: context.style.font,
-                        size: context.style.fontSize,
-                        color: context.style.color
-                    )
+                    // Emit marker based on its type
+                    switch pending.marker {
+                    case .text(let bytes, let font):
+                        context.emitText(
+                            bytes,
+                            at: PDF.UserSpace.Coordinate(x: pending.x, y: baselineY),
+                            font: font,
+                            size: context.style.fontSize,
+                            color: context.style.color
+                        )
+
+                    case .strokedCircle(let circle, let strokeWidth):
+                        // Position circle vertically centered on x-height (middle of lowercase letters)
+                        let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
+                        let ascender = baseFont.metrics.ascender(atSize: baseFontSize)
+                        let centerYValue = context.layoutBox.lly.value + ascender - xHeight / 2
+                        let centerY = PDF.UserSpace.Y(centerYValue)
+                        // Center circle horizontally at marker position
+                        let centerXValue = pending.x.value + circle.radius.value
+                        let centerX = PDF.UserSpace.X(centerXValue)
+                        context.emitCircle(
+                            center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
+                            radius: circle.radius.value,
+                            fill: nil,
+                            stroke: context.style.color,
+                            strokeWidth: .init(strokeWidth)
+                        )
+
+                    case .filledCircle(let circle):
+                        // Position circle vertically centered on x-height
+                        let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
+                        let ascender = baseFont.metrics.ascender(atSize: baseFontSize)
+                        let centerYValue = context.layoutBox.lly.value + ascender - xHeight / 2
+                        let centerY = PDF.UserSpace.Y(centerYValue)
+                        let centerXValue = pending.x.value + circle.radius.value
+                        let centerX = PDF.UserSpace.X(centerXValue)
+                        context.emitCircle(
+                            center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
+                            radius: circle.radius.value,
+                            fill: context.style.color,
+                            stroke: nil
+                        )
+
+                    case .filledSquare(let rect):
+                        // Position square vertically centered on x-height
+                        let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
+                        let ascender = baseFont.metrics.ascender(atSize: baseFontSize)
+                        let squareYValue = context.layoutBox.lly.value + ascender - xHeight / 2 - rect.height.value / 2
+                        let squareY = PDF.UserSpace.Y(squareYValue)
+                        let squareRect = PDF.UserSpace.Rectangle(
+                            x: pending.x,
+                            y: squareY,
+                            width: .init(rect.width.value),
+                            height: .init(rect.height.value)
+                        )
+                        context.emitRectangle(squareRect, fill: context.style.color, stroke: nil)
+                    }
+
                     context.pendingListMarker = nil
                     isFirstLine = false
                 }

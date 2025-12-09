@@ -64,8 +64,8 @@ extension PDF {
         public var listStack: [(type: ListType, currentIndex: Int)] = []
 
         /// Pending list marker to be rendered with the first line of text.
-        /// Stores the marker as WinAnsi-encoded bytes and the X position where it should be rendered.
-        public var pendingListMarker: (markerBytes: [UInt8], x: PDF.UserSpace.X)? = nil
+        /// Stores the marker and X position where it should be rendered.
+        public var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)? = nil
         
         // MARK: - Modes
         
@@ -234,16 +234,19 @@ extension PDF.Context {
         _ = listStack.popLast()
     }
     
-    /// Get the next list marker (WinAnsi-encoded) and advance the counter.
+    /// Get the next list marker and advance the counter.
     ///
-    /// Returns bytes that can be directly emitted to PDF content stream.
+    /// Returns a ListMarker for the current list item.
     ///
-    /// For unordered lists (approximates WebKit/CSS default markers):
-    /// - Level 1: bullet • (0x95)
-    /// - Level 2: middle dot · (0xB7)
-    /// - Level 3+: en-dash – (0x96)
-    public mutating func nextListMarker() -> [UInt8] {
-        guard !listStack.isEmpty else { return [UInt8.WinAnsi.bullet] }
+    /// For unordered lists (matches WebKit/CSS default markers):
+    /// - Level 1: • (disc) - filled circle using text bullet
+    /// - Level 2: ○ (circle) - stroked (hollow) circle using PDF graphics
+    /// - Level 3+: ■ (square) - filled square using PDF graphics
+    ///
+    /// For ordered lists:
+    /// - Numbers with period (1., 2., etc.) in text font
+    public mutating func nextListMarker() -> ListMarker {
+        guard !listStack.isEmpty else { return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font) }
         let index = listStack.count - 1
         switch listStack[index].type {
         case .unordered:
@@ -252,20 +255,34 @@ extension PDF.Context {
                 if case .unordered = $0.type { return true }
                 return false
             }.count
-            // WinAnsiEncoding bytes for list markers (ISO 32000-2 Annex D)
             switch unorderedDepth {
             case 1:
-                return [UInt8.WinAnsi.bullet]         // • (disc)
+                // Level 1: bullet • (disc) - WinAnsi encoding
+                return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
             case 2:
-                return [UInt8.WinAnsi.periodcentered] // · (circle approximation)
+                // Level 2: ○ (circle) - hollow circle drawn with PDF graphics
+                // Radius sized to match typical bullet character (about 0.25em)
+                let radius = Geometry<PDF.UserSpace.Unit>.Length(style.fontSize * 0.15)
+                // Circle center will be set when marker is positioned
+                let circle = Geometry<PDF.UserSpace.Unit>.Circle(radius: radius)
+                // Stroke width proportional to font size
+                let strokeWidth = style.fontSize * 0.08
+                return .strokedCircle(circle, strokeWidth: strokeWidth)
             default:
-                return [UInt8.WinAnsi.endash]         // – (square approximation)
+                // Level 3+: ■ (square) - filled square using PDF graphics
+                let size = style.fontSize * 0.3
+                // Rectangle will be positioned when marker is rendered
+                let rect = Geometry<PDF.UserSpace.Unit>.Rectangle(
+                    llx: .init(0), lly: .init(0),
+                    urx: .init(size), ury: .init(size)
+                )
+                return .filledSquare(rect)
             }
         case .ordered:
             let num = listStack[index].currentIndex
             listStack[index].currentIndex += 1
             // WinAnsi encoding for ordered list numbers
-            return [UInt8](winAnsi: "\(num).", withFallback: true)
+            return .text(bytes: [UInt8](winAnsi: "\(num).", withFallback: true), font: style.font)
         }
     }
 }
@@ -291,8 +308,9 @@ extension PDF.Context {
         currentPageBuilder = .init()
         currentPageAnnotations = []
 
-        // Reset to initial layout position
-        layoutBox.origin = initialLayoutBox.origin
+        // Reset Y position to top of page, but preserve horizontal margins (llx/urx)
+        // This maintains list indentation and other horizontal context across page breaks
+        layoutBox.lly = initialLayoutBox.lly
     }
 
     /// Add a link annotation to the current page.
@@ -477,7 +495,69 @@ extension PDF.Context {
         }
         
         currentPageBuilder.rectangle(x: rect.llx, y: pdfY, width: rect.width, height: rect.height)
-        
+
+        if fill != nil && stroke != nil {
+            currentPageBuilder.fillAndStroke()
+        } else if fill != nil {
+            currentPageBuilder.fill()
+        } else if stroke != nil {
+            currentPageBuilder.stroke()
+        }
+    }
+
+    /// Emit a circle.
+    ///
+    /// - Parameters:
+    ///   - center: Circle center in top-left coordinate system
+    ///   - radius: Circle radius
+    ///   - fill: Fill color (nil for no fill)
+    ///   - stroke: Stroke color (nil for no stroke)
+    ///   - strokeWidth: Line width for stroke
+    public mutating func emitCircle(
+        center: PDF.UserSpace.Coordinate,
+        radius: PDF.UserSpace.Unit,
+        fill: PDF.Color?,
+        stroke: PDF.Color?,
+        strokeWidth: PDF.UserSpace.Width = .init(1)
+    ) {
+        guard !measurementMode else { return }
+
+        // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
+        let pdfCenterY = convertY(center.y)
+        let pdfCenter = Geometry<PDF.UserSpace.Unit>.Point(
+            x: center.x,
+            y: pdfCenterY
+        )
+        let circle = Geometry<PDF.UserSpace.Unit>.Circle(
+            center: pdfCenter,
+            radius: .init(radius)
+        )
+
+        if let fill = fill {
+            switch fill {
+            case .gray(let g):
+                currentPageBuilder.setFillColorGray(g)
+            case .rgb(let r, let g, let b):
+                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+            case .cmyk(let c, let m, let y, let k):
+                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+            }
+        }
+
+        if let stroke = stroke {
+            switch stroke {
+            case .gray(let g):
+                currentPageBuilder.setStrokeColorGray(g)
+            case .rgb(let r, let g, let b):
+                currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+            case .cmyk(let c, let m, let y, let k):
+                currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+            }
+            currentPageBuilder.setLineWidth(strokeWidth)
+        }
+
+        currentPageBuilder.circle(circle)
+
         if fill != nil && stroke != nil {
             currentPageBuilder.fillAndStroke()
         } else if fill != nil {
