@@ -91,7 +91,7 @@ extension PDF.Context {
             guard !tokens.isEmpty else { return }
 
             // Build lines from tokens
-            let lines = buildLines(tokens, maxWidth: context.layoutBox.width)
+            let lines = buildLines(tokens, maxWidth: context.layoutBox.width, preserveWhitespace: context.preserveWhitespace)
 
             // Render lines with pagination support
             var isFirstLine = true
@@ -157,9 +157,8 @@ extension PDF.Context {
                     case .filledSquare(let square):
                         // Position square vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let squareSize = square.width.value  // Square has equal width/height
-                        let squareYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2) - squareSize / ISO_32000.UserSpace.Unit(2)
-                        let squareY = PDF.UserSpace.Y(squareYValue)
+                        let squareYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2) - square.size.height / ISO_32000.UserSpace.Unit(2)
+                        let squareY = PDF.UserSpace.Y(squareYValue.value)
                         let rect = PDF.UserSpace.Rectangle(
                             x: pending.x,
                             y: squareY,
@@ -362,11 +361,12 @@ extension PDF.Context.TextRun {
     }
 
     /// Build lines from tokens
-    static func buildLines(_ tokens: [Token], maxWidth: PDF.UserSpace.Width) -> [Line] {
+    static func buildLines(_ tokens: [Token], maxWidth: PDF.UserSpace.Width, preserveWhitespace: Bool = false) -> [Line] {
         var lines: [Line] = []
         var currentLine = Line(tokens: [])
         var currentWidth: PDF.UserSpace.Unit = 0
-        var lastWasWhitespace = true  // Start true to skip leading whitespace
+        // When preserving whitespace (preformatted text), don't skip leading whitespace
+        var lastWasWhitespace = !preserveWhitespace
 
         for token in tokens {
             // Handle newlines
@@ -374,7 +374,8 @@ extension PDF.Context.TextRun {
                 lines.append(currentLine)
                 currentLine = Line(tokens: [])
                 currentWidth = 0
-                lastWasWhitespace = true
+                // After newline, preserve leading whitespace if in preformatted mode
+                lastWasWhitespace = !preserveWhitespace
                 continue
             }
 
@@ -391,8 +392,9 @@ extension PDF.Context.TextRun {
 
             // Handle regular whitespace
             if token.isWhitespace {
-                if !lastWasWhitespace && !currentLine.tokens.isEmpty {
-                    // Add space only between words
+                if preserveWhitespace || (!lastWasWhitespace && !currentLine.tokens.isEmpty) {
+                    // In preformatted mode, always add whitespace
+                    // Otherwise, add space only between words
                     currentLine.tokens.append(token)
                     currentWidth = currentWidth + token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
                 }
