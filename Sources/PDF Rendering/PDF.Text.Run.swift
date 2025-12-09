@@ -46,8 +46,8 @@ extension PDF.Text {
             verticalOffset: PDF.UserSpace.Unit = 0,
             linkURL: String? = nil
         ) {
-            // Sanitize text to replace unsupported Unicode characters
-            self.text = ISO_32000.WinAnsiEncoding.sanitize(text)
+            // Store text as-is; WinAnsiEncoding will be applied during PDF serialization
+            self.text = text
             self.font = font
             self.fontSize = fontSize
             self.color = color
