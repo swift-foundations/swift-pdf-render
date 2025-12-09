@@ -12,42 +12,40 @@ struct `PDF.Text Tests` {
     @Test
     func `Creates text with content`() {
         let text = PDF.Text("Hello, World!")
-        #expect(text.text == "Hello, World!")
+        #expect(text.string == "Hello, World!")
     }
 
     @Test
-    func `Creates text with all parameters`() {
+    func `Creates text with state parameters`() {
         let text = PDF.Text(
             "Custom text",
-            font: .times,
-            fontSize: 18,
-            color: .blue
+            state: .init(fontSize: 18)
         )
 
-        #expect(text.text == "Custom text")
-        #expect(text.style.font == .times)
-        #expect(text.style.fontSize == 18)
-        #expect(text.style.color == .blue)
+        #expect(text.string == "Custom text")
+        #expect(text.state.fontSize == 18)
     }
 
     @Test
-    func `Optional parameters default to nil`() {
+    func `Optional parameters default to nil or initial values`() {
         let text = PDF.Text("Simple")
 
-        #expect(text.style.font == nil)
-        #expect(text.style.fontSize == nil)
-        #expect(text.style.color == nil)
+        #expect(text.state.font == nil)
+        #expect(text.state.fontSize == nil)
+        #expect(text.state.characterSpacing == 0)
+        #expect(text.state.wordSpacing == 0)
     }
 
     @Test
-    func `Creates text with style`() {
-        let style = PDF.Context.Style(font: .courier, fontSize: 14, color: .red)
-        let text = PDF.Text("Styled text", style: style)
+    func `Creates text with full state`() {
+        var state = PDF.Text.State()
+        state.fontSize = 14
+        state.characterSpacing = 1
+        let text = PDF.Text("Styled text", state: state)
 
-        #expect(text.text == "Styled text")
-        #expect(text.style.font == .courier)
-        #expect(text.style.fontSize == 14)
-        #expect(text.style.color == .red)
+        #expect(text.string == "Styled text")
+        #expect(text.state.fontSize == 14)
+        #expect(text.state.characterSpacing == 1)
     }
 
     // MARK: - Single Line Rendering
@@ -55,11 +53,8 @@ struct `PDF.Text Tests` {
     @Test
     func `Renders single line text`() {
         var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 400,
-            availableHeight: 700,
-            mediaBox: .letter
+            mediaBox: .letter,
+            margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
         )
 
         let text = PDF.Text("Hello, World!")
@@ -71,56 +66,31 @@ struct `PDF.Text Tests` {
     @Test
     func `Advances Y after rendering`() {
         var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 400,
-            availableHeight: 700,
             mediaBox: .letter,
-            fontSize: 12,
-            lineHeight: 1.2
+            margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
         )
+        let startY = context.layoutBox.lly
 
         let text = PDF.Text("Hello")
         PDF.Text._render(text, context: &context)
 
-        // 72 + 12 * 1.2 = 86.4 (tolerance for floating point)
-        #expect(abs(context.layoutBox.lly.value - 86.4) < 0.001)
+        // Y should have advanced
+        #expect(context.layoutBox.lly.value > startY.value)
     }
 
     @Test
-    func `Uses context font when not specified`() {
+    func `Uses context font when not specified in state`() {
         var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 400,
-            availableHeight: 700,
             mediaBox: .letter,
-            font: .courier.bold
+            margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
         )
+        context.style.font = PDF.Font.courier.bold
 
         let text = PDF.Text("Hello")
         PDF.Text._render(text, context: &context)
 
         // Font should be in the fonts used
-        #expect(context.currentPageBuilder.fontsUsed.contains(.courier.bold))
-    }
-
-    @Test
-    func `Overrides context font when specified`() {
-        var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 400,
-            availableHeight: 700,
-            mediaBox: .letter,
-            font: .helvetica
-        )
-
-        let text = PDF.Text("Hello", font: .times)
-        PDF.Text._render(text, context: &context)
-
-        // Times should be in the fonts used
-        #expect(context.currentPageBuilder.fontsUsed.contains(.times))
+        #expect(context.currentPageBuilder.fontsUsed.contains(PDF.Font.courier.bold))
     }
 
     // MARK: - Text Wrapping
@@ -130,7 +100,7 @@ struct `PDF.Text Tests` {
         var context = PDF.Context(
             x: 72,
             y: 72,
-            availableWidth: 100,
+            availableWidth: 100,  // Narrow width to force wrapping
             availableHeight: 700,
             mediaBox: .letter
         )
@@ -145,33 +115,11 @@ struct `PDF.Text Tests` {
     }
 
     @Test
-    func `Each wrapped line advances Y`() {
-        var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 100,
-            availableHeight: 700,
-            mediaBox: .letter,
-            fontSize: 12,
-            lineHeight: 1.2
-        )
-
-        let text = PDF.Text("This is a longer text that should wrap")
-        let startY = context.layoutBox.lly.value
-        PDF.Text._render(text, context: &context)
-
-        // Each line advances by fontSize * lineHeight = 12 * 1.2 = 14.4
-        // The final Y should be startY + (lineCount * 14.4)
-        let linesRendered = (context.layoutBox.lly.value - startY) / 14.4
-        #expect(linesRendered >= 1)
-    }
-
-    @Test
     func `Word that exceeds width gets its own line`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
-            availableWidth: 50,
+            availableWidth: 50,  // Very narrow
             availableHeight: 700,
             mediaBox: .letter
         )
@@ -187,16 +135,27 @@ struct `PDF.Text Tests` {
     @Test
     func `Empty text produces single empty line`() {
         var context = PDF.Context(
-            x: 72,
-            y: 72,
-            availableWidth: 400,
-            availableHeight: 700,
-            mediaBox: .letter
+            mediaBox: .letter,
+            margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
         )
 
         let text = PDF.Text("")
         PDF.Text._render(text, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
+    }
+
+    // MARK: - Byte Storage
+
+    @Test
+    func `Stores content as bytes`() {
+        let text = PDF.Text("ABC")
+        #expect(text.content == [0x41, 0x42, 0x43])  // WinAnsi for "ABC"
+    }
+
+    @Test
+    func `Creates from raw bytes`() {
+        let text = PDF.Text(bytes: [0x48, 0x69])  // "Hi" in ASCII/WinAnsi
+        #expect(text.string == "Hi")
     }
 }

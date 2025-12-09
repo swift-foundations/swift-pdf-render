@@ -13,21 +13,16 @@ extension PDF.Text: PDF.View {
         fatalError("PDF.Text is a leaf view")
     }
 
-    public static func _render(_ view: Self, context: inout PDF.Context) {
-        // Resolve style: view's partial style combined with context's resolved style
-        let effectiveStyle = PDF.Context.Style(context.style).combined(with: view.style).resolved()
-        let effectiveFont = effectiveStyle.font
-        let effectiveSize = effectiveStyle.fontSize
-        let effectiveColor = effectiveStyle.color
-
-        // Encode text to WinAnsi bytes at the boundary
-        let bytes = [UInt8](winAnsi: view.text, withFallback: true)
+    public static func _render(_ text: Self, context: inout PDF.Context) {
+        // Get font and size from text state, falling back to context defaults
+        let font = text.state.font.flatMap { context.fontRegistry[$0.name] } ?? context.style.font
+        let fontSize = text.state.fontSize ?? context.style.fontSize
 
         // Word wrap the bytes
         let lines = wrapBytes(
-            bytes,
-            font: effectiveFont,
-            size: effectiveSize,
+            text.content,
+            font: font,
+            size: fontSize,
             maxWidth: context.layoutBox.width
         )
 
@@ -38,15 +33,15 @@ extension PDF.Text: PDF.View {
             // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
-            let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + effectiveFont.metrics.ascender(atSize: effectiveSize))
+            let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + font.metrics.ascender(atSize: fontSize))
 
             // Emit bytes directly to content stream
             context.emitText(
                 line,
                 at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
-                font: effectiveFont,
-                size: effectiveSize,
-                color: effectiveColor
+                font: font,
+                size: fontSize,
+                color: context.style.color
             )
 
             context.advanceLine()

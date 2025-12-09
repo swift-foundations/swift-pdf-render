@@ -1,14 +1,15 @@
-// PDF.Text.Run.swift
+// PDF.Context.TextRun.swift
 
 public import PDF_Standard
+import INCITS_4_1986
 
-extension PDF.Text {
+extension PDF.Context {
     /// A styled text segment for inline text flow.
     ///
-    /// Text.Runs accumulate in the context and are rendered together
+    /// TextRuns accumulate in the context and are rendered together
     /// when a block element flushes them, enabling proper inline flow
     /// with mixed styling (e.g., "It supports **bold** and *italic* text.").
-    public struct Run: Sendable {
+    public struct TextRun: Sendable {
         /// The text content as WinAnsi-encoded bytes
         public let bytes: [UInt8]
 
@@ -80,7 +81,7 @@ extension PDF.Text {
         /// 3. Emits content directly to context's content stream
         /// 4. Handles page breaks automatically when lines exceed page boundary
         public static func renderRuns(
-            _ runs: [PDF.Text.Run],
+            _ runs: [PDF.Context.TextRun],
             context: inout PDF.Context
         ) {
             guard !runs.isEmpty else { return }
@@ -90,7 +91,7 @@ extension PDF.Text {
             guard !tokens.isEmpty else { return }
 
             // Build lines from tokens
-            let lines = buildLines(tokens: tokens, maxWidth: context.layoutBox.width)
+            let lines = buildLines(tokens, maxWidth: context.layoutBox.width)
 
             // Render lines with pagination support
             var isFirstLine = true
@@ -101,10 +102,9 @@ extension PDF.Text {
 
                 // Emit pending list marker on the first line
                 if isFirstLine, let pending = context.pendingListMarker {
-                    // Calculate baseline Y for the marker using line box model (CSS half-leading)
+                    // Calculate baseline Y for the marker using half-leading model
                     // This ensures the marker aligns with text that is centered within its line box.
-                    let lineBox = context.style.lineBox
-                    let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + lineBox.baselineOffset)
+                    let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + context.style.baselineOffset)
 
                     // For circle/square markers, we need font metrics for x-height positioning
                     let baseFont = context.style.font
@@ -154,26 +154,29 @@ extension PDF.Text {
                             stroke: nil
                         )
 
-                    case .filledSquare(let rect):
+                    case .filledSquare(let square):
                         // Position square vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let squareYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2) - rect.height.value / ISO_32000.UserSpace.Unit(2)
+                        let squareSize = square.width.value  // Square has equal width/height
+                        let squareYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2) - squareSize / ISO_32000.UserSpace.Unit(2)
                         let squareY = PDF.UserSpace.Y(squareYValue)
-                        let squareRect = PDF.UserSpace.Rectangle(
+                        let rect = PDF.UserSpace.Rectangle(
                             x: pending.x,
                             y: squareY,
-                            width: .init(rect.width.value),
-                            height: .init(rect.height.value)
+                            width: square.width,
+                            height: square.height
                         )
-                        context.emitRectangle(squareRect, fill: context.style.color, stroke: nil)
+                        context.emitRectangle(rect, fill: context.style.color, stroke: nil)
                     }
 
                     context.pendingListMarker = nil
                     isFirstLine = false
                 }
 
-                // Render the line directly to context
+                // Render line content
                 renderLine(line, context: &context)
+
+                // Advance to next line
                 context.advanceLine()
             }
         }
@@ -182,158 +185,157 @@ extension PDF.Text {
 
 // MARK: - Tokenization
 
-extension PDF.Text.Run {
-    /// A styled token (word, whitespace, or line break)
+extension PDF.Context.TextRun {
+    /// Token representing a word or space with its styling
     struct Token: Sendable {
-        enum Kind: Sendable {
-            case word([UInt8])
-            case space
-            case lineBreak  // Explicit line break for preformatted text
-        }
-
-        let kind: Kind
+        let bytes: [UInt8]
         let font: PDF.Font
         let fontSize: PDF.UserSpace.Unit
         let color: PDF.Color
         let textDecoration: PDF.TextMarkup?
         let verticalOffset: PDF.UserSpace.Unit
         let linkURL: String?
+        let isWhitespace: Bool
+        let isNewline: Bool
+        let isTab: Bool
 
-        var width: PDF.UserSpace.Width {
-            switch kind {
-            case .word(let bytes):
-                return PDF.UserSpace.Width(font.winAnsi.width(of: bytes, atSize: fontSize))
-            case .space:
-                return PDF.UserSpace.Width(font.winAnsi.width(of: [.ascii.space], atSize: fontSize))
-            case .lineBreak:
-                return 0  // Line breaks have no width
-            }
-        }
-
-        var bytes: [UInt8] {
-            switch kind {
-            case .word(let bytes): return bytes
-            case .space: return [.ascii.space]
-            case .lineBreak: return []
-            }
+        var width: PDF.UserSpace.Unit {
+            font.winAnsi.width(of: bytes, atSize: fontSize)
         }
     }
 
-    /// Tokenize runs into styled words and spaces
-    ///
-    /// - Parameters:
-    ///   - runs: Text runs to tokenize
-    ///   - preserveWhitespace: If true, preserves newlines as explicit line breaks
-    ///     and doesn't collapse multiple spaces. Used for `<pre>` blocks.
-    static func tokenize(_ runs: [PDF.Text.Run], preserveWhitespace: Bool = false) -> [Token] {
+    /// Tokenize runs into words with styling
+    static func tokenize(_ runs: [PDF.Context.TextRun], preserveWhitespace: Bool = false) -> [Token] {
         var tokens: [Token] = []
 
         for run in runs {
-            // Handle empty bytes
-            if run.bytes.isEmpty { continue }
-
-            // Track current word being built
             var currentWord: [UInt8] = []
 
             for byte in run.bytes {
-                if preserveWhitespace {
-                    // Preformatted mode: preserve structure
-                    if byte == .ascii.lf {
-                        // Flush current word if any
-                        if !currentWord.isEmpty {
-                            tokens.append(Token(
-                                kind: .word(currentWord),
-                                font: run.font,
-                                fontSize: run.fontSize,
-                                color: run.color,
-                                textDecoration: run.textDecoration,
-                                verticalOffset: run.verticalOffset,
-                                linkURL: run.linkURL
-                            ))
-                            currentWord = []
-                        }
-                        // Add explicit line break
+                if byte == .ascii.newline {
+                    // Flush current word
+                    if !currentWord.isEmpty {
                         tokens.append(Token(
-                            kind: .lineBreak,
+                            bytes: currentWord,
                             font: run.font,
                             fontSize: run.fontSize,
                             color: run.color,
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
-                            linkURL: run.linkURL
+                            linkURL: run.linkURL,
+                            isWhitespace: false,
+                            isNewline: false,
+                            isTab: false
                         ))
-                    } else if byte == .ascii.space || byte == .ascii.htab {
-                        // In preformatted mode, each space/tab is its own token
-                        if !currentWord.isEmpty {
-                            tokens.append(Token(
-                                kind: .word(currentWord),
-                                font: run.font,
-                                fontSize: run.fontSize,
-                                color: run.color,
-                                textDecoration: run.textDecoration,
-                                verticalOffset: run.verticalOffset,
-                                linkURL: run.linkURL
-                            ))
-                            currentWord = []
-                        }
-                        // Use tab as 4 spaces worth of width
-                        let spaceBytes: [UInt8] = byte == .ascii.htab
-                            ? [.ascii.space, .ascii.space, .ascii.space, .ascii.space]
-                            : [.ascii.space]
+                        currentWord = []
+                    }
+                    // Add newline token
+                    tokens.append(Token(
+                        bytes: [],
+                        font: run.font,
+                        fontSize: run.fontSize,
+                        color: run.color,
+                        textDecoration: run.textDecoration,
+                        verticalOffset: run.verticalOffset,
+                        linkURL: run.linkURL,
+                        isWhitespace: true,
+                        isNewline: true,
+                        isTab: false
+                    ))
+                } else if byte == .ascii.htab {
+                    // Flush current word
+                    if !currentWord.isEmpty {
                         tokens.append(Token(
-                            kind: .word(spaceBytes),
+                            bytes: currentWord,
                             font: run.font,
                             fontSize: run.fontSize,
                             color: run.color,
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
-                            linkURL: run.linkURL
+                            linkURL: run.linkURL,
+                            isWhitespace: false,
+                            isNewline: false,
+                            isTab: false
+                        ))
+                        currentWord = []
+                    }
+                    // Add tab token
+                    tokens.append(Token(
+                        bytes: [],
+                        font: run.font,
+                        fontSize: run.fontSize,
+                        color: run.color,
+                        textDecoration: run.textDecoration,
+                        verticalOffset: run.verticalOffset,
+                        linkURL: run.linkURL,
+                        isWhitespace: true,
+                        isNewline: false,
+                        isTab: true
+                    ))
+                } else if byte == .ascii.space {
+                    // Flush current word
+                    if !currentWord.isEmpty {
+                        tokens.append(Token(
+                            bytes: currentWord,
+                            font: run.font,
+                            fontSize: run.fontSize,
+                            color: run.color,
+                            textDecoration: run.textDecoration,
+                            verticalOffset: run.verticalOffset,
+                            linkURL: run.linkURL,
+                            isWhitespace: false,
+                            isNewline: false,
+                            isTab: false
+                        ))
+                        currentWord = []
+                    }
+                    // Add space token (preserve for inline flow)
+                    if preserveWhitespace {
+                        tokens.append(Token(
+                            bytes: [.ascii.space],
+                            font: run.font,
+                            fontSize: run.fontSize,
+                            color: run.color,
+                            textDecoration: run.textDecoration,
+                            verticalOffset: run.verticalOffset,
+                            linkURL: run.linkURL,
+                            isWhitespace: true,
+                            isNewline: false,
+                            isTab: false
                         ))
                     } else {
-                        currentWord.append(byte)
+                        // Mark space but don't include bytes (will be added during line building)
+                        tokens.append(Token(
+                            bytes: [],
+                            font: run.font,
+                            fontSize: run.fontSize,
+                            color: run.color,
+                            textDecoration: run.textDecoration,
+                            verticalOffset: run.verticalOffset,
+                            linkURL: run.linkURL,
+                            isWhitespace: true,
+                            isNewline: false,
+                            isTab: false
+                        ))
                     }
                 } else {
-                    // Normal mode: collapse whitespace
-                    if byte == .ascii.space || byte == .ascii.htab || byte == .ascii.lf || byte == .ascii.cr {
-                        // Flush current word if any
-                        if !currentWord.isEmpty {
-                            tokens.append(Token(
-                                kind: .word(currentWord),
-                                font: run.font,
-                                fontSize: run.fontSize,
-                                color: run.color,
-                                textDecoration: run.textDecoration,
-                                verticalOffset: run.verticalOffset,
-                                linkURL: run.linkURL
-                            ))
-                            currentWord = []
-                        }
-                        // Add space token
-                        tokens.append(Token(
-                            kind: .space,
-                            font: run.font,
-                            fontSize: run.fontSize,
-                            color: run.color,
-                            textDecoration: run.textDecoration,
-                            verticalOffset: run.verticalOffset,
-                            linkURL: run.linkURL
-                        ))
-                    } else {
-                        currentWord.append(byte)
-                    }
+                    currentWord.append(byte)
                 }
             }
 
             // Flush remaining word
             if !currentWord.isEmpty {
                 tokens.append(Token(
-                    kind: .word(currentWord),
+                    bytes: currentWord,
                     font: run.font,
                     fontSize: run.fontSize,
                     color: run.color,
                     textDecoration: run.textDecoration,
                     verticalOffset: run.verticalOffset,
-                    linkURL: run.linkURL
+                    linkURL: run.linkURL,
+                    isWhitespace: false,
+                    isNewline: false,
+                    isTab: false
                 ))
             }
         }
@@ -344,74 +346,84 @@ extension PDF.Text.Run {
 
 // MARK: - Line Building
 
-extension PDF.Text.Run {
-    /// A line of tokens
+extension PDF.Context.TextRun {
+    /// A line of tokens ready for rendering
     struct Line: Sendable {
         var tokens: [Token]
 
-        var isEmpty: Bool { tokens.isEmpty }
-
-        var width: PDF.UserSpace.Width {
-            PDF.UserSpace.Width(PDF.UserSpace.Unit(tokens.reduce(0.0) { $0 + $1.width.value }))
-        }
-
-        /// Tokens with trailing spaces removed
+        /// Get tokens without trailing whitespace
         var trimmedTokens: [Token] {
             var result = tokens
-            while let last = result.last, case .space = last.kind {
+            while let last = result.last, last.isWhitespace {
                 result.removeLast()
             }
             return result
         }
     }
 
-    /// Build lines from tokens respecting max width
-    static func buildLines(tokens: [Token], maxWidth: PDF.UserSpace.Width) -> [Line] {
+    /// Build lines from tokens
+    static func buildLines(_ tokens: [Token], maxWidth: PDF.UserSpace.Width) -> [Line] {
         var lines: [Line] = []
         var currentLine = Line(tokens: [])
-        var currentWidth: PDF.UserSpace.Width = 0
+        var currentWidth: PDF.UserSpace.Unit = 0
+        var lastWasWhitespace = true  // Start true to skip leading whitespace
 
         for token in tokens {
-            let tokenWidth = token.width
-
-            switch token.kind {
-            case .word:
-                if currentLine.isEmpty {
-                    // First word on line - always add it
-                    currentLine.tokens.append(token)
-                    currentWidth = tokenWidth
-                } else if currentWidth.value + tokenWidth.value <= maxWidth.value {
-                    // Word fits on current line
-                    currentLine.tokens.append(token)
-                    currentWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(currentWidth.value + tokenWidth.value))
-                } else {
-                    // Word doesn't fit - start new line
-                    lines.append(currentLine)
-                    currentLine = Line(tokens: [token])
-                    currentWidth = tokenWidth
-                }
-
-            case .space:
-                if !currentLine.isEmpty {
-                    // Only add space if we have content and it might fit
-                    if currentWidth.value + tokenWidth.value <= maxWidth.value {
-                        currentLine.tokens.append(token)
-                        currentWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(currentWidth.value + tokenWidth.value))
-                    }
-                    // Otherwise skip the space (will start new line on next word)
-                }
-
-            case .lineBreak:
-                // Explicit line break - finish current line and start new one
-                // Add current line even if empty (to preserve blank lines in preformatted text)
+            // Handle newlines
+            if token.isNewline {
                 lines.append(currentLine)
                 currentLine = Line(tokens: [])
                 currentWidth = 0
+                lastWasWhitespace = true
+                continue
             }
+
+            // Handle tabs (convert to spaces for now)
+            if token.isTab {
+                let tabWidth = token.font.winAnsi.width(of: [.ascii.space, .ascii.space, .ascii.space, .ascii.space], atSize: token.fontSize)
+                if currentWidth + tabWidth <= maxWidth.value {
+                    currentLine.tokens.append(token)
+                    currentWidth = currentWidth + tabWidth
+                }
+                lastWasWhitespace = true
+                continue
+            }
+
+            // Handle regular whitespace
+            if token.isWhitespace {
+                if !lastWasWhitespace && !currentLine.tokens.isEmpty {
+                    // Add space only between words
+                    currentLine.tokens.append(token)
+                    currentWidth = currentWidth + token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+                }
+                lastWasWhitespace = true
+                continue
+            }
+
+            // Handle words
+            let wordWidth = token.width
+
+            // Check if word fits on current line
+            if currentLine.tokens.isEmpty {
+                // First word on line - always add it even if it exceeds width
+                currentLine.tokens.append(token)
+                currentWidth = wordWidth
+            } else if currentWidth + wordWidth <= maxWidth.value {
+                // Word fits
+                currentLine.tokens.append(token)
+                currentWidth = currentWidth + wordWidth
+            } else {
+                // Word doesn't fit - start new line
+                lines.append(currentLine)
+                currentLine = Line(tokens: [token])
+                currentWidth = wordWidth
+            }
+
+            lastWasWhitespace = false
         }
 
-        // Add remaining line if not empty
-        if !currentLine.isEmpty {
+        // Add final line if non-empty
+        if !currentLine.tokens.isEmpty {
             lines.append(currentLine)
         }
 
@@ -421,7 +433,7 @@ extension PDF.Text.Run {
 
 // MARK: - Line Rendering
 
-extension PDF.Text.Run {
+extension PDF.Context.TextRun {
     /// Render a single line of tokens directly to context.
     static func renderLine(_ line: Line, context: inout PDF.Context) {
         var currentX = context.layoutBox.llx
@@ -429,12 +441,11 @@ extension PDF.Text.Run {
         // Use trimmed tokens to avoid trailing spaces
         let tokens = line.trimmedTokens
 
-        // Calculate line baseline using line box model (CSS half-leading)
+        // Calculate line baseline using half-leading model
         // This ensures symmetric spacing above and below text within the line box.
         // The baselineOffset includes halfLeading + ascender, positioning text
         // centered within the line height rather than anchored at the top.
-        let lineBox = context.style.lineBox
-        let lineBaselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + lineBox.baselineOffset)
+        let lineBaselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + context.style.baselineOffset)
 
         // Group consecutive tokens with same styling
         var currentSegment: [UInt8] = []
@@ -478,79 +489,88 @@ extension PDF.Text.Run {
 
             // Draw text decoration if present (underline, strikethrough)
             if let decoration = currentDecoration {
-                let lineY: PDF.UserSpace.Y
                 switch decoration {
                 case .underline:
-                    lineY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value + size.value * 0.15))  // Below baseline (positive = down)
+                    // Position underline slightly below baseline
+                    let underlineY = PDF.UserSpace.Y(textY.value + size * 0.15)
+                    context.emitLine(
+                        from: PDF.UserSpace.Coordinate(x: segmentStartX, y: underlineY),
+                        to: PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(segmentStartX.value + segmentWidth.value), y: underlineY),
+                        color: color,
+                        width: .init(max(0.5, size.value * 0.05))
+                    )
+
                 case .strikeout:
-                    // Position at half the x-height (middle of lowercase letters)
-                    let xHeightHalf = font.metrics.xHeight(atSize: size).value / 2.0
-                    lineY = PDF.UserSpace.Y(textY.value - .init(xHeightHalf))
+                    // Position strikethrough at middle of x-height
+                    let strikeY = PDF.UserSpace.Y(textY.value - font.metrics.xHeight(atSize: size) / ISO_32000.UserSpace.Unit(2))
+                    context.emitLine(
+                        from: PDF.UserSpace.Coordinate(x: segmentStartX, y: strikeY),
+                        to: PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(segmentStartX.value + segmentWidth.value), y: strikeY),
+                        color: color,
+                        width: .init(max(0.5, size.value * 0.05))
+                    )
+
                 case .highlight:
-                    return  // Already drawn above, no line needed
+                    // Already handled above
+                    break
                 case .jagged:
-                    fatalError("unimplemented")
+                    break
                 }
-
-                let startPoint = PDF.UserSpace.Coordinate(x: segmentStartX, y: lineY)
-                let endPoint = PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(PDF.UserSpace.Unit(segmentStartX.value + segmentWidth.value)), y: lineY)
-                // WebKit uses approximately 1px line thickness, which at 72dpi is about 0.07-0.08 of font size
-                let lineWidth = PDF.UserSpace.Width(PDF.UserSpace.Unit(size.value * 0.07))
-                let minLineWidth: PDF.UserSpace.Width = 0.75
-                let effectiveLineWidth = lineWidth.value > minLineWidth.value ? lineWidth : minLineWidth
-
-                context.emitLine(
-                    from: startPoint,
-                    to: endPoint,
-                    color: color,
-                    width: effectiveLineWidth
-                )
             }
 
-            // Add link annotation if this segment has a URL
+            // Add link annotation if present
             if let url = currentLinkURL {
+                // Create link rect covering the text
                 let linkRect = PDF.UserSpace.Rectangle(
                     x: segmentStartX,
-                    y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
+                    y: PDF.UserSpace.Y(textY.value - size * 0.85),
                     width: segmentWidth,
-                    height: PDF.UserSpace.Height(size.value * 1.15)
+                    height: PDF.UserSpace.Height(size * 1.15)
                 )
                 context.addLinkAnnotation(rect: linkRect, uri: url)
             }
 
+            // Advance X position
+            currentX = PDF.UserSpace.X(segmentStartX.value + segmentWidth.value)
             currentSegment = []
         }
 
         for token in tokens {
-            let sameStyle = token.font == currentFont &&
-            token.fontSize == currentSize &&
-            token.color == currentColor &&
-            token.textDecoration == currentDecoration &&
-            token.verticalOffset == currentVerticalOffset &&
-            token.linkURL == currentLinkURL
-
-            if sameStyle {
-                // Same style - append to current segment
-                currentSegment.append(contentsOf: token.bytes)
-            } else {
-                // Style changed - flush previous segment
+            // Handle whitespace
+            if token.isWhitespace {
                 flushSegment()
-
-                // Start new segment
+                let spaceWidth = token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+                currentX = PDF.UserSpace.X(currentX.value + spaceWidth)
                 segmentStartX = currentX
-                currentSegment = token.bytes
+                continue
+            }
+
+            // Check if styling changed
+            let stylingChanged = (
+                currentFont != token.font ||
+                currentSize != token.fontSize ||
+                currentColor != token.color ||
+                currentDecoration != token.textDecoration ||
+                currentVerticalOffset != token.verticalOffset ||
+                currentLinkURL != token.linkURL
+            )
+
+            if stylingChanged {
+                flushSegment()
                 currentFont = token.font
                 currentSize = token.fontSize
                 currentColor = token.color
                 currentDecoration = token.textDecoration
                 currentVerticalOffset = token.verticalOffset
                 currentLinkURL = token.linkURL
+                segmentStartX = currentX
             }
 
-            currentX = PDF.UserSpace.X(PDF.UserSpace.Unit(currentX.value + token.width.value))
+            // Add token bytes to current segment
+            currentSegment.append(contentsOf: token.bytes)
         }
 
-        // Flush remaining segment
+        // Flush final segment
         flushSegment()
     }
 }

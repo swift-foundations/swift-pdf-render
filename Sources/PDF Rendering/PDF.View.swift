@@ -22,9 +22,9 @@ extension PDF {
     /// struct MyDocument: PDF.View {
     ///     var body: some PDF.View {
     ///         PDF.VStack(spacing: 12) {
-    ///             PDF.Text("Hello, World!", fontSize: 24)
+    ///             PDF.Text("Hello, World!")
     ///             PDF.Divider()
-    ///             PDF.Text("This is a paragraph of text that will wrap automatically.")
+    ///             PDF.Text("This is a paragraph of text.")
     ///         }
     ///     }
     /// }

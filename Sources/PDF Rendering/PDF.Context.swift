@@ -34,21 +34,30 @@ extension PDF {
     /// ```
     public struct Context: Sendable {
         // MARK: - Categorical Primitives
-        
+
         /// The layout box (position + available size).
         ///
         /// Forms a bounded lattice under intersection.
         public var layoutBox: PDF.UserSpace.Rectangle
-        
+
         /// Resolved text style.
         ///
         /// Forms a monoid under combination.
         public var style: Style.Resolved
-        
+
         /// Graphics state stack for save/restore operations.
         ///
         /// Mirrors ISO 32000's q/Q operators.
         public var graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
+
+        /// Font registry mapping font reference names to Font objects.
+        ///
+        /// Per ISO 32000-2:2020 Section 9.3, `Text.State.font` stores only a
+        /// `Font.Reference` (the resource name like "F1"). The registry provides
+        /// lookup from that name to the full `Font` object with metrics.
+        ///
+        /// This is populated when fonts are set via `style.font`.
+        public var fontRegistry: [String: PDF.Font] = [:]
         
         // MARK: - Inline Text Flow
         
@@ -56,7 +65,7 @@ extension PDF {
         ///
         /// Block elements flush this buffer to render accumulated inline content
         /// as a single wrapped unit. Inline elements append without rendering.
-        public var inlineRuns: [PDF.Text.Run] = []
+        public var inlineRuns: [PDF.Context.TextRun] = []
         
         // MARK: - List State
 
@@ -196,16 +205,16 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Append a text run to the inline buffer.
-    public mutating func append(inline run: PDF.Text.Run) {
+    public mutating func append(inline run: PDF.Context.TextRun) {
         inlineRuns.append(run)
     }
-    
+
     /// Flush accumulated inline runs, rendering them as a wrapped block.
     public mutating func flushInlineRuns() {
         guard !inlineRuns.isEmpty else { return }
         let runs = inlineRuns
         inlineRuns = []
-        PDF.Text.Run.renderRuns(runs, context: &self)
+        PDF.Context.TextRun.renderRuns(runs, context: &self)
     }
     
     /// Check if there are pending inline runs.
