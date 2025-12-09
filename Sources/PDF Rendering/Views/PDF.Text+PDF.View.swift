@@ -19,25 +19,28 @@ extension PDF.Text: PDF.View {
         let effectiveFont = effectiveStyle.font
         let effectiveSize = effectiveStyle.fontSize
         let effectiveColor = effectiveStyle.color
-        
-        // Word wrap the text
-        let lines = wrapText(
-            view.text,
+
+        // Encode text to WinAnsi bytes at the boundary
+        let bytes = [UInt8](winAnsi: view.text, withFallback: true)
+
+        // Word wrap the bytes
+        let lines = wrapBytes(
+            bytes,
             font: effectiveFont,
             size: effectiveSize,
             maxWidth: context.layoutBox.width
         )
-        
+
         for line in lines {
             // Check for page break before each line
             context.checkPageBreak(needing: context.style.lineHeightPoints)
-            
+
             // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
             let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + effectiveFont.metrics.ascender(atSize: effectiveSize))
-            
-            // Emit text directly to content stream
+
+            // Emit bytes directly to content stream
             context.emitText(
                 line,
                 at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
@@ -45,50 +48,69 @@ extension PDF.Text: PDF.View {
                 size: effectiveSize,
                 color: effectiveColor
             )
-            
+
             context.advanceLine()
         }
     }
-    
-    /// Wrap text to fit within max width
-    private static func wrapText(
-        _ text: String,
+
+    /// Wrap bytes to fit within max width
+    private static func wrapBytes(
+        _ bytes: [UInt8],
         font: PDF.Font,
         size: PDF.UserSpace.Unit,
         maxWidth: PDF.UserSpace.Width
-    ) -> [String] {
-        let words = text.split(separator: " ", omittingEmptySubsequences: false)
-        var lines: [String] = []
-        var currentLine = ""
-        let spaceWidth = PDF.UserSpace.Width(font.stringWidth(" ", atSize: size))
-        
+    ) -> [[UInt8]] {
+        // Split bytes on spaces
+        var words: [[UInt8]] = []
+        var currentWord: [UInt8] = []
+
+        for byte in bytes {
+            if byte == .ascii.space {
+                if !currentWord.isEmpty {
+                    words.append(currentWord)
+                    currentWord = []
+                }
+                // Add empty word for consecutive spaces
+                words.append([])
+            } else {
+                currentWord.append(byte)
+            }
+        }
+        if !currentWord.isEmpty {
+            words.append(currentWord)
+        }
+
+        var lines: [[UInt8]] = []
+        var currentLine: [UInt8] = []
+        let spaceWidth = font.winAnsi.width(of: [.ascii.space], atSize: size)
+
         for word in words {
-            let wordString = String(word)
-            let wordWidth = PDF.UserSpace.Width(font.stringWidth(wordString, atSize: size))
-            
+            let wordWidth = font.winAnsi.width(of: word, atSize: size)
+
             if currentLine.isEmpty {
-                if wordWidth.value > maxWidth.value {
-                    lines.append(wordString)
+                if wordWidth > maxWidth.value {
+                    lines.append(word)
                 } else {
-                    currentLine = wordString
+                    currentLine = word
                 }
             } else {
-                let lineWidth = PDF.UserSpace.Width(font.stringWidth(currentLine, atSize: size))
-                let potentialWidth = PDF.UserSpace.Width(lineWidth.value + spaceWidth.value + wordWidth.value)
-                
-                if potentialWidth.value <= maxWidth.value {
-                    currentLine += " " + wordString
+                let lineWidth = font.winAnsi.width(of: currentLine, atSize: size)
+                let potentialWidth = lineWidth + spaceWidth + wordWidth
+
+                if potentialWidth <= maxWidth.value {
+                    currentLine.append(.ascii.space)
+                    currentLine.append(contentsOf: word)
                 } else {
                     lines.append(currentLine)
-                    currentLine = wordString
+                    currentLine = word
                 }
             }
         }
-        
+
         if !currentLine.isEmpty {
             lines.append(currentLine)
         }
-        
-        return lines.isEmpty ? [""] : lines
+
+        return lines.isEmpty ? [[]] : lines
     }
 }

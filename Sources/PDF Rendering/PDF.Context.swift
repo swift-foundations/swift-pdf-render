@@ -64,8 +64,8 @@ extension PDF {
         public var listStack: [(type: ListType, currentIndex: Int)] = []
 
         /// Pending list marker to be rendered with the first line of text.
-        /// Stores the marker string and the X position where it should be rendered.
-        public var pendingListMarker: (marker: String, x: PDF.UserSpace.X)? = nil
+        /// Stores the marker as WinAnsi-encoded bytes and the X position where it should be rendered.
+        public var pendingListMarker: (markerBytes: [UInt8], x: PDF.UserSpace.X)? = nil
         
         // MARK: - Modes
         
@@ -234,15 +234,16 @@ extension PDF.Context {
         _ = listStack.popLast()
     }
     
-    /// Get the next list marker and advance the counter.
+    /// Get the next list marker (WinAnsi-encoded) and advance the counter.
     ///
-    /// For unordered lists, approximates WebKit/CSS default markers using
-    /// characters available in WinAnsiEncoding (PDF Standard 14 fonts):
-    /// - Level 1: disc (filled circle) `•` (U+2022)
-    /// - Level 2: circle → middle dot `·` (U+00B7) as approximation
-    /// - Level 3+: square → en-dash `–` (U+2013) as approximation
-    public mutating func nextListMarker() -> String {
-        guard !listStack.isEmpty else { return "\u{2022}" }  // bullet
+    /// Returns bytes that can be directly emitted to PDF content stream.
+    ///
+    /// For unordered lists (approximates WebKit/CSS default markers):
+    /// - Level 1: bullet • (0x95)
+    /// - Level 2: middle dot · (0xB7)
+    /// - Level 3+: en-dash – (0x96)
+    public mutating func nextListMarker() -> [UInt8] {
+        guard !listStack.isEmpty else { return [UInt8.WinAnsi.bullet] }
         let index = listStack.count - 1
         switch listStack[index].type {
         case .unordered:
@@ -251,19 +252,20 @@ extension PDF.Context {
                 if case .unordered = $0.type { return true }
                 return false
             }.count
-            // Approximate WebKit markers using WinAnsiEncoding-compatible chars
+            // WinAnsiEncoding bytes for list markers (ISO 32000-2 Annex D)
             switch unorderedDepth {
             case 1:
-                return "\u{2022}"  // bullet •
+                return [UInt8.WinAnsi.bullet]         // • (disc)
             case 2:
-                return "\u{00B0}"  // degree ° (approximates open circle)
+                return [UInt8.WinAnsi.periodcentered] // · (circle approximation)
             default:
-                return "\u{2013}"  // en-dash – (approximates square)
+                return [UInt8.WinAnsi.endash]         // – (square approximation)
             }
         case .ordered:
             let num = listStack[index].currentIndex
             listStack[index].currentIndex += 1
-            return "\(num)."
+            // WinAnsi encoding for ordered list numbers
+            return [UInt8](winAnsi: "\(num).", withFallback: true)
         }
     }
 }
@@ -367,22 +369,22 @@ extension PDF.Context {
         PDF.UserSpace.Y(pageHeight.value - y.value)
     }
     
-    /// Emit a text string at a position.
+    /// Emit WinAnsi-encoded bytes at a position.
     ///
     /// Handles coordinate conversion and font/color setup.
     public mutating func emitText(
-        _ text: String,
+        _ bytes: [UInt8],
         at position: PDF.UserSpace.Coordinate,
         font: PDF.Font,
         size: PDF.UserSpace.Unit,
         color: PDF.Color
     ) {
         guard !measurementMode else { return }
-        
+
         let pdfY = convertY(position.y)
-        
+
         currentPageBuilder.beginText()
-        
+
         // Set color
         switch color {
         case .gray(let g):
@@ -392,11 +394,24 @@ extension PDF.Context {
         case .cmyk(let c, let m, let y, let k):
             currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
         }
-        
+
         currentPageBuilder.setFont(font, size: size)
         currentPageBuilder.moveText(x: position.x, y: pdfY)
-        currentPageBuilder.showText(text)
+        currentPageBuilder.showText(bytes)
         currentPageBuilder.endText()
+    }
+
+    /// Emit a text string at a position (encodes to WinAnsi).
+    ///
+    /// Convenience overload that encodes the string to WinAnsi bytes.
+    public mutating func emitText(
+        _ text: String,
+        at position: PDF.UserSpace.Coordinate,
+        font: PDF.Font,
+        size: PDF.UserSpace.Unit,
+        color: PDF.Color
+    ) {
+        emitText([UInt8](winAnsi: text, withFallback: true), at: position, font: font, size: size, color: color)
     }
     
     /// Emit a line.
