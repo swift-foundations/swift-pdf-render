@@ -59,9 +59,13 @@ extension PDF {
         public var inlineRuns: [PDF.Text.Run] = []
         
         // MARK: - List State
-        
+
         /// Stack of active lists (for nested list support).
         public var listStack: [(type: ListType, currentIndex: Int)] = []
+
+        /// Pending list marker to be rendered with the first line of text.
+        /// Stores the marker string and the X position where it should be rendered.
+        public var pendingListMarker: (marker: String, x: PDF.UserSpace.X)? = nil
         
         // MARK: - Modes
         
@@ -231,12 +235,31 @@ extension PDF.Context {
     }
     
     /// Get the next list marker and advance the counter.
+    ///
+    /// For unordered lists, approximates WebKit/CSS default markers using
+    /// characters available in WinAnsiEncoding (PDF Standard 14 fonts):
+    /// - Level 1: disc (filled circle) `•` (U+2022)
+    /// - Level 2: circle → middle dot `·` (U+00B7) as approximation
+    /// - Level 3+: square → en-dash `–` (U+2013) as approximation
     public mutating func nextListMarker() -> String {
-        guard !listStack.isEmpty else { return "-" }
+        guard !listStack.isEmpty else { return "\u{2022}" }  // bullet
         let index = listStack.count - 1
         switch listStack[index].type {
         case .unordered:
-            return "-"
+            // Count nesting depth of unordered lists only
+            let unorderedDepth = listStack.filter {
+                if case .unordered = $0.type { return true }
+                return false
+            }.count
+            // Approximate WebKit markers using WinAnsiEncoding-compatible chars
+            switch unorderedDepth {
+            case 1:
+                return "\u{2022}"  // bullet •
+            case 2:
+                return "\u{00B0}"  // degree ° (approximates open circle)
+            default:
+                return "\u{2013}"  // en-dash – (approximates square)
+            }
         case .ordered:
             let num = listStack[index].currentIndex
             listStack[index].currentIndex += 1

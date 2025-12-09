@@ -77,10 +77,32 @@ extension PDF.Text {
             let lines = buildLines(tokens: tokens, maxWidth: context.layoutBox.width)
 
             // Render lines with pagination support
+            var isFirstLine = true
             for line in lines {
                 // Check if this line would exceed the page
                 let lineHeight = context.style.lineHeightPoints
                 context.checkPageBreak(needing: lineHeight)
+
+                // Emit pending list marker on the first line
+                if isFirstLine, let pending = context.pendingListMarker {
+                    // Calculate baseline Y for the marker (same as text line)
+                    let baseFont = context.style.font ?? .helvetica
+                    let baseFontSize = context.style.fontSize ?? 12
+                    let baselineY = PDF.UserSpace.Y(
+                        context.layoutBox.lly.value +
+                        baseFont.metrics.ascender(atSize: baseFontSize)
+                    )
+
+                    context.emitText(
+                        pending.marker,
+                        at: PDF.UserSpace.Coordinate(x: pending.x, y: baselineY),
+                        font: context.style.font ?? .helvetica,
+                        size: context.style.fontSize ?? 12,
+                        color: context.style.color
+                    )
+                    context.pendingListMarker = nil
+                    isFirstLine = false
+                }
 
                 // Render the line directly to context
                 renderLine(line, context: &context)
