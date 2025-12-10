@@ -1,7 +1,7 @@
 // Empty+PDF.View.swift
 // PDF.View conformance for Empty
 
-public import Renderable
+public import Rendering
 public import PDF_Standard
 
 extension Empty: PDF.View {

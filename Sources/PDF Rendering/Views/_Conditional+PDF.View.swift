@@ -1,7 +1,7 @@
 // _Conditional+PDF.View.swift
 // PDF.View conformance for _Conditional
 
-public import Renderable
+public import Rendering
 public import PDF_Standard
 
 extension _Conditional: PDF.View where First: PDF.View, Second: PDF.View {

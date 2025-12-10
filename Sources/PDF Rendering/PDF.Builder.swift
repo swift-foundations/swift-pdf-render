@@ -2,7 +2,7 @@
 // Uses typed composition primitives from swift-renderable
 
 public import PDF_Standard
-public import Renderable
+public import Rendering
 
 // Re-export Builder from Renderable
 public typealias BuilderRaw = Builder

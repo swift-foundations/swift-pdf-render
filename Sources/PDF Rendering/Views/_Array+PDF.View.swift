@@ -1,7 +1,7 @@
 // _Array+PDF.View.swift
 // PDF.View conformance for _Array
 
-public import Renderable
+public import Rendering
 public import PDF_Standard
 
 extension _Array: PDF.View where Element: PDF.View {

@@ -9,22 +9,30 @@ import ISO_32000
 extension ISO_32000.Table {
     /// Creates a table element with content.
     ///
+    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
+    ///
     /// ```swift
     /// Table(summary: "Sales data") {
-    ///     TR() { ... }
+    ///     TR() {
+    ///         TD() { ... }
+    ///     }
     /// }
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0, content)
+        }
     }
 }
 
 // MARK: - TR (14.8.4.8.3)
 
-extension ISO_32000.`14`.`8`.`4`.`8`.`3`.TR {
+extension ISO_32000.Table.Row {
     /// Creates a table row element with cells.
+    ///
+    /// Content is automatically wrapped in `HStack` for horizontal cell layout.
     ///
     /// ```swift
     /// TR() {
@@ -34,8 +42,10 @@ extension ISO_32000.`14`.`8`.`4`.`8`.`3`.TR {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> PDF.Element<Self, PDF.HStack<Content>> {
+        PDF.Element(tag: self) {
+            PDF.HStack(content)
+        }
     }
 }
 
@@ -44,15 +54,33 @@ extension ISO_32000.`14`.`8`.`4`.`8`.`3`.TR {
 extension ISO_32000.TH {
     /// Creates a table header cell element with content.
     ///
+    /// Combines ISO structure attributes with rendering parameters. Content is
+    /// automatically wrapped in `Pair<Rectangle, Content>` with the specified styling.
+    ///
     /// ```swift
-    /// TH(scope: .column) {
-    ///     Pair(PDF.Rectangle(fill: headerBg), PDF.Text("Product"))
+    /// PDF.Table.Header.Cell(
+    ///     scope: .column,
+    ///     width: 100,
+    ///     height: 24,
+    ///     fill: .gray(0.9),
+    ///     stroke: .gray(0.3)
+    /// ) {
+    ///     PDF.Text("Product")
     /// }
     /// ```
     public func callAsFunction<Content: PDF.View>(
+        width: PDF.UserSpace.Width,
+        height: PDF.UserSpace.Height,
+        fill: PDF.Color? = nil,
+        stroke: PDF.Color? = nil,
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> some PDF.View {
+        PDF.Element(tag: self) {
+            Pair(
+                PDF.Rectangle(width: width, height: height, fill: fill, stroke: stroke),
+                content()
+            )
+        }
     }
 }
 
@@ -61,22 +89,40 @@ extension ISO_32000.TH {
 extension ISO_32000.TD {
     /// Creates a table data cell element with content.
     ///
+    /// Combines ISO structure attributes with rendering parameters. Content is
+    /// automatically wrapped in `Pair<Rectangle, Content>` with the specified styling.
+    ///
     /// ```swift
-    /// TD() {
-    ///     Pair(PDF.Rectangle(), PDF.Text("Value"))
+    /// PDF.Table.Row.Cell(
+    ///     width: 100,
+    ///     height: 24,
+    ///     stroke: .gray(0.3)
+    /// ) {
+    ///     PDF.Text("Value")
     /// }
     /// ```
     public func callAsFunction<Content: PDF.View>(
+        width: PDF.UserSpace.Width,
+        height: PDF.UserSpace.Height,
+        fill: PDF.Color? = nil,
+        stroke: PDF.Color? = nil,
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> some PDF.View {
+        PDF.Element(tag: self) {
+            Pair(
+                PDF.Rectangle(width: width, height: height, fill: fill, stroke: stroke),
+                content()
+            )
+        }
     }
 }
 
 // MARK: - THead (14.8.4.8.3)
 
-extension ISO_32000.THead {
+extension ISO_32000.Table.Header {
     /// Creates a table header group with rows.
+    ///
+    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// THead() {
@@ -85,15 +131,19 @@ extension ISO_32000.THead {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0, content)
+        }
     }
 }
 
 // MARK: - TBody (14.8.4.8.3)
 
-extension ISO_32000.TBody {
+extension ISO_32000.Table.Body {
     /// Creates a table body group with rows.
+    ///
+    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// TBody() {
@@ -102,15 +152,19 @@ extension ISO_32000.TBody {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0, content)
+        }
     }
 }
 
 // MARK: - TFoot (14.8.4.8.3)
 
-extension ISO_32000.TFoot {
+extension ISO_32000.Table.Footer {
     /// Creates a table footer group with rows.
+    ///
+    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// TFoot() {
@@ -119,7 +173,9 @@ extension ISO_32000.TFoot {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, Content> {
-        PDF.Element(tag: self, content: content)
+    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0, content)
+        }
     }
 }
