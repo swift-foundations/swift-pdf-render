@@ -7,7 +7,7 @@
 
 import PDF_Standard
 
-extension PDF.Text: PDF.View {
+extension ISO_32000.Text: PDF.View {
 
     public var body: Never {
         fatalError("PDF.Text is a leaf view")

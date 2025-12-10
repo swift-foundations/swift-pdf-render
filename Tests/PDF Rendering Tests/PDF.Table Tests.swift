@@ -32,7 +32,7 @@ struct `PDF.Table Tests` {
 
                     // Simple 3x3 table
                     PDF.Text("Sales Data Q4 2024", state: .init(fontSize: 14))
-                    PDF.Spacer(8)
+                    PDF.Spacer(4)
 
                     // Table rows with no spacing between them
                     PDF.VStack(spacing: 0) {
@@ -68,7 +68,7 @@ struct `PDF.Table Tests` {
 
                     // Table with column span simulation
                     PDF.Text("Table with Merged Header", state: .init(fontSize: 14))
-                    PDF.Spacer(8)
+                    PDF.Spacer(4)
 
                     PDF.VStack(spacing: 0) {
                         // Merged header spanning 2 columns
@@ -136,39 +136,39 @@ struct `PDF.Table Tests` {
     @Test
     func `ISO 32000 table structure types`() {
         // Table 371 - Table structure types
-        let table = ISO_32000.`14`.`8`.`4`.`8`.`3`.Table(
+        let table = ISO_32000.Table(
             summary: "Quarterly sales data for accessibility"
         )
 
         // Header cell with scope (Table 384)
-        let productHeader = ISO_32000.`14`.`8`.`4`.`8`.`3`.TH(
+        let productHeader = ISO_32000.TH(
             scope: .column,
             short: "Prod"
         )
 
         // Header spanning 2 columns (Table 384)
-        let mergedHeader = ISO_32000.`14`.`8`.`4`.`8`.`3`.TH(
+        let mergedHeader = ISO_32000.TH(
             col: .init(span: 2),
             scope: .column
         )
 
         // Data cell referencing headers (Table 384)
-        let dataCell = ISO_32000.`14`.`8`.`4`.`8`.`3`.TD(
+        let dataCell = ISO_32000.TD(
             headers: ["product-col", "q4-row"]
         )
 
         // Row groupings (Table 371)
-        let thead = ISO_32000.`14`.`8`.`4`.`8`.`3`.THead()
-        let tbody = ISO_32000.`14`.`8`.`4`.`8`.`3`.TBody()
-        let tfoot = ISO_32000.`14`.`8`.`4`.`8`.`3`.TFoot()
+        let thead = ISO_32000.THead()
+        let tbody = ISO_32000.TBody()
+        let tfoot = ISO_32000.TFoot()
 
         // Verify structure
         #expect(table.summary != nil)
         #expect(productHeader.scope == .column)
         #expect(mergedHeader.col.span == 2)
         #expect(dataCell.headers.count == 2)
-        #expect(thead == ISO_32000.`14`.`8`.`4`.`8`.`3`.THead())
-        #expect(tbody == ISO_32000.`14`.`8`.`4`.`8`.`3`.TBody())
+        #expect(thead == ISO_32000.THead())
+        #expect(tbody == ISO_32000.TBody())
         #expect(tfoot == ISO_32000.`14`.`8`.`4`.`8`.`3`.TFoot())
     }
 
@@ -285,6 +285,128 @@ struct `PDF.Table Tests` {
         try Data(bytes).write(to: url)
 
         print("Complex table PDF written to: \(url.path)")
+        #expect(bytes.count > 0)
+    }
+
+    /// Minimal test using ISO 32000 table structure types with callAsFunction.
+    ///
+    /// This demonstrates using Table, TR, TH, TD as callable types that wrap content.
+    @Test
+    func `Writes table using ISO structure types`() throws {
+       
+
+        let cellWidth: PDF.UserSpace.Width = 100
+        let cellHeight: PDF.UserSpace.Height = 24
+        let headerBg: PDF.Color = .gray(0.9)
+        let borderColor: PDF.Color = .gray(0.3)
+
+        // Helper for header cells
+        func headerCell(_ text: String) -> some PDF.View {
+            Pair(
+                PDF.Rectangle(width: cellWidth, height: cellHeight, fill: headerBg, stroke: borderColor),
+                PDF.Text(text, state: .init(fontSize: 11))
+            )
+        }
+
+        // Helper for data cells
+        func dataCell(_ text: String) -> some PDF.View {
+            Pair(
+                PDF.Rectangle(width: cellWidth, height: cellHeight, stroke: borderColor),
+                PDF.Text(text, state: .init(fontSize: 10))
+            )
+        }
+
+        struct ISOTableDocument: PDF.View {
+            let cellWidth: PDF.UserSpace.Width
+            let cellHeight: PDF.UserSpace.Height
+            let headerBg: PDF.Color
+            let borderColor: PDF.Color
+
+//            typealias Table = ISO_32000.Table
+//            typealias TR = ISO_32000.`14`.`8`.`4`.`8`.`3`.TR
+//            typealias TH = ISO_32000.TH
+//            typealias TD = ISO_32000.TD
+//            typealias THead = ISO_32000.THead
+//            typealias TBody = ISO_32000.TBody
+
+            
+            var body: some PDF.View {
+                PDF.VStack(spacing: 20) {
+                    PDF.Text("ISO 32000 Table Structure Types", state: .init(fontSize: 24))
+                    PDF.Divider()
+
+                    PDF.Text("Table using TH/TD callAsFunction", state: .init(fontSize: 14))
+                    PDF.Spacer(8)
+
+                    // Table with ISO structure types
+                    PDF.Table(summary: "Product sales data") {
+                        PDF.VStack(spacing: 0) {
+                            PDF.THead() {
+                                PDF.TR() {
+                                    PDF.HStack {
+                                        PDF.Table.Header.Cell(scope: .column) { headerCell("Product") }
+                                        PDF.Table.Header.Cell(scope: .column) { headerCell("Units") }
+                                        PDF.Table.Header.Cell(scope: .column) { headerCell("Revenue") }
+                                    }
+                                }
+                            }
+
+                            PDF.TBody() {
+                                PDF.TR() {
+                                    PDF.HStack {
+                                        PDF.TD() { dataCell("Widget A") }
+                                        PDF.TD() { dataCell("1,234") }
+                                        PDF.TD() { dataCell("$12,340") }
+                                    }
+                                }
+                                PDF.TR() {
+                                    PDF.HStack {
+                                        PDF.TD() { dataCell("Widget B") }
+                                        PDF.TD() { dataCell("567") }
+                                        PDF.TD() { dataCell("$8,505") }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            func headerCell(_ text: String) -> some PDF.View {
+                Pair(
+                    PDF.Rectangle(width: cellWidth, height: cellHeight, fill: headerBg, stroke: borderColor),
+                    PDF.Text(text, state: .init(fontSize: 11))
+                )
+            }
+
+            func dataCell(_ text: String) -> some PDF.View {
+                Pair(
+                    PDF.Rectangle(width: cellWidth, height: cellHeight, stroke: borderColor),
+                    PDF.Text(text, state: .init(fontSize: 10))
+                )
+            }
+        }
+
+        let pdfDocument = ISO_32000.Document(
+            version: .v2_0,
+            info: ISO_32000.Document.Info(
+                title: "ISO Structure Types Table",
+                author: "swift-pdf-rendering"
+            )
+        ) {
+            ISOTableDocument(
+                cellWidth: cellWidth,
+                cellHeight: cellHeight,
+                headerBg: headerBg,
+                borderColor: borderColor
+            )
+        }
+
+        let bytes = [UInt8](pdfDocument)
+        let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-iso-table.pdf")
+        try Data(bytes).write(to: url)
+
+        print("ISO table PDF written to: \(url.path)")
         #expect(bytes.count > 0)
     }
 }

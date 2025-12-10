@@ -97,10 +97,8 @@ extension Layout.Stack.Vertical: PDF.View where StackContent: PDF.View {
         let previousSpacing = context.stackSpacing
         let previousLastY = context.lastElementY
 
-        // Set spacing for this stack (only if non-zero)
-        if view.spacing > 0 {
-            context.stackSpacing = PDF.UserSpace.Y(view.spacing)
-        }
+        // Set spacing for this stack (always set, even if 0)
+        context.stackSpacing = view.spacing > 0 ? PDF.UserSpace.Y(view.spacing) : nil
         context.lastElementY = nil
 
         // Render content - spacing is applied by _Tuple between elements
