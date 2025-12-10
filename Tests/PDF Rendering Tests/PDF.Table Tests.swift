@@ -48,50 +48,38 @@ struct `PDF.Table Tests` {
                 PDF.Spacer(8)
 
                 PDF.Table(summary: "Regional sales summary") {
-                    PDF.THead() {
-                        PDF.Table.Row() {
-                            PDF.ForEach(headers) { header in
-                                PDF.Table.Header.Cell(scope: .column)(
-                                    width: cellWidth,
-                                    height: rowHeight,
-                                    fill: headerBg,
-                                    stroke: borderColor
-                                ) {
-                                    PDF.Text(header, state: .init(fontSize: 10))
-                                }
+                    PDF.THead()(headers) { header in
+                        PDF.Table.Header.Cell(scope: .column)(
+                            width: cellWidth,
+                            height: rowHeight,
+                            fill: headerBg,
+                            stroke: borderColor
+                        ) {
+                            PDF.Text(header, state: .init(fontSize: 10))
+                        }
+                    }
+
+                    PDF.Table.Body()(dataRows) { row in
+                        PDF.Table.Row()(row.values) { value in
+                            PDF.Table.Row.Cell()(
+                                width: cellWidth,
+                                height: rowHeight,
+                                fill: row.alt ? altRowBg : nil,
+                                stroke: borderColor
+                            ) {
+                                PDF.Text(value, state: .init(fontSize: 9))
                             }
                         }
                     }
 
-                    PDF.Table.Body() {
-                        PDF.ForEach(dataRows) { row in
-                            PDF.Table.Row() {
-                                PDF.ForEach(row.values) { value in
-                                    PDF.Table.Row.Cell()(
-                                        width: cellWidth,
-                                        height: rowHeight,
-                                        fill: row.alt ? altRowBg : nil,
-                                        stroke: borderColor
-                                    ) {
-                                        PDF.Text(value, state: .init(fontSize: 9))
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    PDF.TFoot() {
-                        PDF.Table.Row() {
-                            PDF.ForEach(footerValues) { value in
-                                PDF.Table.Row.Cell()(
-                                    width: cellWidth,
-                                    height: rowHeight,
-                                    fill: footerBg,
-                                    stroke: borderColor
-                                ) {
-                                    PDF.Text(value, state: .init(fontSize: 10))
-                                }
-                            }
+                    PDF.TFoot()(footerValues) { value in
+                        PDF.Table.Row.Cell()(
+                            width: cellWidth,
+                            height: rowHeight,
+                            fill: footerBg,
+                            stroke: borderColor
+                        ) {
+                            PDF.Text(value, state: .init(fontSize: 10))
                         }
                     }
                 }

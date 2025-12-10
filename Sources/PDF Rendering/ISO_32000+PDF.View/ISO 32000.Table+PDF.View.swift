@@ -47,6 +47,24 @@ extension ISO_32000.Table.Row {
             PDF.HStack(content)
         }
     }
+
+    /// Creates a table row element by iterating over data.
+    ///
+    /// ```swift
+    /// PDF.Table.Row(headers) { header in
+    ///     PDF.Table.Header.Cell(scope: .column)(...) { ... }
+    /// }
+    /// ```
+    public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
+        _ data: Data,
+        @PDF.Builder content: (Data.Element) -> Content
+    ) -> PDF.Element<Self, PDF.HStack<PDF.ForEach<Content>>> {
+        PDF.Element(tag: self) {
+            PDF.HStack {
+                PDF.ForEach(data, content: content)
+            }
+        }
+    }
 }
 
 // MARK: - TH (14.8.4.8.3)
@@ -136,6 +154,26 @@ extension ISO_32000.Table.Header {
             PDF.VStack(spacing: 0, content)
         }
     }
+
+    /// Creates a table header group with a single row by iterating over data.
+    ///
+    /// Wraps the iterated content in TR and THead automatically.
+    ///
+    /// ```swift
+    /// PDF.THead(headers) { header in
+    ///     PDF.Table.Header.Cell(scope: .column)(...) { ... }
+    /// }
+    /// ```
+    public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
+        _ data: Data,
+        @PDF.Builder content: (Data.Element) -> Content
+    ) -> some PDF.View {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0) {
+                ISO_32000.TR()(data, content: content)
+            }
+        }
+    }
 }
 
 // MARK: - TBody (14.8.4.8.3)
@@ -157,6 +195,28 @@ extension ISO_32000.Table.Body {
             PDF.VStack(spacing: 0, content)
         }
     }
+
+    /// Creates a table body group by iterating over row data.
+    ///
+    /// Each element creates a row. Wraps content in TR automatically.
+    ///
+    /// ```swift
+    /// PDF.Table.Body(dataRows) { row in
+    ///     PDF.Table.Row(row.values) { value in
+    ///         PDF.Table.Row.Cell()(...) { ... }
+    ///     }
+    /// }
+    /// ```
+    public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
+        _ data: Data,
+        @PDF.Builder content: (Data.Element) -> Content
+    ) -> some PDF.View {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0) {
+                PDF.ForEach(data, content: content)
+            }
+        }
+    }
 }
 
 // MARK: - TFoot (14.8.4.8.3)
@@ -176,6 +236,26 @@ extension ISO_32000.Table.Footer {
     ) -> PDF.Element<Self, PDF.VStack<Content>> {
         PDF.Element(tag: self) {
             PDF.VStack(spacing: 0, content)
+        }
+    }
+
+    /// Creates a table footer group with a single row by iterating over data.
+    ///
+    /// Wraps the iterated content in TR and TFoot automatically.
+    ///
+    /// ```swift
+    /// PDF.TFoot(footerValues) { value in
+    ///     PDF.Table.Row.Cell()(...) { ... }
+    /// }
+    /// ```
+    public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
+        _ data: Data,
+        @PDF.Builder content: (Data.Element) -> Content
+    ) -> some PDF.View {
+        PDF.Element(tag: self) {
+            PDF.VStack(spacing: 0) {
+                ISO_32000.TR()(data, content: content)
+            }
         }
     }
 }
