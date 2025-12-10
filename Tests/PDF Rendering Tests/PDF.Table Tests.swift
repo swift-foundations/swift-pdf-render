@@ -48,7 +48,7 @@ struct `PDF.Table Tests` {
                 PDF.Spacer(8)
 
                 PDF.Table(summary: "Regional sales summary") {
-                    PDF.THead()(headers) { header in
+                    PDF.Table.Header()(headers) { header in
                         PDF.Table.Header.Cell(scope: .column)(
                             width: cellWidth,
                             height: rowHeight,

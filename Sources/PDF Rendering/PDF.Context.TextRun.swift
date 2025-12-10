@@ -73,6 +73,100 @@ extension PDF.Context {
             self.linkURL = linkURL
         }
 
+        /// Create text runs from a String, automatically switching to ZapfDingbats for symbols.
+        ///
+        /// This method scans the text for characters that:
+        /// - Can be encoded in WinAnsi → uses the provided font
+        /// - Can be encoded in ZapfDingbats but not WinAnsi → switches to ZapfDingbats font
+        /// - Cannot be encoded in either → uses the fallback character
+        ///
+        /// - Parameters:
+        ///   - text: The text to convert
+        ///   - font: The primary font to use for regular text
+        ///   - fontSize: Font size
+        ///   - color: Text color
+        ///   - textDecoration: Optional text decoration
+        ///   - verticalOffset: Vertical offset for sub/superscript
+        ///   - linkURL: Optional link URL
+        /// - Returns: Array of TextRuns, possibly with different fonts
+        public static func runsWithSymbolSupport(
+            text: String,
+            font: PDF.Font,
+            fontSize: PDF.UserSpace.Unit,
+            color: PDF.Color,
+            textDecoration: PDF.TextMarkup? = .none,
+            verticalOffset: PDF.UserSpace.Unit = 0,
+            linkURL: String? = nil
+        ) -> [TextRun] {
+            var runs: [TextRun] = []
+            var currentWinAnsiBytes: [UInt8] = []
+            var currentDingbatsBytes: [UInt8] = []
+
+            func flushWinAnsi() {
+                guard !currentWinAnsiBytes.isEmpty else { return }
+                runs.append(TextRun(
+                    bytes: currentWinAnsiBytes,
+                    font: font,
+                    fontSize: fontSize,
+                    color: color,
+                    textDecoration: textDecoration,
+                    verticalOffset: verticalOffset,
+                    linkURL: linkURL
+                ))
+                currentWinAnsiBytes = []
+            }
+
+            func flushDingbats() {
+                guard !currentDingbatsBytes.isEmpty else { return }
+                runs.append(TextRun(
+                    bytes: currentDingbatsBytes,
+                    font: .zapfDingbats,
+                    fontSize: fontSize,
+                    color: color,
+                    textDecoration: textDecoration,
+                    verticalOffset: verticalOffset,
+                    linkURL: linkURL
+                ))
+                currentDingbatsBytes = []
+            }
+
+            for scalar in text.unicodeScalars {
+                let value = scalar.value
+
+                // Preserve control characters (0x00-0x1F) as-is for tokenizer
+                // This includes newlines (0x0A), tabs (0x09), etc.
+                if value < 0x20 {
+                    flushDingbats()
+                    currentWinAnsiBytes.append(UInt8(value))
+                }
+                // Try WinAnsi first (primary encoding)
+                else if let byte = ISO_32000.WinAnsiEncoding.encode(scalar) {
+                    flushDingbats()
+                    currentWinAnsiBytes.append(byte)
+                }
+                // Try ZapfDingbats for symbols
+                else if let byte = ISO_32000.ZapfDingbatsEncoding.encode(scalar) {
+                    flushWinAnsi()
+                    currentDingbatsBytes.append(byte)
+                }
+                // Use fallback from the map, or '?' as last resort
+                else if let fallback = ISO_32000.unicodeFallbackMap[value] {
+                    flushDingbats()
+                    currentWinAnsiBytes.append(contentsOf: fallback)
+                }
+                else {
+                    flushDingbats()
+                    currentWinAnsiBytes.append(0x3F) // '?'
+                }
+            }
+
+            // Flush remaining bytes
+            flushWinAnsi()
+            flushDingbats()
+
+            return runs
+        }
+
         /// Render multiple text runs with proper line wrapping.
         ///
         /// This algorithm:
