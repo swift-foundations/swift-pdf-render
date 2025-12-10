@@ -5,12 +5,13 @@ import Testing
 import Foundation
 @testable import PDF_Rendering
 import PDF_Standard
+import Algebra
 
 @Suite
 struct `PDF.Table Tests` {
 
     /// Renders a simple table to PDF for visual inspection.
-    /// Uses VStack/HStack to simulate table layout until PDF.Table view is implemented.
+    /// Uses Tagged<Rectangle, Text> for cells with background and content overlaid.
     @Test
     func `Writes simple table PDF to tmp`() throws {
         let cellWidth: PDF.UserSpace.Width = 100
@@ -33,30 +34,33 @@ struct `PDF.Table Tests` {
                     PDF.Text("Sales Data Q4 2024", state: .init(fontSize: 14))
                     PDF.Spacer(8)
 
-                    // Header row
-                    PDF.HStack {
-                        tableCell("Product", isHeader: true)
-                        tableCell("Units", isHeader: true)
-                        tableCell("Revenue", isHeader: true)
-                    }
+                    // Table rows with no spacing between them
+                    PDF.VStack(spacing: 0) {
+                        // Header row
+                        PDF.HStack {
+                            tableCell("Product", isHeader: true)
+                            tableCell("Units", isHeader: true)
+                            tableCell("Revenue", isHeader: true)
+                        }
 
-                    // Data rows
-                    PDF.HStack {
-                        tableCell("Widget A")
-                        tableCell("1,234")
-                        tableCell("$12,340")
-                    }
+                        // Data rows
+                        PDF.HStack {
+                            tableCell("Widget A")
+                            tableCell("1,234")
+                            tableCell("$12,340")
+                        }
 
-                    PDF.HStack {
-                        tableCell("Widget B")
-                        tableCell("567")
-                        tableCell("$8,505")
-                    }
+                        PDF.HStack {
+                            tableCell("Widget B")
+                            tableCell("567")
+                            tableCell("$8,505")
+                        }
 
-                    PDF.HStack {
-                        tableCell("Widget C")
-                        tableCell("890")
-                        tableCell("$17,800")
+                        PDF.HStack {
+                            tableCell("Widget C")
+                            tableCell("890")
+                            tableCell("$17,800")
+                        }
                     }
 
                     PDF.Spacer(30)
@@ -66,38 +70,40 @@ struct `PDF.Table Tests` {
                     PDF.Text("Table with Merged Header", state: .init(fontSize: 14))
                     PDF.Spacer(8)
 
-                    // Merged header spanning 2 columns
-                    PDF.HStack {
-                        PDF.VStack {
-                            PDF.Rectangle(
-                                width: cellWidth * 2,
-                                height: cellHeight,
-                                fill: headerBg,
-                                stroke: borderColor
+                    PDF.VStack(spacing: 0) {
+                        // Merged header spanning 2 columns
+                        PDF.HStack {
+                            Pair(
+                                PDF.Rectangle(
+                                    width: cellWidth * 2,
+                                    height: cellHeight,
+                                    fill: headerBg,
+                                    stroke: borderColor
+                                ),
+                                PDF.Text("Q4 Results (ColSpan: 2)", state: .init(fontSize: 10))
                             )
-                            PDF.Text("Q4 Results (ColSpan: 2)", state: .init(fontSize: 10))
+                            tableCell("Total", isHeader: true)
                         }
-                        tableCell("Total", isHeader: true)
-                    }
 
-                    PDF.HStack {
-                        tableCell("Oct")
-                        tableCell("Nov")
-                        tableCell("$38,645")
+                        PDF.HStack {
+                            tableCell("Oct")
+                            tableCell("Nov")
+                            tableCell("$38,645")
+                        }
                     }
                 }
             }
 
             func tableCell(_ text: String, isHeader: Bool = false) -> some PDF.View {
-                PDF.VStack {
+                Pair(
                     PDF.Rectangle(
                         width: cellWidth,
                         height: cellHeight,
                         fill: isHeader ? headerBg : nil,
                         stroke: borderColor
-                    )
+                    ),
                     PDF.Text(text, state: .init(fontSize: isHeader ? 11 : 10))
-                }
+                )
             }
         }
 
@@ -190,30 +196,33 @@ struct `PDF.Table Tests` {
                     PDF.Text("ISO 32000-2:2020 Table Structure Types", state: .init(fontSize: 12))
                     PDF.Spacer(12)
 
-                    // Header row
-                    PDF.HStack {
-                        headerCell("Region")
-                        headerCell("Q1")
-                        headerCell("Q2")
-                        headerCell("Q3")
-                        headerCell("Q4")
-                        headerCell("Total")
-                    }
+                    // Table rows with no spacing between them
+                    PDF.VStack(spacing: 0) {
+                        // Header row
+                        PDF.HStack {
+                            headerCell("Region")
+                            headerCell("Q1")
+                            headerCell("Q2")
+                            headerCell("Q3")
+                            headerCell("Q4")
+                            headerCell("Total")
+                        }
 
-                    // Data rows with alternating background
-                    dataRow(["North", "1,200", "1,350", "1,100", "1,450", "5,100"], alt: false)
-                    dataRow(["South", "980", "1,100", "1,250", "1,180", "4,510"], alt: true)
-                    dataRow(["East", "1,500", "1,420", "1,380", "1,600", "5,900"], alt: false)
-                    dataRow(["West", "1,100", "1,200", "1,150", "1,300", "4,750"], alt: true)
+                        // Data rows with alternating background
+                        dataRow(["North", "1,200", "1,350", "1,100", "1,450", "5,100"], alt: false)
+                        dataRow(["South", "980", "1,100", "1,250", "1,180", "4,510"], alt: true)
+                        dataRow(["East", "1,500", "1,420", "1,380", "1,600", "5,900"], alt: false)
+                        dataRow(["West", "1,100", "1,200", "1,150", "1,300", "4,750"], alt: true)
 
-                    // Footer row
-                    PDF.HStack {
-                        footerCell("Total")
-                        footerCell("4,780")
-                        footerCell("5,070")
-                        footerCell("4,880")
-                        footerCell("5,530")
-                        footerCell("20,260")
+                        // Footer row
+                        PDF.HStack {
+                            footerCell("Total")
+                            footerCell("4,780")
+                            footerCell("5,070")
+                            footerCell("4,880")
+                            footerCell("5,530")
+                            footerCell("20,260")
+                        }
                     }
 
                     PDF.Spacer(30)
@@ -224,33 +233,33 @@ struct `PDF.Table Tests` {
             }
 
             func headerCell(_ text: String) -> some PDF.View {
-                PDF.VStack {
-                    PDF.Rectangle(width: cellWidth, height: rowHeight, fill: headerBg, stroke: borderColor)
+                Pair(
+                    PDF.Rectangle(width: cellWidth, height: rowHeight, fill: headerBg, stroke: borderColor),
                     PDF.Text(text, state: .init(fontSize: 10))
-                }
+                )
             }
 
             func dataRow(_ values: [String], alt: Bool) -> some PDF.View {
                 PDF.HStack {
                     for value in values {
-                        PDF.VStack {
+                        Pair(
                             PDF.Rectangle(
                                 width: cellWidth,
                                 height: rowHeight,
                                 fill: alt ? altRowBg : nil,
                                 stroke: borderColor
-                            )
+                            ),
                             PDF.Text(value, state: .init(fontSize: 9))
-                        }
+                        )
                     }
                 }
             }
 
             func footerCell(_ text: String) -> some PDF.View {
-                PDF.VStack {
-                    PDF.Rectangle(width: cellWidth, height: rowHeight, fill: .gray(0.85), stroke: borderColor)
+                Pair(
+                    PDF.Rectangle(width: cellWidth, height: rowHeight, fill: .gray(0.85), stroke: borderColor),
                     PDF.Text(text, state: .init(fontSize: 10))
-                }
+                )
             }
         }
 

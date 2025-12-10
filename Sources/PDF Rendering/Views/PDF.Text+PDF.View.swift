@@ -18,6 +18,14 @@ extension PDF.Text: PDF.View {
         let font = text.state.font.flatMap { context.fontRegistry[$0.name] } ?? context.style.font
         let fontSize = text.state.fontSize ?? context.style.fontSize
 
+        if context.isHorizontalLayout {
+            _renderHorizontal(text, font: font, fontSize: fontSize, context: &context)
+        } else {
+            _renderVertical(text, font: font, fontSize: fontSize, context: &context)
+        }
+    }
+
+    private static func _renderVertical(_ text: Self, font: PDF.Font, fontSize: PDF.UserSpace.Unit, context: inout PDF.Context) {
         // Word wrap the bytes
         let lines = wrapBytes(
             text.content,
@@ -46,6 +54,33 @@ extension PDF.Text: PDF.View {
 
             context.advanceLine()
         }
+    }
+
+    private static func _renderHorizontal(_ text: Self, font: PDF.Font, fontSize: PDF.UserSpace.Unit, context: inout PDF.Context) {
+        // In horizontal layout, render text on a single line without wrapping
+        // and advance X by the text width
+
+        // Check for page break
+        context.checkPageBreak(needing: context.style.lineHeightPoints)
+
+        // Calculate text width
+        let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
+
+        // In top-left coordinates, context.layoutBox.lly is the top of the line box.
+        let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + font.metrics.ascender(atSize: fontSize))
+
+        // Emit text
+        context.emitText(
+            text.content,
+            at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
+            font: font,
+            size: fontSize,
+            color: context.style.color
+        )
+
+        // Advance X by text width and track Y for max height
+        context.advanceX(PDF.UserSpace.X(textWidth))
+        context.advanceLine()
     }
 
     /// Wrap bytes to fit within max width

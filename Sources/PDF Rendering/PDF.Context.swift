@@ -77,18 +77,32 @@ extension PDF {
         public var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)? = nil
         
         // MARK: - Modes
-        
+
         /// Preformatted mode - preserves whitespace in `<pre>` blocks.
         public var preserveWhitespace: Bool = false
-        
+
         /// Stack spacing - applied between elements in a VStack.
         public var stackSpacing: PDF.UserSpace.Y? = nil
-        
+
         /// Track Y position before last element rendered (for spacing logic).
         internal var lastElementY: PDF.UserSpace.Y? = nil
-        
+
         /// Measurement mode - when true, operations are not added.
         public var measurementMode: Bool = false
+
+        // MARK: - Horizontal Layout
+
+        /// Horizontal stack spacing - applied between elements in an HStack.
+        public var horizontalSpacing: PDF.UserSpace.X? = nil
+
+        /// Track X position before last element rendered (for horizontal spacing).
+        internal var lastElementX: PDF.UserSpace.X? = nil
+
+        /// Starting Y position for current horizontal row (to track max height).
+        internal var horizontalRowStartY: PDF.UserSpace.Y? = nil
+
+        /// Maximum Y reached in current horizontal row.
+        internal var horizontalRowMaxY: PDF.UserSpace.Y? = nil
         
         // MARK: - Pagination
 
@@ -194,10 +208,32 @@ extension PDF.Context {
     public mutating func advanceLine() {
         layoutBox.lly = PDF.UserSpace.Y(PDF.UserSpace.Unit(layoutBox.lly.value + style.lineHeightPoints.value))
     }
-    
+
     /// Advance Y position by specified amount.
     public mutating func advance(_ amount: PDF.UserSpace.Y) {
         layoutBox.lly = PDF.UserSpace.Y(layoutBox.lly.value + amount.value)
+    }
+
+    /// Advance X position by specified amount (for horizontal layout).
+    public mutating func advanceX(_ amount: PDF.UserSpace.X) {
+        layoutBox.llx = PDF.UserSpace.X(layoutBox.llx.value + amount.value)
+        // Reduce available width
+        layoutBox.urx = PDF.UserSpace.X(layoutBox.urx.value)
+    }
+
+    /// Check if we're currently in horizontal layout mode.
+    public var isHorizontalLayout: Bool {
+        horizontalSpacing != nil
+    }
+
+    /// Update the maximum Y reached in the current horizontal row.
+    public mutating func updateHorizontalRowMaxY() {
+        if let startY = horizontalRowStartY {
+            let currentMaxY = horizontalRowMaxY ?? startY
+            if layoutBox.lly > currentMaxY {
+                horizontalRowMaxY = layoutBox.lly
+            }
+        }
     }
 }
 

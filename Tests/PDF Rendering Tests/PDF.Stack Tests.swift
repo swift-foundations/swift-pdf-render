@@ -151,7 +151,7 @@ struct `PDF.Stack.Horizontal Tests` {
     }
 
     @Test
-    func `Y advances for each child`() {
+    func `Y advances by max child height`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
@@ -169,9 +169,9 @@ struct `PDF.Stack.Horizontal Tests` {
 
         PDF.HStack._render(stack, context: &context)
 
-        // TODO: HStack should position children horizontally, not vertically
-        // Currently each child advances Y by one line: 72 + 12 + 12 = 96
-        #expect(context.layoutBox.lly == 96)
+        // HStack positions children horizontally, Y advances by max height (one line)
+        // 72 + 12 = 84
+        #expect(context.layoutBox.lly == 84)
     }
 
     @Test
