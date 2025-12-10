@@ -532,10 +532,32 @@ extension PDF.Context.TextRun {
 extension PDF.Context.TextRun {
     /// Render a single line of tokens directly to context.
     static func renderLine(_ line: Line, context: inout PDF.Context) {
-        var currentX = context.layoutBox.llx
-
         // Use trimmed tokens to avoid trailing spaces
         let tokens = line.trimmedTokens
+
+        // Calculate total line width for alignment
+        var totalLineWidth: PDF.UserSpace.Unit = 0
+        for (index, token) in tokens.enumerated() {
+            totalLineWidth += token.width
+            // Add space width between words (same logic as rendering below)
+            if token.isWhitespace && index < tokens.count - 1 {
+                totalLineWidth += token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+            }
+        }
+
+        // Calculate alignment offset
+        let availableWidth = context.layoutBox.width.value
+        let alignmentOffset: PDF.UserSpace.Unit
+        switch context.style.textAlign {
+        case .leading:
+            alignmentOffset = 0
+        case .center:
+            alignmentOffset = max(0, (availableWidth - totalLineWidth) / PDF.UserSpace.Unit(2))
+        case .trailing:
+            alignmentOffset = max(0, availableWidth - totalLineWidth)
+        }
+
+        var currentX = PDF.UserSpace.X(context.layoutBox.llx.value + alignmentOffset)
 
         // Calculate line baseline using half-leading model
         // This ensures symmetric spacing above and below text within the line box.

@@ -3,6 +3,7 @@
 
 public import PDF_Standard
 import Geometry
+public import Layout
 
 extension PDF.Context {
     /// Text styling configuration for rendering.
@@ -45,6 +46,9 @@ extension PDF.Context {
         /// Vertical offset for subscript/superscript
         public var verticalOffset: PDF.UserSpace.Unit?
 
+        /// Horizontal text alignment
+        public var textAlign: Horizontal.Alignment?
+
         // MARK: - Initializers
 
         /// Create a style with all properties
@@ -54,7 +58,8 @@ extension PDF.Context {
             color: PDF.Color? = nil,
             lineHeight: Scale<1>? = nil,
             textMarkup: PDF.TextMarkup? = nil,
-            verticalOffset: PDF.UserSpace.Unit? = nil
+            verticalOffset: PDF.UserSpace.Unit? = nil,
+            textAlign: Horizontal.Alignment? = nil
         ) {
             self.font = font
             self.fontSize = fontSize
@@ -62,6 +67,7 @@ extension PDF.Context {
             self.lineHeight = lineHeight
             self.textMarkup = textMarkup
             self.verticalOffset = verticalOffset
+            self.textAlign = textAlign
         }
     }
 }
@@ -87,7 +93,8 @@ extension PDF.Context.Style {
         color: .black,
         lineHeight: 1.2,
         textMarkup: nil,
-        verticalOffset: 0
+        verticalOffset: 0,
+        textAlign: .leading
     )
 }
 
@@ -109,7 +116,8 @@ extension PDF.Context.Style {
             color: other.color ?? self.color,
             lineHeight: other.lineHeight ?? self.lineHeight,
             textMarkup: other.textMarkup ?? self.textMarkup,
-            verticalOffset: other.verticalOffset ?? self.verticalOffset
+            verticalOffset: other.verticalOffset ?? self.verticalOffset,
+            textAlign: other.textAlign ?? self.textAlign
         )
     }
 
@@ -179,6 +187,14 @@ extension PDF.Context.Style {
         copy.verticalOffset = verticalOffset
         return copy
     }
+
+    /// Return a new style with text alignment changed.
+    @inlinable
+    public func with(textAlign: Horizontal.Alignment) -> PDF.Context.Style {
+        var copy = self
+        copy.textAlign = textAlign
+        return copy
+    }
 }
 
 // MARK: - Resolution
@@ -194,7 +210,8 @@ extension PDF.Context.Style {
         color: .black,
         lineHeight: 1.2,
         textMarkup: nil,
-        verticalOffset: 0
+        verticalOffset: 0,
+        textAlign: .leading
     )) -> Resolved {
         Resolved(
             font: font ?? defaults.font,
@@ -202,7 +219,8 @@ extension PDF.Context.Style {
             color: color ?? defaults.color,
             lineHeight: lineHeight ?? defaults.lineHeight,
             textMarkup: textMarkup ?? defaults.textMarkup,
-            verticalOffset: verticalOffset ?? defaults.verticalOffset
+            verticalOffset: verticalOffset ?? defaults.verticalOffset,
+            textAlign: textAlign ?? defaults.textAlign
         )
     }
 }
@@ -218,7 +236,8 @@ extension PDF.Context.Style {
             color: resolved.color,
             lineHeight: resolved.lineHeight,
             textMarkup: resolved.textMarkup,
-            verticalOffset: resolved.verticalOffset
+            verticalOffset: resolved.verticalOffset,
+            textAlign: resolved.textAlign
         )
     }
 }

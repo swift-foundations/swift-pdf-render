@@ -3,6 +3,7 @@
 
 public import PDF_Standard
 import Geometry
+public import Layout
 
 extension PDF.Context.Style {
     /// A style with all properties resolved to concrete values.
@@ -15,6 +16,7 @@ extension PDF.Context.Style {
         public var lineHeight: Scale<1>
         public var textMarkup: PDF.TextMarkup?
         public var verticalOffset: PDF.UserSpace.Unit
+        public var textAlign: Horizontal.Alignment
 
         public init(
             font: PDF.Font,
@@ -22,7 +24,8 @@ extension PDF.Context.Style {
             color: PDF.Color,
             lineHeight: Scale<1>,
             textMarkup: PDF.TextMarkup? = nil,
-            verticalOffset: PDF.UserSpace.Unit = 0
+            verticalOffset: PDF.UserSpace.Unit = 0,
+            textAlign: Horizontal.Alignment = .leading
         ) {
             self.font = font
             self.fontSize = fontSize
@@ -30,6 +33,7 @@ extension PDF.Context.Style {
             self.lineHeight = lineHeight
             self.textMarkup = textMarkup
             self.verticalOffset = verticalOffset
+            self.textAlign = textAlign
         }
     }
 }
