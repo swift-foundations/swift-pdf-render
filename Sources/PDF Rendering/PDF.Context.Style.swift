@@ -41,7 +41,7 @@ extension PDF.Context {
         public var lineHeight: Scale<1>?
 
         /// Text decoration (underline, strikethrough)
-        public var textMarkup: PDF.TextMarkup?
+        public var textMarkup: PDF.Annotation.TextMarkup.Kind?
 
         /// Vertical offset for subscript/superscript
         public var verticalOffset: PDF.UserSpace.Unit?
@@ -57,7 +57,7 @@ extension PDF.Context {
             fontSize: PDF.UserSpace.Unit? = nil,
             color: PDF.Color? = nil,
             lineHeight: Scale<1>? = nil,
-            textMarkup: PDF.TextMarkup? = nil,
+            textMarkup: PDF.Annotation.TextMarkup.Kind? = nil,
             verticalOffset: PDF.UserSpace.Unit? = nil,
             textAlign: Horizontal.Alignment? = nil
         ) {
@@ -174,7 +174,7 @@ extension PDF.Context.Style {
 
     /// Return a new style with text markup changed.
     @inlinable
-    public func with(textMarkup: PDF.TextMarkup?) -> PDF.Context.Style {
+    public func with(textMarkup: PDF.Annotation.TextMarkup.Kind?) -> PDF.Context.Style {
         var copy = self
         copy.textMarkup = textMarkup
         return copy

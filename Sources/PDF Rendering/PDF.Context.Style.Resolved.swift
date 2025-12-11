@@ -14,7 +14,7 @@ extension PDF.Context.Style {
         public var fontSize: PDF.UserSpace.Unit
         public var color: PDF.Color
         public var lineHeight: Scale<1>
-        public var textMarkup: PDF.TextMarkup?
+        public var textMarkup: PDF.Annotation.TextMarkup.Kind?
         public var verticalOffset: PDF.UserSpace.Unit
         public var textAlign: Horizontal.Alignment
 
@@ -23,7 +23,7 @@ extension PDF.Context.Style {
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
             lineHeight: Scale<1>,
-            textMarkup: PDF.TextMarkup? = nil,
+            textMarkup: PDF.Annotation.TextMarkup.Kind? = nil,
             verticalOffset: PDF.UserSpace.Unit = 0,
             textAlign: Horizontal.Alignment = .leading
         ) {

@@ -129,6 +129,26 @@ extension PDF {
 
         /// Annotations for current page.
         public var currentPageAnnotations: [PDF.Annotation] = []
+
+        /// Pending internal links to be resolved after rendering.
+        /// These are collected during text rendering and resolved to destinations later.
+        public var pendingInternalLinks: [PendingInternalLink] = []
+
+        /// A pending internal link that needs to be resolved
+        public struct PendingInternalLink: Sendable {
+            /// The target anchor id (without #)
+            public let targetId: String
+            /// Page number where the link is (1-indexed)
+            public let pageNumber: Int
+            /// Bounds of the link annotation
+            public let bounds: PDF.UserSpace.Rectangle
+
+            public init(targetId: String, pageNumber: Int, bounds: PDF.UserSpace.Rectangle) {
+                self.targetId = targetId
+                self.pageNumber = pageNumber
+                self.bounds = bounds
+            }
+        }
     }
 }
 
@@ -362,12 +382,40 @@ extension PDF.Context {
         layoutBox.lly = initialLayoutBox.lly
     }
 
-    /// Add a link annotation to the current page.
+    /// Add a link annotation to the current page (URI target).
     public mutating func addLinkAnnotation(
         rect: PDF.UserSpace.Rectangle,
         uri: String
     ) {
-        currentPageAnnotations.append(.link(ISO_32000.LinkAnnotation(rect: rect, uri: uri)))
+        let link = PDF.Annotation.Link(uri: uri)
+        let annotation = PDF.Annotation(rect: rect, content: .link(link))
+        currentPageAnnotations.append(annotation)
+    }
+
+    /// Add a link annotation to the current page (internal destination target).
+    public mutating func addLinkAnnotation(
+        rect: PDF.UserSpace.Rectangle,
+        destination: ISO_32000.Destination
+    ) {
+        let link = PDF.Annotation.Link(destination: destination)
+        let annotation = PDF.Annotation(rect: rect, content: .link(link))
+        currentPageAnnotations.append(annotation)
+    }
+
+    /// Add a pending internal link to be resolved after rendering.
+    ///
+    /// Internal links (href="#anchor") need to be collected during rendering
+    /// and resolved later when all destinations are known.
+    public mutating func addPendingInternalLink(
+        rect: PDF.UserSpace.Rectangle,
+        targetId: String
+    ) {
+        let pageNumber = pages.count + 1  // Current page (1-indexed)
+        pendingInternalLinks.append(PendingInternalLink(
+            targetId: targetId,
+            pageNumber: pageNumber,
+            bounds: rect
+        ))
     }
 
     /// Check if we need a page break and start new page if so.
@@ -409,6 +457,66 @@ extension PDF.Context {
             allPages.append(currentPage)
         }
         return allPages
+    }
+
+    /// Resolve pending internal links and return pages with link annotations.
+    ///
+    /// Internal links (href="#anchor") are collected during rendering and need to be
+    /// resolved after all destinations are known. This method:
+    /// 1. Takes pages and named destinations
+    /// 2. For each pending link, looks up the target destination
+    /// 3. Creates link annotations with resolved destinations
+    /// 4. Returns modified pages with the link annotations added
+    ///
+    /// - Parameters:
+    ///   - pages: The rendered pages
+    ///   - namedDestinations: Dictionary mapping anchor IDs to destination info
+    /// - Returns: Pages with resolved internal link annotations
+    public static func resolveInternalLinks(
+        pages: [PDF.Page],
+        pendingLinks: [PendingInternalLink],
+        namedDestinations: [String: (pageNumber: Int, yPosition: PDF.UserSpace.Y)]
+    ) -> [PDF.Page] {
+        guard !pendingLinks.isEmpty else { return pages }
+
+        // Group pending links by page number for efficient processing
+        var linksByPage: [Int: [PendingInternalLink]] = [:]
+        for link in pendingLinks {
+            linksByPage[link.pageNumber, default: []].append(link)
+        }
+
+        // Process each page
+        return pages.enumerated().map { (index, page) in
+            let pageNumber = index + 1  // 1-indexed
+            guard let pageLinks = linksByPage[pageNumber], !pageLinks.isEmpty else {
+                return page
+            }
+
+            // Resolve links for this page
+            var newAnnotations = page.annotations
+            for pendingLink in pageLinks {
+                if let dest = namedDestinations[pendingLink.targetId] {
+                    // Create destination pointing to the target page and position
+                    // Extract raw Unit from typed Y coordinate for PDF destination
+                    let destination = ISO_32000.Destination.xyz(
+                        page: dest.pageNumber - 1,  // 0-indexed page reference
+                        left: nil,
+                        top: dest.yPosition.value,  // Raw coordinate for PDF user space
+                        zoom: nil
+                    )
+                    let link = PDF.Annotation.Link(destination: destination)
+                    let annotation = PDF.Annotation(rect: pendingLink.bounds, content: .link(link))
+                    newAnnotations.append(annotation)
+                }
+            }
+
+            // Return page with updated annotations
+            return PDF.Page(
+                mediaBox: page.mediaBox,
+                contents: page.contents,
+                annotations: newAnnotations
+            )
+        }
     }
 }
 

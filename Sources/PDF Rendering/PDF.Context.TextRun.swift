@@ -23,13 +23,17 @@ extension PDF.Context {
         public let color: PDF.Color
 
         /// Text decoration (underline, strikethrough, etc.)
-        public let textDecoration: PDF.TextMarkup?
+        public let textDecoration: PDF.Annotation.TextMarkup.Kind?
 
         /// Vertical offset for subscript/superscript (positive = up, negative = down)
         public let verticalOffset: PDF.UserSpace.Unit
 
-        /// Optional link URL (makes this text a clickable link)
+        /// Optional link URL (makes this text a clickable external link)
         public let linkURL: String?
+
+        /// Optional internal link target ID (for #anchor links)
+        /// Used to create pending internal links that are resolved after rendering completes.
+        public let internalLinkId: String?
 
         /// Create a text run from a String (encodes to WinAnsi)
         public init(
@@ -37,10 +41,11 @@ extension PDF.Context {
             font: PDF.Font,
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
-            textDecoration: PDF.TextMarkup? = .none,
+            textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             backgroundColor: PDF.Color? = nil,
             verticalOffset: PDF.UserSpace.Unit = 0,
-            linkURL: String? = nil
+            linkURL: String? = nil,
+            internalLinkId: String? = nil
         ) {
             // Encode to WinAnsi, preserving control characters for tokenizer.
             // Control chars (newline, tab, etc.) are handled specially by the tokenizer
@@ -52,6 +57,7 @@ extension PDF.Context {
             self.textDecoration = textDecoration
             self.verticalOffset = verticalOffset
             self.linkURL = linkURL
+            self.internalLinkId = internalLinkId
         }
 
         /// Create a text run from pre-encoded bytes
@@ -60,9 +66,10 @@ extension PDF.Context {
             font: PDF.Font,
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
-            textDecoration: PDF.TextMarkup? = .none,
+            textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             verticalOffset: PDF.UserSpace.Unit = 0,
-            linkURL: String? = nil
+            linkURL: String? = nil,
+            internalLinkId: String? = nil
         ) {
             self.bytes = bytes
             self.font = font
@@ -71,6 +78,7 @@ extension PDF.Context {
             self.textDecoration = textDecoration
             self.verticalOffset = verticalOffset
             self.linkURL = linkURL
+            self.internalLinkId = internalLinkId
         }
 
         /// Create text runs from a String, automatically switching to ZapfDingbats for symbols.
@@ -87,16 +95,18 @@ extension PDF.Context {
         ///   - color: Text color
         ///   - textDecoration: Optional text decoration
         ///   - verticalOffset: Vertical offset for sub/superscript
-        ///   - linkURL: Optional link URL
+        ///   - linkURL: Optional external link URL
+        ///   - internalLinkId: Optional internal link target ID (for #anchor links)
         /// - Returns: Array of TextRuns, possibly with different fonts
         public static func runsWithSymbolSupport(
             text: String,
             font: PDF.Font,
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
-            textDecoration: PDF.TextMarkup? = .none,
+            textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             verticalOffset: PDF.UserSpace.Unit = 0,
-            linkURL: String? = nil
+            linkURL: String? = nil,
+            internalLinkId: String? = nil
         ) -> [TextRun] {
             var runs: [TextRun] = []
             var currentWinAnsiBytes: [UInt8] = []
@@ -111,7 +121,8 @@ extension PDF.Context {
                     color: color,
                     textDecoration: textDecoration,
                     verticalOffset: verticalOffset,
-                    linkURL: linkURL
+                    linkURL: linkURL,
+                    internalLinkId: internalLinkId
                 ))
                 currentWinAnsiBytes = []
             }
@@ -125,7 +136,8 @@ extension PDF.Context {
                     color: color,
                     textDecoration: textDecoration,
                     verticalOffset: verticalOffset,
-                    linkURL: linkURL
+                    linkURL: linkURL,
+                    internalLinkId: internalLinkId
                 ))
                 currentDingbatsBytes = []
             }
@@ -285,9 +297,10 @@ extension PDF.Context.TextRun {
         let font: PDF.Font
         let fontSize: PDF.UserSpace.Unit
         let color: PDF.Color
-        let textDecoration: PDF.TextMarkup?
+        let textDecoration: PDF.Annotation.TextMarkup.Kind?
         let verticalOffset: PDF.UserSpace.Unit
         let linkURL: String?
+        let internalLinkId: String?
         let isWhitespace: Bool
         let isNewline: Bool
         let isTab: Bool
@@ -316,6 +329,7 @@ extension PDF.Context.TextRun {
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
                             linkURL: run.linkURL,
+                            internalLinkId: run.internalLinkId,
                             isWhitespace: false,
                             isNewline: false,
                             isTab: false
@@ -331,6 +345,7 @@ extension PDF.Context.TextRun {
                         textDecoration: run.textDecoration,
                         verticalOffset: run.verticalOffset,
                         linkURL: run.linkURL,
+                        internalLinkId: run.internalLinkId,
                         isWhitespace: true,
                         isNewline: true,
                         isTab: false
@@ -346,6 +361,7 @@ extension PDF.Context.TextRun {
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
                             linkURL: run.linkURL,
+                            internalLinkId: run.internalLinkId,
                             isWhitespace: false,
                             isNewline: false,
                             isTab: false
@@ -361,6 +377,7 @@ extension PDF.Context.TextRun {
                         textDecoration: run.textDecoration,
                         verticalOffset: run.verticalOffset,
                         linkURL: run.linkURL,
+                        internalLinkId: run.internalLinkId,
                         isWhitespace: true,
                         isNewline: false,
                         isTab: true
@@ -376,6 +393,7 @@ extension PDF.Context.TextRun {
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
                             linkURL: run.linkURL,
+                            internalLinkId: run.internalLinkId,
                             isWhitespace: false,
                             isNewline: false,
                             isTab: false
@@ -392,6 +410,7 @@ extension PDF.Context.TextRun {
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
                             linkURL: run.linkURL,
+                            internalLinkId: run.internalLinkId,
                             isWhitespace: true,
                             isNewline: false,
                             isTab: false
@@ -406,6 +425,7 @@ extension PDF.Context.TextRun {
                             textDecoration: run.textDecoration,
                             verticalOffset: run.verticalOffset,
                             linkURL: run.linkURL,
+                            internalLinkId: run.internalLinkId,
                             isWhitespace: true,
                             isNewline: false,
                             isTab: false
@@ -426,6 +446,7 @@ extension PDF.Context.TextRun {
                     textDecoration: run.textDecoration,
                     verticalOffset: run.verticalOffset,
                     linkURL: run.linkURL,
+                    internalLinkId: run.internalLinkId,
                     isWhitespace: false,
                     isNewline: false,
                     isTab: false
@@ -570,9 +591,10 @@ extension PDF.Context.TextRun {
         var currentFont: PDF.Font?
         var currentSize: PDF.UserSpace.Unit?
         var currentColor: PDF.Color?
-        var currentDecoration: PDF.TextMarkup?
+        var currentDecoration: PDF.Annotation.TextMarkup.Kind?
         var currentVerticalOffset: PDF.UserSpace.Unit = 0
         var currentLinkURL: String? = nil
+        var currentInternalLinkId: String? = nil
         var segmentStartX = currentX
 
         func flushSegment() {
@@ -586,14 +608,21 @@ extension PDF.Context.TextRun {
             let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(lineBaselineY.value) - currentVerticalOffset)
 
             // Draw highlight background BEFORE text (so text appears on top)
-            if case .highlight(let highlightColor) = currentDecoration {
+            if case .highlight(let annotationColor) = currentDecoration {
+                // Convert annotation color to graphics color
+                let fillColor: PDF.Color = switch annotationColor {
+                case .transparent: .gray(1) // fallback to white
+                case .gray(let g): .gray(g)
+                case .rgb(let r, let g, let b): .rgb(r: r, g: g, b: b)
+                case .cmyk(let c, let m, let y, let k): .cmyk(c: c, m: m, y: y, k: k)
+                }
                 let bgRect = PDF.UserSpace.Rectangle(
                     x: segmentStartX,
                     y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
                     width: segmentWidth,
                     height: PDF.UserSpace.Height(size.value * 1.15)
                 )
-                context.emitRectangle(bgRect, fill: highlightColor, stroke: nil)
+                context.emitRectangle(bgRect, fill: fillColor, stroke: nil)
             }
 
             // Emit bytes directly to context
@@ -618,7 +647,7 @@ extension PDF.Context.TextRun {
                         width: .init(max(0.5, size.value * 0.05))
                     )
 
-                case .strikeout:
+                case .strikeOut:
                     // Position strikethrough at middle of x-height
                     let strikeY = PDF.UserSpace.Y(textY.value - font.metrics.xHeight(atSize: size) / ISO_32000.UserSpace.Unit(2))
                     context.emitLine(
@@ -631,20 +660,23 @@ extension PDF.Context.TextRun {
                 case .highlight:
                     // Already handled above
                     break
-                case .jagged:
+                case .squiggly:
                     break
                 }
             }
 
             // Add link annotation if present
-            if let url = currentLinkURL {
-                // Create link rect covering the text
-                let linkRect = PDF.UserSpace.Rectangle(
-                    x: segmentStartX,
-                    y: PDF.UserSpace.Y(textY.value - size * 0.85),
-                    width: segmentWidth,
-                    height: PDF.UserSpace.Height(size * 1.15)
-                )
+            let linkRect = PDF.UserSpace.Rectangle(
+                x: segmentStartX,
+                y: PDF.UserSpace.Y(textY.value - size * 0.85),
+                width: segmentWidth,
+                height: PDF.UserSpace.Height(size * 1.15)
+            )
+            if let internalId = currentInternalLinkId {
+                // Internal link - add to pending for later resolution
+                context.addPendingInternalLink(rect: linkRect, targetId: internalId)
+            } else if let url = currentLinkURL {
+                // External link - add URI annotation directly
                 context.addLinkAnnotation(rect: linkRect, uri: url)
             }
 
@@ -670,7 +702,8 @@ extension PDF.Context.TextRun {
                 currentColor != token.color ||
                 currentDecoration != token.textDecoration ||
                 currentVerticalOffset != token.verticalOffset ||
-                currentLinkURL != token.linkURL
+                currentLinkURL != token.linkURL ||
+                currentInternalLinkId != token.internalLinkId
             )
 
             if stylingChanged {
@@ -681,6 +714,7 @@ extension PDF.Context.TextRun {
                 currentDecoration = token.textDecoration
                 currentVerticalOffset = token.verticalOffset
                 currentLinkURL = token.linkURL
+                currentInternalLinkId = token.internalLinkId
                 segmentStartX = currentX
             }
 
