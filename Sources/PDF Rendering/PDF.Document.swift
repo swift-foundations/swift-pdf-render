@@ -14,29 +14,54 @@ public import PDF_Standard
 import ISO_32000_Flate
 
 extension PDF.Document {
-    /// Create a document with builder syntax.
+    /// Create a document with configuration and builder syntax.
     ///
     /// Full pipeline: `View ──render──▶ Context ──pages──▶ [Page] ──▶ Document`
     ///
     /// Example:
     /// ```swift
-    /// let doc = PDF.Document {
+    /// var config = PDF.Configuration()
+    /// config.paperSize = .letter
+    /// config.defaultFont = .helvetica
+    ///
+    /// let doc = PDF.Document(configuration: config) {
     ///     PDF.VStack {
     ///         PDF.Text("Hello, World!")
     ///     }
     /// }
     /// ```
     public init<View: PDF.View>(
-        version: ISO_32000.Version = .v1_7,
-        info: ISO_32000.Document.Info? = nil,
-        mediaBox: ISO_32000.UserSpace.Rectangle = .a4,
-        edgeInsets: PDF.EdgeInsets = PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72),
+        configuration: PDF.Configuration = .init(),
         @PDF.Builder _ build: () -> View
     ) {
-        var context = PDF.Context(mediaBox: mediaBox, margins: edgeInsets)
+        let contentWidth = PDF.UserSpace.Width(configuration.mediaBox.width.value - configuration.margins.horizontal)
+        let contentHeight = PDF.UserSpace.Height(configuration.mediaBox.height.value - configuration.margins.vertical)
+
+        var context = PDF.Context(
+            x: PDF.UserSpace.X(configuration.margins.leading),
+            y: PDF.UserSpace.Y(configuration.margins.top),
+            availableWidth: contentWidth,
+            availableHeight: contentHeight,
+            mediaBox: configuration.mediaBox,
+            font: configuration.defaultFont,
+            fontSize: configuration.defaultFontSize,
+            color: configuration.defaultColor,
+            lineHeight: Scale(configuration.lineHeight)
+        )
         let view = build()
         View._render(view, context: &context)
 
-        self.init(version: version, info: info, pages: context.pages)
+        // Only include viewer if it differs from defaults
+        let viewer: ISO_32000.Viewer? = configuration.viewer == .init()
+            ? nil
+            : configuration.viewer
+
+        self.init(
+            version: configuration.version,
+            info: configuration.info,
+            pages: context.pages,
+            viewer: viewer
+        )
     }
+
 }

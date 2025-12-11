@@ -226,7 +226,7 @@ extension PDF.Context {
 extension PDF.Context {
     /// Advance Y position by one line.
     public mutating func advanceLine() {
-        layoutBox.lly = PDF.UserSpace.Y(PDF.UserSpace.Unit(layoutBox.lly.value + style.lineHeightPoints.value))
+        layoutBox.lly = layoutBox.lly + style.lineHeightPoints
     }
 
     /// Advance Y position by specified amount.
@@ -668,13 +668,13 @@ extension PDF.Context {
     ///
     /// - Parameters:
     ///   - center: Circle center in top-left coordinate system
-    ///   - radius: Circle radius
+    ///   - radius: Circle radius (typed length)
     ///   - fill: Fill color (nil for no fill)
     ///   - stroke: Stroke color (nil for no stroke)
     ///   - strokeWidth: Line width for stroke
     public mutating func emitCircle(
         center: PDF.UserSpace.Coordinate,
-        radius: PDF.UserSpace.Unit,
+        radius: Geometry<PDF.UserSpace.Unit>.Length,
         fill: PDF.Color?,
         stroke: PDF.Color?,
         strokeWidth: PDF.UserSpace.Width = .init(1)
@@ -689,7 +689,7 @@ extension PDF.Context {
         )
         let circle = Geometry<PDF.UserSpace.Unit>.Circle(
             center: pdfCenter,
-            radius: .init(radius)
+            radius: radius
         )
 
         if let fill = fill {

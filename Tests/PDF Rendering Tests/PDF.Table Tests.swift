@@ -36,13 +36,13 @@ struct `PDF.Table Tests` {
         ]
         let footerValues = ["Total", "4,780", "5,070", "4,880", "5,530", "20,260"]
 
-        let pdfDocument = ISO_32000.Document(
+        let pdfDocument = PDF.Document(configuration: .init(
             version: .v2_0,
-            info: ISO_32000.Document.Info(
+            info: .init(
                 title: "Table Test",
                 author: "swift-pdf-rendering"
             )
-        ) {
+        )) {
             PDF.VStack(spacing: 16) {
                 PDF.Text("ISO 32000-2:2020 Table Structure Types", state: .init(fontSize: 18))
                 PDF.Spacer(8)

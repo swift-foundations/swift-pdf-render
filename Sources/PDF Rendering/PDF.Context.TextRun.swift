@@ -240,7 +240,7 @@ extension PDF.Context {
                         let centerX = PDF.UserSpace.X(centerXValue)
                         context.emitCircle(
                             center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
-                            radius: circle.radius.value,
+                            radius: circle.radius,
                             fill: nil,
                             stroke: context.style.color,
                             strokeWidth: .init(strokeWidth)
@@ -249,13 +249,13 @@ extension PDF.Context {
                     case .filledCircle(let circle):
                         // Position circle vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let centerYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2)
-                        let centerY = PDF.UserSpace.Y(centerYValue)
-                        let centerXValue = pending.x.value + circle.radius.value
-                        let centerX = PDF.UserSpace.X(centerXValue)
+                        let centerYValue = baselineY.value.value - xHeight.value / 2.0
+                        let centerY = PDF.UserSpace.Y(PDF.UserSpace.Unit(centerYValue))
+                        let centerXValue = pending.x.value.value + circle.radius.value.value
+                        let centerX = PDF.UserSpace.X(PDF.UserSpace.Unit(centerXValue))
                         context.emitCircle(
                             center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
-                            radius: circle.radius.value,
+                            radius: circle.radius,
                             fill: context.style.color,
                             stroke: nil
                         )
@@ -263,8 +263,8 @@ extension PDF.Context {
                     case .filledSquare(let square):
                         // Position square vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let squareYValue = baselineY.value - xHeight / ISO_32000.UserSpace.Unit(2) - square.size.height / ISO_32000.UserSpace.Unit(2)
-                        let squareY = PDF.UserSpace.Y(squareYValue.value)
+                        let squareYValue = baselineY.value.value - xHeight.value / 2.0 - square.size.height.value.value / 2.0
+                        let squareY = PDF.UserSpace.Y(PDF.UserSpace.Unit(squareYValue))
                         let rect = PDF.UserSpace.Rectangle(
                             x: pending.x,
                             y: squareY,
@@ -573,9 +573,9 @@ extension PDF.Context.TextRun {
         case .leading:
             alignmentOffset = 0
         case .center:
-            alignmentOffset = max(0, (availableWidth - totalLineWidth) / PDF.UserSpace.Unit(2))
+            alignmentOffset = PDF.UserSpace.Unit(Swift.max(0, (availableWidth.value - totalLineWidth.value) / 2.0))
         case .trailing:
-            alignmentOffset = max(0, availableWidth - totalLineWidth)
+            alignmentOffset = PDF.UserSpace.Unit(Swift.max(0, availableWidth.value - totalLineWidth.value))
         }
 
         var currentX = PDF.UserSpace.X(context.layoutBox.llx.value + alignmentOffset)
@@ -605,7 +605,7 @@ extension PDF.Context.TextRun {
 
             let segmentWidth = PDF.UserSpace.Width(font.winAnsi.width(of: currentSegment, atSize: size))
             // Use the line's consistent baseline, adjusted for vertical offset (sub/superscript)
-            let textY = PDF.UserSpace.Y(PDF.UserSpace.Unit(lineBaselineY.value) - currentVerticalOffset)
+            let textY = PDF.UserSpace.Y(lineBaselineY.value - currentVerticalOffset)
 
             // Draw highlight background BEFORE text (so text appears on top)
             if case .highlight(let annotationColor) = currentDecoration {
@@ -649,7 +649,7 @@ extension PDF.Context.TextRun {
 
                 case .strikeOut:
                     // Position strikethrough at middle of x-height
-                    let strikeY = PDF.UserSpace.Y(textY.value - font.metrics.xHeight(atSize: size) / ISO_32000.UserSpace.Unit(2))
+                    let strikeY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value.value - font.metrics.xHeight(atSize: size).value / 2.0))
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: strikeY),
                         to: PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(segmentStartX.value + segmentWidth.value), y: strikeY),

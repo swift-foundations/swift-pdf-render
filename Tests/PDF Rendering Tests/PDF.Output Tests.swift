@@ -60,14 +60,14 @@ struct `PDF.Output Tests` {
         }
 
         // Create document
-        let pdfDocument = ISO_32000.Document.init(
+        let pdfDocument = PDF.Document(configuration: .init(
             version: .v1_7,
-            info: ISO_32000.Document.Info(
+            info: .init(
                 title: "PDF Rendering Test",
                 author: "swift-pdf-rendering",
                 creator: "PDF.Output Tests"
             )
-        ) {
+        )) {
             SampleDocument()
         }
 
@@ -103,13 +103,13 @@ struct `PDF.Output Tests` {
         }
 
         // Create document using the Document builder
-        let pdfDocument = ISO_32000.Document(
+        let pdfDocument = PDF.Document(configuration: .init(
             version: .v1_7,
-            info: ISO_32000.Document.Info(
+            info: .init(
                 title: "Multi-Page Test",
                 author: "swift-pdf-rendering"
             )
-        ) {
+        )) {
             MultiPageDocument()
         }
 
@@ -126,13 +126,13 @@ struct `PDF.Output Tests` {
     @Test
     func `Writes graphics PDF to tmp`() throws {
         // Create a page with graphics using the document builder
-        let pdfDocument = ISO_32000.Document(
+        let pdfDocument = PDF.Document(configuration: .init(
             version: .v1_7,
-            info: ISO_32000.Document.Info(
+            info: .init(
                 title: "Graphics Test",
                 author: "swift-pdf-rendering"
             )
-        ) {
+        )) {
             PDF.VStack(spacing: 10) {
                 PDF.Text("Graphics Test", state: .init(fontSize: 24))
                 PDF.Divider()

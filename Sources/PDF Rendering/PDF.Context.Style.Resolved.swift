@@ -57,7 +57,7 @@ extension PDF.Context.Style.Resolved {
         let descender = font.metrics.descender(atSize: fontSize)  // negative
         let contentHeight = ascender - descender
         let lineHeight = fontSize * self.lineHeight.value
-        return Swift.max(PDF.UserSpace.Unit(0), (lineHeight - contentHeight) / PDF.UserSpace.Unit(2))
+        return max(PDF.UserSpace.Unit(0), (lineHeight - contentHeight) / 2.0)
     }
 
     /// Distance from top of line box to baseline.
