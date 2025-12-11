@@ -410,7 +410,9 @@ extension PDF.Context {
         rect: PDF.UserSpace.Rectangle,
         targetId: String
     ) {
-        let pageNumber = pages.count + 1  // Current page (1-indexed)
+        // Use completedPages.count + 1 for correct 1-indexed page number
+        // pages.count includes current page if non-empty, which would overcount
+        let pageNumber = completedPages.count + 1
         pendingInternalLinks.append(PendingInternalLink(
             targetId: targetId,
             pageNumber: pageNumber,
