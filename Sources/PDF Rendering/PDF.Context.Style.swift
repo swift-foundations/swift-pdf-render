@@ -38,7 +38,7 @@ extension PDF.Context {
         public var color: PDF.Color?
 
         /// Line height multiplier (e.g., 1.2 for 120% line height)
-        public var lineHeight: Scale<1>?
+        public var lineHeight: Scale<1, Double>?
 
         /// Text decoration (underline, strikethrough)
         public var textMarkup: PDF.Annotation.TextMarkup.Kind?
@@ -56,7 +56,7 @@ extension PDF.Context {
             font: PDF.Font? = nil,
             fontSize: PDF.UserSpace.Unit? = nil,
             color: PDF.Color? = nil,
-            lineHeight: Scale<1>? = nil,
+            lineHeight: Scale<1, Double>? = nil,
             textMarkup: PDF.Annotation.TextMarkup.Kind? = nil,
             verticalOffset: PDF.UserSpace.Unit? = nil,
             textAlign: Horizontal.Alignment? = nil
@@ -166,7 +166,7 @@ extension PDF.Context.Style {
 
     /// Return a new style with the line height changed.
     @inlinable
-    public func with(lineHeight: Scale<1>) -> PDF.Context.Style {
+    public func with(lineHeight: Scale<1, Double>) -> PDF.Context.Style {
         var copy = self
         copy.lineHeight = lineHeight
         return copy

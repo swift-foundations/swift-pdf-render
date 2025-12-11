@@ -26,7 +26,7 @@ extension PDF.Context {
         public let textDecoration: PDF.Annotation.TextMarkup.Kind?
 
         /// Vertical offset for subscript/superscript (positive = up, negative = down)
-        public let verticalOffset: PDF.UserSpace.Unit
+        public let verticalOffset: PDF.UserSpace.Height
 
         /// Optional link URL (makes this text a clickable external link)
         public let linkURL: String?
@@ -43,7 +43,7 @@ extension PDF.Context {
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             backgroundColor: PDF.Color? = nil,
-            verticalOffset: PDF.UserSpace.Unit = 0,
+            verticalOffset: PDF.UserSpace.Height = 0,
             linkURL: String? = nil,
             internalLinkId: String? = nil
         ) {
@@ -67,7 +67,7 @@ extension PDF.Context {
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
-            verticalOffset: PDF.UserSpace.Unit = 0,
+            verticalOffset: PDF.UserSpace.Height = 0,
             linkURL: String? = nil,
             internalLinkId: String? = nil
         ) {
@@ -104,7 +104,7 @@ extension PDF.Context {
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
-            verticalOffset: PDF.UserSpace.Unit = 0,
+            verticalOffset: PDF.UserSpace.Height = 0,
             linkURL: String? = nil,
             internalLinkId: String? = nil
         ) -> [TextRun] {
@@ -210,7 +210,7 @@ extension PDF.Context {
                 if isFirstLine, let pending = context.pendingListMarker {
                     // Calculate baseline Y for the marker using half-leading model
                     // This ensures the marker aligns with text that is centered within its line box.
-                    let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + context.style.baselineOffset)
+                    let baselineY = context.layoutBox.lly + context.style.baselineOffset
 
                     // For circle/square markers, we need font metrics for x-height positioning
                     let baseFont = context.style.font
@@ -233,26 +233,22 @@ extension PDF.Context {
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
                         // Center at 60% of x-height above baseline for better optical alignment
                         // (slightly higher than mathematical center looks better with hollow circles)
-                        let centerYValue = baselineY.value - xHeight * 0.6
-                        let centerY = PDF.UserSpace.Y(centerYValue)
+                        let centerY = baselineY - PDF.UserSpace.Height(xHeight.value * 0.6)
                         // Center circle horizontally at marker position
-                        let centerXValue = pending.x.value + circle.radius.value
-                        let centerX = PDF.UserSpace.X(centerXValue)
+                        let centerX = pending.x + PDF.UserSpace.Width(circle.radius.value)
                         context.emitCircle(
                             center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
                             radius: circle.radius,
                             fill: nil,
                             stroke: context.style.color,
-                            strokeWidth: .init(strokeWidth)
+                            strokeWidth: PDF.UserSpace.Width(strokeWidth.value)
                         )
 
                     case .filledCircle(let circle):
                         // Position circle vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let centerYValue = baselineY.value.value - xHeight.value / 2.0
-                        let centerY = PDF.UserSpace.Y(PDF.UserSpace.Unit(centerYValue))
-                        let centerXValue = pending.x.value.value + circle.radius.value.value
-                        let centerX = PDF.UserSpace.X(PDF.UserSpace.Unit(centerXValue))
+                        let centerY = baselineY - PDF.UserSpace.Height(xHeight.value / 2.0)
+                        let centerX = pending.x + PDF.UserSpace.Width(circle.radius.value)
                         context.emitCircle(
                             center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
                             radius: circle.radius,
@@ -263,8 +259,7 @@ extension PDF.Context {
                     case .filledSquare(let square):
                         // Position square vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let squareYValue = baselineY.value.value - xHeight.value / 2.0 - square.size.height.value.value / 2.0
-                        let squareY = PDF.UserSpace.Y(PDF.UserSpace.Unit(squareYValue))
+                        let squareY = baselineY - PDF.UserSpace.Height(xHeight.value / 2.0) - PDF.UserSpace.Height(square.height.value / 2.0)
                         let rect = PDF.UserSpace.Rectangle(
                             x: pending.x,
                             y: squareY,
@@ -298,14 +293,14 @@ extension PDF.Context.TextRun {
         let fontSize: PDF.UserSpace.Unit
         let color: PDF.Color
         let textDecoration: PDF.Annotation.TextMarkup.Kind?
-        let verticalOffset: PDF.UserSpace.Unit
+        let verticalOffset: PDF.UserSpace.Height
         let linkURL: String?
         let internalLinkId: String?
         let isWhitespace: Bool
         let isNewline: Bool
         let isTab: Bool
 
-        var width: PDF.UserSpace.Unit {
+        var width: PDF.UserSpace.Width {
             font.winAnsi.width(of: bytes, atSize: fontSize)
         }
     }
@@ -479,7 +474,7 @@ extension PDF.Context.TextRun {
     static func buildLines(_ tokens: [Token], maxWidth: PDF.UserSpace.Width, preserveWhitespace: Bool = false) -> [Line] {
         var lines: [Line] = []
         var currentLine = Line(tokens: [])
-        var currentWidth: PDF.UserSpace.Unit = 0
+        var currentWidth: PDF.UserSpace.Width = 0
         // When preserving whitespace (preformatted text), don't skip leading whitespace
         var lastWasWhitespace = !preserveWhitespace
 
@@ -497,7 +492,7 @@ extension PDF.Context.TextRun {
             // Handle tabs (convert to spaces for now)
             if token.isTab {
                 let tabWidth = token.font.winAnsi.width(of: [.ascii.space, .ascii.space, .ascii.space, .ascii.space], atSize: token.fontSize)
-                if currentWidth + tabWidth <= maxWidth.value {
+                if currentWidth + tabWidth <= maxWidth {
                     currentLine.tokens.append(token)
                     currentWidth = currentWidth + tabWidth
                 }
@@ -525,7 +520,7 @@ extension PDF.Context.TextRun {
                 // First word on line - always add it even if it exceeds width
                 currentLine.tokens.append(token)
                 currentWidth = wordWidth
-            } else if currentWidth + wordWidth <= maxWidth.value {
+            } else if currentWidth + wordWidth <= maxWidth {
                 // Word fits
                 currentLine.tokens.append(token)
                 currentWidth = currentWidth + wordWidth
@@ -557,34 +552,34 @@ extension PDF.Context.TextRun {
         let tokens = line.trimmedTokens
 
         // Calculate total line width for alignment
-        var totalLineWidth: PDF.UserSpace.Unit = 0
+        var totalLineWidth: PDF.UserSpace.Width = 0
         for (index, token) in tokens.enumerated() {
-            totalLineWidth += token.width
+            totalLineWidth = totalLineWidth + token.width
             // Add space width between words (same logic as rendering below)
             if token.isWhitespace && index < tokens.count - 1 {
-                totalLineWidth += token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+                totalLineWidth = totalLineWidth + token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
             }
         }
 
         // Calculate alignment offset
-        let availableWidth = context.layoutBox.width.value
-        let alignmentOffset: PDF.UserSpace.Unit
+        let availableWidth = context.layoutBox.width
+        let alignmentOffset: PDF.UserSpace.Width
         switch context.style.textAlign {
         case .leading:
             alignmentOffset = 0
         case .center:
-            alignmentOffset = PDF.UserSpace.Unit(Swift.max(0, (availableWidth.value - totalLineWidth.value) / 2.0))
+            alignmentOffset = PDF.UserSpace.Width(Swift.max(0, (availableWidth.value - totalLineWidth.value) / 2.0))
         case .trailing:
-            alignmentOffset = PDF.UserSpace.Unit(Swift.max(0, availableWidth.value - totalLineWidth.value))
+            alignmentOffset = PDF.UserSpace.Width(Swift.max(0, availableWidth.value - totalLineWidth.value))
         }
 
-        var currentX = PDF.UserSpace.X(context.layoutBox.llx.value + alignmentOffset)
+        var currentX = context.layoutBox.llx + alignmentOffset
 
         // Calculate line baseline using half-leading model
         // This ensures symmetric spacing above and below text within the line box.
         // The baselineOffset includes halfLeading + ascender, positioning text
         // centered within the line height rather than anchored at the top.
-        let lineBaselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + context.style.baselineOffset)
+        let lineBaselineY = context.layoutBox.lly + context.style.baselineOffset
 
         // Group consecutive tokens with same styling
         var currentSegment: [UInt8] = []
@@ -592,7 +587,7 @@ extension PDF.Context.TextRun {
         var currentSize: PDF.UserSpace.Unit?
         var currentColor: PDF.Color?
         var currentDecoration: PDF.Annotation.TextMarkup.Kind?
-        var currentVerticalOffset: PDF.UserSpace.Unit = 0
+        var currentVerticalOffset: PDF.UserSpace.Height = 0
         var currentLinkURL: String? = nil
         var currentInternalLinkId: String? = nil
         var segmentStartX = currentX
@@ -603,9 +598,9 @@ extension PDF.Context.TextRun {
                   let size = currentSize,
                   let color = currentColor else { return }
 
-            let segmentWidth = PDF.UserSpace.Width(font.winAnsi.width(of: currentSegment, atSize: size))
+            let segmentWidth = font.winAnsi.width(of: currentSegment, atSize: size)
             // Use the line's consistent baseline, adjusted for vertical offset (sub/superscript)
-            let textY = PDF.UserSpace.Y(lineBaselineY.value - currentVerticalOffset)
+            let textY = lineBaselineY - currentVerticalOffset
 
             // Draw highlight background BEFORE text (so text appears on top)
             if case .highlight(let annotationColor) = currentDecoration {
@@ -618,7 +613,7 @@ extension PDF.Context.TextRun {
                 }
                 let bgRect = PDF.UserSpace.Rectangle(
                     x: segmentStartX,
-                    y: PDF.UserSpace.Y(textY.value - size.value * 0.85),
+                    y: textY - PDF.UserSpace.Height(size.value * 0.85),
                     width: segmentWidth,
                     height: PDF.UserSpace.Height(size.value * 1.15)
                 )
@@ -639,22 +634,23 @@ extension PDF.Context.TextRun {
                 switch decoration {
                 case .underline:
                     // Position underline slightly below baseline
-                    let underlineY = PDF.UserSpace.Y(textY.value + size * 0.15)
+                    let underlineY = textY + PDF.UserSpace.Height(size.value * 0.15)
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: underlineY),
-                        to: PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(segmentStartX.value + segmentWidth.value), y: underlineY),
+                        to: PDF.UserSpace.Coordinate(x: segmentStartX + segmentWidth, y: underlineY),
                         color: color,
-                        width: .init(max(0.5, size.value * 0.05))
+                        width: PDF.UserSpace.Unit(max(0.5, size.value * 0.05))
                     )
 
                 case .strikeOut:
                     // Position strikethrough at middle of x-height
-                    let strikeY = PDF.UserSpace.Y(PDF.UserSpace.Unit(textY.value.value - font.metrics.xHeight(atSize: size).value / 2.0))
+                    let xHeight = font.metrics.xHeight(atSize: size)
+                    let strikeY = textY - PDF.UserSpace.Height(xHeight.value / 2.0)
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: strikeY),
-                        to: PDF.UserSpace.Coordinate(x: PDF.UserSpace.X(segmentStartX.value + segmentWidth.value), y: strikeY),
+                        to: PDF.UserSpace.Coordinate(x: segmentStartX + segmentWidth, y: strikeY),
                         color: color,
-                        width: .init(max(0.5, size.value * 0.05))
+                        width: PDF.UserSpace.Unit(max(0.5, size.value * 0.05))
                     )
 
                 case .highlight:
@@ -668,9 +664,9 @@ extension PDF.Context.TextRun {
             // Add link annotation if present
             let linkRect = PDF.UserSpace.Rectangle(
                 x: segmentStartX,
-                y: PDF.UserSpace.Y(textY.value - size * 0.85),
+                y: textY - PDF.UserSpace.Height(size.value * 0.85),
                 width: segmentWidth,
-                height: PDF.UserSpace.Height(size * 1.15)
+                height: PDF.UserSpace.Height(size.value * 1.15)
             )
             if let internalId = currentInternalLinkId {
                 // Internal link - add to pending for later resolution
@@ -681,7 +677,7 @@ extension PDF.Context.TextRun {
             }
 
             // Advance X position
-            currentX = PDF.UserSpace.X(segmentStartX.value + segmentWidth.value)
+            currentX = segmentStartX + segmentWidth
             currentSegment = []
         }
 
@@ -690,7 +686,7 @@ extension PDF.Context.TextRun {
             if token.isWhitespace {
                 flushSegment()
                 let spaceWidth = token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
-                currentX = PDF.UserSpace.X(currentX.value + spaceWidth)
+                currentX = currentX + spaceWidth
                 segmentStartX = currentX
                 continue
             }

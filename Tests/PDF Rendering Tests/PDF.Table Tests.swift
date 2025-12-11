@@ -25,7 +25,7 @@ struct `PDF.Table Tests` {
         let headerBg: PDF.Color = .rgb(r: 0.2, g: 0.4, b: 0.6)
         let altRowBg: PDF.Color = .gray(0.95)
         let footerBg: PDF.Color = .gray(0.85)
-        let borderColor: PDF.Color = .gray(0.4)
+        let borderStroke: PDF.Stroke = .init(.gray(0.4))
 
         let headers = ["Region", "Q1", "Q2", "Q3", "Q4", "Total"]
         let dataRows: [(values: [String], alt: Bool)] = [
@@ -53,7 +53,7 @@ struct `PDF.Table Tests` {
                             width: cellWidth,
                             height: rowHeight,
                             fill: headerBg,
-                            stroke: borderColor
+                            stroke: borderStroke
                         ) {
                             PDF.Text(header, state: .init(fontSize: 10))
                         }
@@ -65,7 +65,7 @@ struct `PDF.Table Tests` {
                                 width: cellWidth,
                                 height: rowHeight,
                                 fill: row.alt ? altRowBg : nil,
-                                stroke: borderColor
+                                stroke: borderStroke
                             ) {
                                 PDF.Text(value, state: .init(fontSize: 9))
                             }
@@ -77,7 +77,7 @@ struct `PDF.Table Tests` {
                             width: cellWidth,
                             height: rowHeight,
                             fill: footerBg,
-                            stroke: borderColor
+                            stroke: borderStroke
                         ) {
                             PDF.Text(value, state: .init(fontSize: 10))
                         }

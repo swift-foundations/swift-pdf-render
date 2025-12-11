@@ -13,7 +13,7 @@ extension PDF.Context.Style {
         public var font: PDF.Font
         public var fontSize: PDF.UserSpace.Unit
         public var color: PDF.Color
-        public var lineHeight: Scale<1>
+        public var lineHeight: Scale<1, Double>
         public var textMarkup: PDF.Annotation.TextMarkup.Kind?
         public var verticalOffset: PDF.UserSpace.Unit
         public var textAlign: Horizontal.Alignment
@@ -22,7 +22,7 @@ extension PDF.Context.Style {
             font: PDF.Font,
             fontSize: PDF.UserSpace.Unit,
             color: PDF.Color,
-            lineHeight: Scale<1>,
+            lineHeight: Scale<1, Double>,
             textMarkup: PDF.Annotation.TextMarkup.Kind? = nil,
             verticalOffset: PDF.UserSpace.Unit = 0,
             textAlign: Horizontal.Alignment = .leading
@@ -43,7 +43,7 @@ extension PDF.Context.Style.Resolved {
     ///
     /// Computed from fontSize × lineHeight multiplier.
     public var lineHeightPoints: PDF.UserSpace.Height {
-        PDF.UserSpace.Height(fontSize * lineHeight.value)
+        PDF.UserSpace.Height(fontSize.value * lineHeight.value)
     }
 
     /// Half-leading value using CSS half-leading model.
@@ -52,12 +52,12 @@ extension PDF.Context.Style.Resolved {
     /// (ascender - descender), distributed symmetrically above and below text.
     ///
     /// `halfLeading = max(0, (lineHeight - contentHeight) / 2)`
-    public var halfLeading: PDF.UserSpace.Unit {
+    public var halfLeading: PDF.UserSpace.Height {
         let ascender = font.metrics.ascender(atSize: fontSize)
         let descender = font.metrics.descender(atSize: fontSize)  // negative
         let contentHeight = ascender - descender
-        let lineHeight = fontSize * self.lineHeight.value
-        return max(PDF.UserSpace.Unit(0), (lineHeight - contentHeight) / 2.0)
+        let lineHeightPts = fontSize.value * self.lineHeight.value
+        return PDF.UserSpace.Height(max(0, (lineHeightPts - contentHeight.value) / 2.0))
     }
 
     /// Distance from top of line box to baseline.
@@ -66,7 +66,7 @@ extension PDF.Context.Style.Resolved {
     ///
     /// Used to position text properly within a line box following
     /// the CSS half-leading model for symmetric spacing.
-    public var baselineOffset: PDF.UserSpace.Unit {
+    public var baselineOffset: PDF.UserSpace.Height {
         halfLeading + font.metrics.ascender(atSize: fontSize)
     }
 }

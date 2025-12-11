@@ -10,17 +10,17 @@ extension PDF {
         /// Line color
         public var color: PDF.Color
 
-        /// Line thickness
-        public var thickness: PDF.UserSpace.Unit
+        /// Line thickness (vertical height of the line)
+        public var thickness: PDF.UserSpace.Height
 
         /// Vertical padding around the line
-        public var padding: PDF.UserSpace.Unit
+        public var padding: PDF.UserSpace.Height
 
         /// Create a divider
         public init(
             color: PDF.Color = .gray50,
-            thickness: PDF.UserSpace.Unit = 0.5,
-            padding: PDF.UserSpace.Unit = 6
+            thickness: PDF.UserSpace.Height = 0.5,
+            padding: PDF.UserSpace.Height = 6
         ) {
             self.color = color
             self.thickness = thickness
@@ -33,23 +33,24 @@ extension PDF {
 
         public static func _render(_ view: Self, context: inout PDF.Context) {
             // Check for page break before rendering
-            let totalHeight = PDF.UserSpace.Height(view.padding + view.thickness + view.padding)
-            context.checkPageBreak(needing: totalHeight)
+            context.checkPageBreak(needing: view.padding + view.thickness + view.padding)
 
-            context.advance(PDF.UserSpace.Y(view.padding))
+            context.advance(view.padding)
 
             let lineY = context.layoutBox.lly
             let startX = context.layoutBox.llx
-            let endX = PDF.UserSpace.X(context.layoutBox.llx.value + context.layoutBox.width.value)
 
-            context.advance(PDF.UserSpace.Y(view.thickness + view.padding))
+            context.advance(view.thickness + view.padding)
 
             // Emit line directly to content stream
             context.emitLine(
                 from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
-                to: PDF.UserSpace.Coordinate(x: endX, y: lineY),
+                to: PDF.UserSpace.Coordinate(
+                    x: context.layoutBox.llx + context.layoutBox.width,
+                    y: lineY
+                ),
                 color: view.color,
-                width: PDF.UserSpace.Width(view.thickness)
+                width: PDF.UserSpace.Unit(view.thickness.value)
             )
         }
     }

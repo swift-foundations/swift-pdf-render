@@ -33,7 +33,7 @@ extension Layout.Stack: PDF.View where StackContent: PDF.View {
 extension Layout.Stack.Horizontal: PDF.View where StackContent: PDF.View {
     /// Create a horizontal stack
     public init(
-        spacing: PDF.UserSpace.Unit = 0,
+        spacing: PDF.UserSpace.Width = 0,
         @PDF.Builder _ build: () -> StackContent
     ) {
         self.content = build()
@@ -54,7 +54,7 @@ extension Layout.Stack.Horizontal: PDF.View where StackContent: PDF.View {
         let startY = context.layoutBox.lly
 
         // Set up horizontal layout mode
-        context.horizontalSpacing = PDF.UserSpace.X(view.spacing)
+        context.horizontalSpacing = view.spacing
         context.lastElementX = nil
         context.horizontalRowStartY = startY
         context.horizontalRowMaxY = startY
@@ -78,10 +78,10 @@ extension Layout.Stack.Horizontal: PDF.View where StackContent: PDF.View {
 }
 
 extension Layout.Stack.Vertical: PDF.View where StackContent: PDF.View {
-    
+
     /// Create a vertical stack
     public init(
-        spacing: PDF.UserSpace.Unit = 0,
+        spacing: PDF.UserSpace.Height = 0,
         @PDF.Builder _ build: () -> StackContent
     ) {
         self.content = build()
@@ -98,7 +98,7 @@ extension Layout.Stack.Vertical: PDF.View where StackContent: PDF.View {
         let previousLastY = context.lastElementY
 
         // Set spacing for this stack (always set, even if 0)
-        context.stackSpacing = view.spacing > 0 ? PDF.UserSpace.Y(view.spacing) : nil
+        context.stackSpacing = view.spacing > 0 ? view.spacing : nil
         context.lastElementY = nil
 
         // Render content - spacing is applied by _Tuple between elements

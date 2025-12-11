@@ -79,10 +79,10 @@ extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
         // Vertical centering: baseline positioned so cap height is centered
         // baseline from top = (cellHeight + capHeight) / 2
         // content Y = startY + baseline - ascender
-        let baselineFromTop = (rectHeight.value + capHeight) / 2.0
-        let contentY = startY.value + baselineFromTop - ascender
+        let baselineFromTop = (rectHeight.value + capHeight.value) / 2.0
+        let contentY = startY.value + baselineFromTop - ascender.value
 
-        context.layoutBox.llx = PDF.UserSpace.X(startX.value + padding)
+        context.layoutBox.llx = startX + PDF.UserSpace.Width(padding.value)
         context.layoutBox.lly = PDF.UserSpace.Y(contentY)
 
         // Render content (foreground)
@@ -90,11 +90,11 @@ extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
 
         // Advance by rectangle dimensions
         if context.isHorizontalLayout {
-            context.layoutBox.llx = PDF.UserSpace.X(startX.value + rectWidth.value)
-            context.layoutBox.lly = PDF.UserSpace.Y(startY.value + rectHeight.value)
+            context.layoutBox.llx = startX + rectWidth
+            context.layoutBox.lly = startY + rectHeight
         } else {
             context.layoutBox.llx = startX
-            context.layoutBox.lly = PDF.UserSpace.Y(startY.value + rectHeight.value)
+            context.layoutBox.lly = startY + rectHeight
         }
     }
 }
@@ -148,15 +148,15 @@ extension Pair where First == PDF.Rectangle, Second: PDF.View {
         let contentY: PDF.UserSpace.Y
         switch verticalAlignment {
         case .top:
-            contentY = PDF.UserSpace.Y(startY.value + padding + capHeight - ascender)
+            contentY = PDF.UserSpace.Y(startY.value + padding.value + capHeight.value - ascender.value)
         case .center:
-            let baselineFromTop = (rectHeight.value + capHeight) / 2.0
-            contentY = PDF.UserSpace.Y(startY.value + baselineFromTop - ascender)
+            let baselineFromTop = (rectHeight.value + capHeight.value) / 2.0
+            contentY = PDF.UserSpace.Y(startY.value + baselineFromTop - ascender.value)
         case .bottom, .baseline:
-            contentY = PDF.UserSpace.Y(startY.value + rectHeight.value - padding - ascender)
+            contentY = PDF.UserSpace.Y(startY.value + rectHeight.value - padding.value - ascender.value)
         }
 
-        context.layoutBox.llx = PDF.UserSpace.X(startX.value + padding)
+        context.layoutBox.llx = startX + PDF.UserSpace.Width(padding.value)
         context.layoutBox.lly = contentY
 
         // Render content (foreground)
@@ -164,11 +164,11 @@ extension Pair where First == PDF.Rectangle, Second: PDF.View {
 
         // Advance by rectangle dimensions
         if context.isHorizontalLayout {
-            context.layoutBox.llx = PDF.UserSpace.X(startX.value + rectWidth.value)
-            context.layoutBox.lly = PDF.UserSpace.Y(startY.value + rectHeight.value)
+            context.layoutBox.llx = startX + rectWidth
+            context.layoutBox.lly = startY + rectHeight
         } else {
             context.layoutBox.llx = startX
-            context.layoutBox.lly = PDF.UserSpace.Y(startY.value + rectHeight.value)
+            context.layoutBox.lly = startY + rectHeight
         }
     }
 }

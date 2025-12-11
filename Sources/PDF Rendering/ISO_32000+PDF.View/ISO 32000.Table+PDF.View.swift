@@ -90,7 +90,7 @@ extension ISO_32000.TH {
         width: PDF.UserSpace.Width,
         height: PDF.UserSpace.Height,
         fill: PDF.Color? = nil,
-        stroke: PDF.Color? = nil,
+        stroke: PDF.Stroke? = nil,
         @PDF.Builder _ content: () -> Content
     ) -> some PDF.View {
         PDF.Element(tag: self) {
@@ -114,7 +114,7 @@ extension ISO_32000.TD {
     /// PDF.Table.Row.Cell(
     ///     width: 100,
     ///     height: 24,
-    ///     stroke: .gray(0.3)
+    ///     stroke: .init(.gray(0.3))
     /// ) {
     ///     PDF.Text("Value")
     /// }
@@ -123,7 +123,7 @@ extension ISO_32000.TD {
         width: PDF.UserSpace.Width,
         height: PDF.UserSpace.Height,
         fill: PDF.Color? = nil,
-        stroke: PDF.Color? = nil,
+        stroke: PDF.Stroke? = nil,
         @PDF.Builder _ content: () -> Content
     ) -> some PDF.View {
         PDF.Element(tag: self) {

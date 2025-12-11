@@ -86,7 +86,7 @@ struct `PDF.Context Tests` {
         )
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs((context.style.lineHeightPoints.value - 14.4).value) < 0.001)
+        #expect(abs(context.style.lineHeightPoints - 14.4) < 0.001)
     }
 
     @Test
@@ -107,7 +107,7 @@ struct `PDF.Context Tests` {
             lineHeight: 1.2
         )
 
-        #expect(large.style.lineHeightPoints.value.value == small.style.lineHeightPoints.value.value * 2.0)
+        #expect(large.style.lineHeightPoints == small.style.lineHeightPoints * 2.0)
     }
 
     // MARK: - Advance Methods
@@ -126,7 +126,8 @@ struct `PDF.Context Tests` {
         context.advanceLine()
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs((context.layoutBox.lly - startY).value.value - 14.4) < 0.001)
+        let advancedHeight = context.layoutBox.lly - startY
+        #expect(abs(advancedHeight.value - 14.4) < 0.001)
     }
 
     @Test
@@ -137,7 +138,7 @@ struct `PDF.Context Tests` {
             mediaBox: .letter
         )
 
-        context.advance(PDF.UserSpace.Y(50))
+        context.advance(PDF.UserSpace.Height(50))
 
         #expect(context.layoutBox.lly == 50)
     }
@@ -151,9 +152,9 @@ struct `PDF.Context Tests` {
             mediaBox: .letter
         )
 
-        context.advance(PDF.UserSpace.Y(10))
-        context.advance(PDF.UserSpace.Y(20))
-        context.advance(PDF.UserSpace.Y(30))
+        context.advance(PDF.UserSpace.Height(10))
+        context.advance(PDF.UserSpace.Height(20))
+        context.advance(PDF.UserSpace.Height(30))
 
         #expect(context.layoutBox.lly == 160)
     }

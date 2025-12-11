@@ -82,7 +82,7 @@ extension PDF {
         public var preserveWhitespace: Bool = false
 
         /// Stack spacing - applied between elements in a VStack.
-        public var stackSpacing: PDF.UserSpace.Y? = nil
+        public var stackSpacing: PDF.UserSpace.Height? = nil
 
         /// Track Y position before last element rendered (for spacing logic).
         internal var lastElementY: PDF.UserSpace.Y? = nil
@@ -93,7 +93,7 @@ extension PDF {
         // MARK: - Horizontal Layout
 
         /// Horizontal stack spacing - applied between elements in an HStack.
-        public var horizontalSpacing: PDF.UserSpace.X? = nil
+        public var horizontalSpacing: PDF.UserSpace.Width? = nil
 
         /// Track X position before last element rendered (for horizontal spacing).
         internal var lastElementX: PDF.UserSpace.X? = nil
@@ -185,7 +185,7 @@ extension PDF.Context {
         font: PDF.Font = .helvetica,
         fontSize: PDF.UserSpace.Unit = 12,
         color: PDF.Color = .black,
-        lineHeight: Scale<1> = 1.2
+        lineHeight: Scale<1, Double> = 1.2
     ) {
         let box = PDF.UserSpace.Rectangle(
             x: x, y: y,
@@ -230,15 +230,13 @@ extension PDF.Context {
     }
 
     /// Advance Y position by specified amount.
-    public mutating func advance(_ amount: PDF.UserSpace.Y) {
-        layoutBox.lly = PDF.UserSpace.Y(layoutBox.lly.value + amount.value)
+    public mutating func advance(_ amount: PDF.UserSpace.Height) {
+        layoutBox.lly = layoutBox.lly + amount
     }
 
     /// Advance X position by specified amount (for horizontal layout).
-    public mutating func advanceX(_ amount: PDF.UserSpace.X) {
-        layoutBox.llx = PDF.UserSpace.X(layoutBox.llx.value + amount.value)
-        // Reduce available width
-        layoutBox.urx = PDF.UserSpace.X(layoutBox.urx.value)
+    public mutating func advanceX(_ amount: PDF.UserSpace.Width) {
+        layoutBox.llx = layoutBox.llx + amount
     }
 
     /// Check if we're currently in horizontal layout mode.
@@ -326,19 +324,20 @@ extension PDF.Context {
             case 2:
                 // Level 2: ○ (circle) - hollow circle drawn with PDF graphics
                 // Diameter ~0.28em (~80% of level 1) for visual hierarchy
-                let radius = Geometry<PDF.UserSpace.Unit>.Length(style.fontSize * 0.14)
-                let circle = Geometry<PDF.UserSpace.Unit>.Circle(radius: radius)
+                let radius = PDF.UserSpace.Length(style.fontSize * 0.14)
+                let circle = PDF.UserSpace.Circle(radius: radius)
                 // Stroke width proportional to font size (thin stroke for hollow appearance)
                 let strokeWidth = style.fontSize * 0.05
                 return .strokedCircle(circle, strokeWidth: strokeWidth)
             default:
                 // Level 3+: ■ (square) - filled square using PDF graphics
                 // Side ~0.22em (~63% of level 1 diameter) for visual hierarchy
-                let size = style.fontSize * 0.22
+                let size = style.fontSize.value * 0.22
                 // Rectangle will be positioned when marker is rendered
-                let rect = Geometry<PDF.UserSpace.Unit>.Rectangle(
-                    llx: .init(0), lly: .init(0),
-                    urx: .init(size), ury: .init(size)
+                let rect = PDF.UserSpace.Rectangle(
+                    x: 0, y: 0,
+                    width: PDF.UserSpace.Width(size),
+                    height: PDF.UserSpace.Height(size)
                 )
                 return .filledSquare(rect)
             }
@@ -503,7 +502,7 @@ extension PDF.Context {
                     let destination = ISO_32000.Destination.xyz(
                         page: dest.pageNumber - 1,  // 0-indexed page reference
                         left: nil,
-                        top: dest.yPosition.value,  // Raw coordinate for PDF user space
+                        top: dest.yPosition,  // Raw coordinate for PDF user space
                         zoom: nil
                     )
                     let link = PDF.Annotation.Link(destination: destination)
@@ -596,7 +595,7 @@ extension PDF.Context {
         from: PDF.UserSpace.Coordinate,
         to: PDF.UserSpace.Coordinate,
         color: PDF.Color,
-        width: PDF.UserSpace.Width
+        width: PDF.UserSpace.Unit
     ) {
         guard !measurementMode else { return }
         
@@ -612,7 +611,7 @@ extension PDF.Context {
             currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
         }
         
-        currentPageBuilder.setLineWidth(width)
+        currentPageBuilder.setLineWidth(PDF.UserSpace.Width(width.value))
         currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
         currentPageBuilder.lineTo(x: to.x, y: pdfToY)
         currentPageBuilder.stroke()
@@ -622,14 +621,13 @@ extension PDF.Context {
     public mutating func emitRectangle(
         _ rect: PDF.UserSpace.Rectangle,
         fill: PDF.Color?,
-        stroke: PDF.Color?,
-        strokeWidth: PDF.UserSpace.Width = .init(1)
+        stroke: PDF.Stroke?
     ) {
         guard !measurementMode else { return }
-        
+
         // Transform Y coordinate (rect uses top-left origin, PDF uses bottom-left)
         let pdfY: PDF.UserSpace.Y = .init(pageHeight.value - rect.lly.value - rect.height.value)
-        
+
         if let fill = fill {
             switch fill {
             case .gray(let g):
@@ -640,9 +638,9 @@ extension PDF.Context {
                 currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
             }
         }
-        
+
         if let stroke = stroke {
-            switch stroke {
+            switch stroke.color {
             case .gray(let g):
                 currentPageBuilder.setStrokeColorGray(g)
             case .rgb(let r, let g, let b):
@@ -650,9 +648,9 @@ extension PDF.Context {
             case .cmyk(let c, let m, let y, let k):
                 currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
             }
-            currentPageBuilder.setLineWidth(strokeWidth)
+            currentPageBuilder.setLineWidth(stroke.width)
         }
-        
+
         currentPageBuilder.rectangle(x: rect.llx, y: pdfY, width: rect.width, height: rect.height)
 
         if fill != nil && stroke != nil {
@@ -674,7 +672,7 @@ extension PDF.Context {
     ///   - strokeWidth: Line width for stroke
     public mutating func emitCircle(
         center: PDF.UserSpace.Coordinate,
-        radius: Geometry<PDF.UserSpace.Unit>.Length,
+        radius: PDF.UserSpace.Length,
         fill: PDF.Color?,
         stroke: PDF.Color?,
         strokeWidth: PDF.UserSpace.Width = .init(1)
@@ -683,11 +681,11 @@ extension PDF.Context {
 
         // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
         let pdfCenterY = convertY(center.y)
-        let pdfCenter = Geometry<PDF.UserSpace.Unit>.Point(
+        let pdfCenter = PDF.UserSpace.Point(
             x: center.x,
             y: pdfCenterY
         )
-        let circle = Geometry<PDF.UserSpace.Unit>.Circle(
+        let circle = PDF.UserSpace.Circle(
             center: pdfCenter,
             radius: radius
         )

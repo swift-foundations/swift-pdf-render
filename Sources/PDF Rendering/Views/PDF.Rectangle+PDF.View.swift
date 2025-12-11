@@ -24,17 +24,16 @@ extension PDF.Rectangle: PDF.View {
         context.emitRectangle(
             renderRect,
             fill: view.fill,
-            stroke: view.stroke,
-            strokeWidth: .init(view.strokeWidth)
+            stroke: view.stroke
         )
 
         if context.isHorizontalLayout {
             // In horizontal layout: advance X by width, track Y for max height
-            context.advanceX(PDF.UserSpace.X(view.rect.width.value))
-            context.advance(PDF.UserSpace.Y(view.rect.height.value))
+            context.advanceX(view.rect.width)
+            context.advance(view.rect.height)
         } else {
             // In vertical layout: advance Y by height
-            context.advance(PDF.UserSpace.Y(view.rect.height.value))
+            context.advance(view.rect.height)
         }
     }
 }

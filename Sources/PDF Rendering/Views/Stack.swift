@@ -24,9 +24,9 @@ extension Layout.Stack {
     ///
     /// Arranges child views horizontally with specified spacing.
     public struct Horizontal {
-        /// Spacing between elements in points
-        public var spacing: PDF.UserSpace.Unit
-        
+        /// Spacing between elements (horizontal displacement)
+        public var spacing: PDF.UserSpace.Width
+
         /// Child content
         public var content: StackContent
 
@@ -45,8 +45,8 @@ extension Layout.Stack {
     ///
     /// Arranges child views vertically with specified spacing.
     public struct Vertical {
-        /// Spacing between elements in points
-        public var spacing: PDF.UserSpace.Unit
+        /// Spacing between elements (vertical displacement)
+        public var spacing: PDF.UserSpace.Height
 
         /// Child content
         public var content: StackContent

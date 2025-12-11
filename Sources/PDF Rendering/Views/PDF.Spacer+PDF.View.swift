@@ -7,11 +7,11 @@ extension PDF {
     public struct Spacer: PDF.View, Sendable {
         public typealias Content = Never
 
-        /// Vertical space in points
-        public var height: Double
+        /// Vertical space (displacement)
+        public var height: PDF.UserSpace.Height
 
         /// Create a spacer
-        public init(_ height: Double) {
+        public init(_ height: PDF.UserSpace.Height) {
             self.height = height
         }
 
@@ -20,7 +20,7 @@ extension PDF {
         }
 
         public static func _render(_ view: Self, context: inout PDF.Context) {
-            context.advance(PDF.UserSpace.Y(PDF.UserSpace.Unit(view.height)))
+            context.advance(view.height)
             // Spacer produces no operations, just advances position
         }
     }

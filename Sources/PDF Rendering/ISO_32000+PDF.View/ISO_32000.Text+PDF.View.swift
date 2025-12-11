@@ -41,7 +41,7 @@ extension ISO_32000.Text: PDF.View {
             // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
-            let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + font.metrics.ascender(atSize: fontSize))
+            let baselineY: PDF.UserSpace.Y = context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
 
             // Emit bytes directly to content stream
             context.emitText(
@@ -67,7 +67,7 @@ extension ISO_32000.Text: PDF.View {
         let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
 
         // In top-left coordinates, context.layoutBox.lly is the top of the line box.
-        let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + font.metrics.ascender(atSize: fontSize))
+        let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + font.metrics.ascender(atSize: fontSize).value)
 
         // Emit text
         context.emitText(
@@ -79,7 +79,7 @@ extension ISO_32000.Text: PDF.View {
         )
 
         // Advance X by text width and track Y for max height
-        context.advanceX(PDF.UserSpace.X(textWidth))
+        context.advanceX(textWidth)
         context.advanceLine()
     }
 
@@ -118,7 +118,7 @@ extension ISO_32000.Text: PDF.View {
             let wordWidth = font.winAnsi.width(of: word, atSize: size)
 
             if currentLine.isEmpty {
-                if wordWidth > maxWidth.value {
+                if wordWidth > maxWidth {
                     lines.append(word)
                 } else {
                     currentLine = word
@@ -127,7 +127,7 @@ extension ISO_32000.Text: PDF.View {
                 let lineWidth = font.winAnsi.width(of: currentLine, atSize: size)
                 let potentialWidth = lineWidth + spaceWidth + wordWidth
 
-                if potentialWidth <= maxWidth.value {
+                if potentialWidth <= maxWidth {
                     currentLine.append(.ascii.space)
                     currentLine.append(contentsOf: word)
                 } else {
