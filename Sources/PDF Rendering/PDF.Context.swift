@@ -209,8 +209,8 @@ extension PDF.Context {
         mediaBox: ISO_32000.UserSpace.Rectangle,
         margins: PDF.UserSpace.EdgeInsets
     ) {
-        let contentWidth = PDF.UserSpace.Width(mediaBox.width.value - margins.horizontal)
-        let contentHeight = PDF.UserSpace.Height(mediaBox.height.value - margins.vertical)
+        let contentWidth = mediaBox.width - margins.horizontal
+        let contentHeight = mediaBox.height - margins.vertical
         self.init(
             x: PDF.UserSpace.X(margins.leading),
             y: PDF.UserSpace.Y(margins.top),

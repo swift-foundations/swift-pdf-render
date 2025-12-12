@@ -34,8 +34,8 @@ extension PDF.Document {
         configuration: PDF.Configuration = .init(),
         @PDF.Builder _ build: () -> View
     ) {
-        let contentWidth = PDF.UserSpace.Width(configuration.mediaBox.width.value - configuration.margins.horizontal)
-        let contentHeight = PDF.UserSpace.Height(configuration.mediaBox.height.value - configuration.margins.vertical)
+        let contentWidth = configuration.mediaBox.width - configuration.margins.horizontal
+        let contentHeight = configuration.mediaBox.height - configuration.margins.vertical
 
         var context = PDF.Context(
             x: PDF.UserSpace.X(configuration.margins.leading),
