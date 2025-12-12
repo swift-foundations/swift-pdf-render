@@ -18,7 +18,10 @@ extension PDF.Context {
         case text(bytes: [UInt8], font: PDF.Font)
 
         /// Stroked circle marker (hollow circle for Level 2)
-        case strokedCircle(PDF.UserSpace.Circle, strokeWidth: PDF.UserSpace.Unit)
+        case strokedCircle(
+            PDF.UserSpace.Circle,
+            strokeWidth: PDF.UserSpace.Width
+        )
 
         /// Filled disc marker (solid circle for Level 1)
         case filledCircle(PDF.UserSpace.Circle)

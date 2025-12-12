@@ -10,8 +10,8 @@ extension PDF {
         /// Line color
         public var color: PDF.Color
 
-        /// Line thickness (vertical height of the line)
-        public var thickness: PDF.UserSpace.Height
+        /// Line thickness (stroke width and vertical extent)
+        public var thickness: PDF.UserSpace.Size<1>
 
         /// Vertical padding around the line
         public var padding: PDF.UserSpace.Height
@@ -19,7 +19,7 @@ extension PDF {
         /// Create a divider
         public init(
             color: PDF.Color = .gray50,
-            thickness: PDF.UserSpace.Height = 0.5,
+            thickness: PDF.UserSpace.Size<1> = 0.5,
             padding: PDF.UserSpace.Height = 6
         ) {
             self.color = color
@@ -33,14 +33,14 @@ extension PDF {
 
         public static func _render(_ view: Self, context: inout PDF.Context) {
             // Check for page break before rendering
-            context.checkPageBreak(needing: view.padding + view.thickness + view.padding)
+            context.checkPageBreak(needing: view.padding + view.thickness.height + view.padding)
 
             context.advance(view.padding)
 
             let lineY = context.layoutBox.lly
             let startX = context.layoutBox.llx
 
-            context.advance(view.thickness + view.padding)
+            context.advance(view.thickness.height + view.padding)
 
             // Emit line directly to content stream
             context.emitLine(
@@ -50,7 +50,7 @@ extension PDF {
                     y: lineY
                 ),
                 color: view.color,
-                width: PDF.UserSpace.Unit(view.thickness.value)
+                width: view.thickness.width
             )
         }
     }

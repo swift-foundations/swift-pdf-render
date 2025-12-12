@@ -32,7 +32,7 @@ extension PDF.Context {
         public var font: PDF.Font?
 
         /// Font size in points
-        public var fontSize: PDF.UserSpace.Unit?
+        public var fontSize: PDF.UserSpace.Size<1>?
 
         /// Text color
         public var color: PDF.Color?
@@ -44,7 +44,7 @@ extension PDF.Context {
         public var textMarkup: PDF.Annotation.TextMarkup.Kind?
 
         /// Vertical offset for subscript/superscript
-        public var verticalOffset: PDF.UserSpace.Unit?
+        public var verticalOffset: PDF.UserSpace.Height?
 
         /// Horizontal text alignment
         public var textAlign: Horizontal.Alignment?
@@ -54,11 +54,11 @@ extension PDF.Context {
         /// Create a style with all properties
         public init(
             font: PDF.Font? = nil,
-            fontSize: PDF.UserSpace.Unit? = nil,
+            fontSize: PDF.UserSpace.Size<1>? = nil,
             color: PDF.Color? = nil,
             lineHeight: Scale<1, Double>? = nil,
             textMarkup: PDF.Annotation.TextMarkup.Kind? = nil,
-            verticalOffset: PDF.UserSpace.Unit? = nil,
+            verticalOffset: PDF.UserSpace.Height? = nil,
             textAlign: Horizontal.Alignment? = nil
         ) {
             self.font = font
@@ -150,7 +150,7 @@ extension PDF.Context.Style {
 
     /// Return a new style with the font size changed.
     @inlinable
-    public func with(fontSize: PDF.UserSpace.Unit) -> PDF.Context.Style {
+    public func with(fontSize: PDF.UserSpace.Size<1>) -> PDF.Context.Style {
         var copy = self
         copy.fontSize = fontSize
         return copy
@@ -182,7 +182,7 @@ extension PDF.Context.Style {
 
     /// Return a new style with vertical offset changed.
     @inlinable
-    public func with(verticalOffset: PDF.UserSpace.Unit) -> PDF.Context.Style {
+    public func with(verticalOffset: PDF.UserSpace.Height) -> PDF.Context.Style {
         var copy = self
         copy.verticalOffset = verticalOffset
         return copy

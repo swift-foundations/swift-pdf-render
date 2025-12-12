@@ -25,7 +25,12 @@ extension ISO_32000.Text: PDF.View {
         }
     }
 
-    private static func _renderVertical(_ text: Self, font: PDF.Font, fontSize: PDF.UserSpace.Unit, context: inout PDF.Context) {
+    private static func _renderVertical(
+        _ text: Self,
+        font: PDF.Font,
+        fontSize: PDF.UserSpace.Size<1>,
+        context: inout PDF.Context
+    ) {
         // Word wrap the bytes
         let lines = wrapBytes(
             text.content,
@@ -56,7 +61,7 @@ extension ISO_32000.Text: PDF.View {
         }
     }
 
-    private static func _renderHorizontal(_ text: Self, font: PDF.Font, fontSize: PDF.UserSpace.Unit, context: inout PDF.Context) {
+    private static func _renderHorizontal(_ text: Self, font: PDF.Font, fontSize: PDF.UserSpace.Size<1>, context: inout PDF.Context) {
         // In horizontal layout, render text on a single line without wrapping
         // and advance X by the text width
 
@@ -87,7 +92,7 @@ extension ISO_32000.Text: PDF.View {
     private static func wrapBytes(
         _ bytes: [UInt8],
         font: PDF.Font,
-        size: PDF.UserSpace.Unit,
+        size: PDF.UserSpace.Size<1>,
         maxWidth: PDF.UserSpace.Width
     ) -> [[UInt8]] {
         // Split bytes on spaces

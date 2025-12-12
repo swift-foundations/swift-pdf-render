@@ -183,7 +183,7 @@ extension PDF.Context {
         availableHeight: PDF.UserSpace.Height,
         mediaBox: ISO_32000.UserSpace.Rectangle,
         font: PDF.Font = .helvetica,
-        fontSize: PDF.UserSpace.Unit = 12,
+        fontSize: PDF.UserSpace.Size<1> = 12,
         color: PDF.Color = .black,
         lineHeight: Scale<1, Double> = 1.2
     ) {
@@ -324,15 +324,15 @@ extension PDF.Context {
             case 2:
                 // Level 2: ○ (circle) - hollow circle drawn with PDF graphics
                 // Diameter ~0.28em (~80% of level 1) for visual hierarchy
-                let radius = PDF.UserSpace.Length(style.fontSize * 0.14)
+                let radius = (style.fontSize * 0.14).length
                 let circle = PDF.UserSpace.Circle(radius: radius)
                 // Stroke width proportional to font size (thin stroke for hollow appearance)
-                let strokeWidth = style.fontSize * 0.05
+                let strokeWidth = (style.fontSize * 0.05).width
                 return .strokedCircle(circle, strokeWidth: strokeWidth)
             default:
                 // Level 3+: ■ (square) - filled square using PDF graphics
                 // Side ~0.22em (~63% of level 1 diameter) for visual hierarchy
-                let size = style.fontSize.value * 0.22
+                let size = style.fontSize.length.value * 0.22
                 // Rectangle will be positioned when marker is rendered
                 let rect = PDF.UserSpace.Rectangle(
                     x: 0, y: 0,
@@ -552,7 +552,7 @@ extension PDF.Context {
         _ bytes: [UInt8],
         at position: PDF.UserSpace.Coordinate,
         font: PDF.Font,
-        size: PDF.UserSpace.Unit,
+        size: PDF.UserSpace.Size<1>,
         color: PDF.Color
     ) {
         guard !measurementMode else { return }
@@ -584,7 +584,7 @@ extension PDF.Context {
         _ text: String,
         at position: PDF.UserSpace.Coordinate,
         font: PDF.Font,
-        size: PDF.UserSpace.Unit,
+        size: PDF.UserSpace.Size<1>,
         color: PDF.Color
     ) {
         emitText([UInt8](winAnsi: text, withFallback: true), at: position, font: font, size: size, color: color)
@@ -595,13 +595,13 @@ extension PDF.Context {
         from: PDF.UserSpace.Coordinate,
         to: PDF.UserSpace.Coordinate,
         color: PDF.Color,
-        width: PDF.UserSpace.Unit
+        width: PDF.UserSpace.Width
     ) {
         guard !measurementMode else { return }
-        
+
         let pdfFromY = convertY(from.y)
         let pdfToY = convertY(to.y)
-        
+
         switch color {
         case .gray(let g):
             currentPageBuilder.setStrokeColorGray(g)
@@ -610,8 +610,8 @@ extension PDF.Context {
         case .cmyk(let c, let m, let y, let k):
             currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
         }
-        
-        currentPageBuilder.setLineWidth(PDF.UserSpace.Width(width.value))
+
+        currentPageBuilder.setLineWidth(width)
         currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
         currentPageBuilder.lineTo(x: to.x, y: pdfToY)
         currentPageBuilder.stroke()

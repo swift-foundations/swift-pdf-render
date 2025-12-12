@@ -11,20 +11,20 @@ extension PDF.Context.Style {
     /// Unlike `Style`, this cannot have nil values and is ready for rendering.
     public struct Resolved: Sendable, Equatable {
         public var font: PDF.Font
-        public var fontSize: PDF.UserSpace.Unit
+        public var fontSize: PDF.UserSpace.Size<1>
         public var color: PDF.Color
         public var lineHeight: Scale<1, Double>
         public var textMarkup: PDF.Annotation.TextMarkup.Kind?
-        public var verticalOffset: PDF.UserSpace.Unit
+        public var verticalOffset: PDF.UserSpace.Height
         public var textAlign: Horizontal.Alignment
 
         public init(
             font: PDF.Font,
-            fontSize: PDF.UserSpace.Unit,
+            fontSize: PDF.UserSpace.Size<1>,
             color: PDF.Color,
             lineHeight: Scale<1, Double>,
             textMarkup: PDF.Annotation.TextMarkup.Kind? = nil,
-            verticalOffset: PDF.UserSpace.Unit = 0,
+            verticalOffset: PDF.UserSpace.Height = 0,
             textAlign: Horizontal.Alignment = .leading
         ) {
             self.font = font
@@ -43,7 +43,7 @@ extension PDF.Context.Style.Resolved {
     ///
     /// Computed from fontSize × lineHeight multiplier.
     public var lineHeightPoints: PDF.UserSpace.Height {
-        PDF.UserSpace.Height(fontSize.value * lineHeight.value)
+        fontSize.height * lineHeight.value
     }
 
     /// Half-leading value using CSS half-leading model.
@@ -56,8 +56,8 @@ extension PDF.Context.Style.Resolved {
         let ascender = font.metrics.ascender(atSize: fontSize)
         let descender = font.metrics.descender(atSize: fontSize)  // negative
         let contentHeight = ascender - descender
-        let lineHeightPts = fontSize.value * self.lineHeight.value
-        return PDF.UserSpace.Height(max(0, (lineHeightPts - contentHeight.value) / 2.0))
+        let lineHeightPts = fontSize.height * self.lineHeight.value
+        return PDF.UserSpace.Height(max(0, (lineHeightPts.value - contentHeight.value) / 2.0))
     }
 
     /// Distance from top of line box to baseline.

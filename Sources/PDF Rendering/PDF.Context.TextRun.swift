@@ -17,7 +17,7 @@ extension PDF.Context {
         public let font: PDF.Font
 
         /// Font size in points
-        public let fontSize: PDF.UserSpace.Unit
+        public let fontSize: PDF.UserSpace.Size<1>
 
         /// Text color
         public let color: PDF.Color
@@ -39,7 +39,7 @@ extension PDF.Context {
         public init(
             text: String,
             font: PDF.Font,
-            fontSize: PDF.UserSpace.Unit,
+            fontSize: PDF.UserSpace.Size<1>,
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             backgroundColor: PDF.Color? = nil,
@@ -64,7 +64,7 @@ extension PDF.Context {
         public init(
             bytes: [UInt8],
             font: PDF.Font,
-            fontSize: PDF.UserSpace.Unit,
+            fontSize: PDF.UserSpace.Size<1>,
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             verticalOffset: PDF.UserSpace.Height = 0,
@@ -101,7 +101,7 @@ extension PDF.Context {
         public static func runsWithSymbolSupport(
             text: String,
             font: PDF.Font,
-            fontSize: PDF.UserSpace.Unit,
+            fontSize: PDF.UserSpace.Size<1>,
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
             verticalOffset: PDF.UserSpace.Height = 0,
@@ -290,7 +290,7 @@ extension PDF.Context.TextRun {
     struct Token: Sendable {
         let bytes: [UInt8]
         let font: PDF.Font
-        let fontSize: PDF.UserSpace.Unit
+        let fontSize: PDF.UserSpace.Size<1>
         let color: PDF.Color
         let textDecoration: PDF.Annotation.TextMarkup.Kind?
         let verticalOffset: PDF.UserSpace.Height
@@ -584,7 +584,7 @@ extension PDF.Context.TextRun {
         // Group consecutive tokens with same styling
         var currentSegment: [UInt8] = []
         var currentFont: PDF.Font?
-        var currentSize: PDF.UserSpace.Unit?
+        var currentSize: PDF.UserSpace.Size<1>?
         var currentColor: PDF.Color?
         var currentDecoration: PDF.Annotation.TextMarkup.Kind?
         var currentVerticalOffset: PDF.UserSpace.Height = 0
@@ -613,9 +613,9 @@ extension PDF.Context.TextRun {
                 }
                 let bgRect = PDF.UserSpace.Rectangle(
                     x: segmentStartX,
-                    y: textY - PDF.UserSpace.Height(size.value * 0.85),
+                    y: textY - (size * 0.85).height,
                     width: segmentWidth,
-                    height: PDF.UserSpace.Height(size.value * 1.15)
+                    height: (size * 1.15).height
                 )
                 context.emitRectangle(bgRect, fill: fillColor, stroke: nil)
             }
@@ -634,23 +634,25 @@ extension PDF.Context.TextRun {
                 switch decoration {
                 case .underline:
                     // Position underline slightly below baseline
-                    let underlineY = textY + PDF.UserSpace.Height(size.value * 0.15)
+                    let underlineY = textY + (size * 0.15).height
+                    let lineWidth = max((size * 0.05).width, PDF.UserSpace.Width(0.5))
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: underlineY),
                         to: PDF.UserSpace.Coordinate(x: segmentStartX + segmentWidth, y: underlineY),
                         color: color,
-                        width: PDF.UserSpace.Unit(max(0.5, size.value * 0.05))
+                        width: lineWidth
                     )
 
                 case .strikeOut:
                     // Position strikethrough at middle of x-height
                     let xHeight = font.metrics.xHeight(atSize: size)
                     let strikeY = textY - PDF.UserSpace.Height(xHeight.value / 2.0)
+                    let lineWidth = max((size * 0.05).width, PDF.UserSpace.Width(0.5))
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: strikeY),
                         to: PDF.UserSpace.Coordinate(x: segmentStartX + segmentWidth, y: strikeY),
                         color: color,
-                        width: PDF.UserSpace.Unit(max(0.5, size.value * 0.05))
+                        width: lineWidth
                     )
 
                 case .highlight:
@@ -664,9 +666,9 @@ extension PDF.Context.TextRun {
             // Add link annotation if present
             let linkRect = PDF.UserSpace.Rectangle(
                 x: segmentStartX,
-                y: textY - PDF.UserSpace.Height(size.value * 0.85),
+                y: textY - size.height * 0.85,
                 width: segmentWidth,
-                height: PDF.UserSpace.Height(size.value * 1.15)
+                height: size.height * 1.15
             )
             if let internalId = currentInternalLinkId {
                 // Internal link - add to pending for later resolution
