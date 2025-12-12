@@ -39,34 +39,49 @@ extension PDF.Context.Style {
 }
 
 extension PDF.Context.Style.Resolved {
-    /// Total line height in points.
-    ///
-    /// Computed from fontSize × lineHeight multiplier.
-    public var lineHeightPoints: PDF.UserSpace.Height {
-        fontSize.height * lineHeight.value
+    /// Line box metrics computed from font and line height.
+    public var line: Line { Line(style: self) }
+
+    /// Line box metrics for text layout.
+    public struct Line: Sendable {
+        private let style: PDF.Context.Style.Resolved
+
+        init(style: PDF.Context.Style.Resolved) {
+            self.style = style
+        }
+
+        /// Total line height in points (fontSize × lineHeight multiplier).
+        public var height: PDF.UserSpace.Height {
+            style.fontSize.height * style.lineHeight.value
+        }
+
+        /// Half-leading value using CSS half-leading model.
+        ///
+        /// The leading is the extra space beyond the font's natural content height
+        /// (ascender - descender), distributed symmetrically above and below text.
+        public var halfLeading: PDF.UserSpace.Height {
+            let ascender = style.font.metrics.ascender(atSize: style.fontSize)
+            let descender = style.font.metrics.descender(atSize: style.fontSize)
+            let contentHeight = ascender - descender
+            return PDF.UserSpace.Height(max(0, (height.value - contentHeight.value) / 2.0))
+        }
+
+        /// Distance from top of line box to baseline.
+        ///
+        /// This equals: `halfLeading + ascender`
+        public var baselineOffset: PDF.UserSpace.Height {
+            halfLeading + style.font.metrics.ascender(atSize: style.fontSize)
+        }
     }
 
-    /// Half-leading value using CSS half-leading model.
-    ///
-    /// The leading is the extra space beyond the font's natural content height
-    /// (ascender - descender), distributed symmetrically above and below text.
-    ///
-    /// `halfLeading = max(0, (lineHeight - contentHeight) / 2)`
-    public var halfLeading: PDF.UserSpace.Height {
-        let ascender = font.metrics.ascender(atSize: fontSize)
-        let descender = font.metrics.descender(atSize: fontSize)  // negative
-        let contentHeight = ascender - descender
-        let lineHeightPts = fontSize.height * self.lineHeight.value
-        return PDF.UserSpace.Height(max(0, (lineHeightPts.value - contentHeight.value) / 2.0))
-    }
+    // MARK: - Convenience (deprecated, use style.line.*)
 
-    /// Distance from top of line box to baseline.
-    ///
-    /// This equals: `halfLeading + ascender`
-    ///
-    /// Used to position text properly within a line box following
-    /// the CSS half-leading model for symmetric spacing.
-    public var baselineOffset: PDF.UserSpace.Height {
-        halfLeading + font.metrics.ascender(atSize: fontSize)
-    }
+    @available(*, deprecated, renamed: "line.height")
+    public var lineHeightPoints: PDF.UserSpace.Height { line.height }
+
+    @available(*, deprecated, renamed: "line.halfLeading")
+    public var halfLeading: PDF.UserSpace.Height { line.halfLeading }
+
+    @available(*, deprecated, renamed: "line.baselineOffset")
+    public var baselineOffset: PDF.UserSpace.Height { line.baselineOffset }
 }
