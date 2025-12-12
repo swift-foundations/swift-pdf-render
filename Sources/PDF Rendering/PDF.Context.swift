@@ -226,7 +226,7 @@ extension PDF.Context {
 extension PDF.Context {
     /// Advance Y position by one line.
     public mutating func advanceLine() {
-        layoutBox.lly = layoutBox.lly + style.lineHeightPoints
+        layoutBox.lly = layoutBox.lly + style.line.height
     }
 
     /// Advance Y position by specified amount.
@@ -332,12 +332,12 @@ extension PDF.Context {
             default:
                 // Level 3+: ■ (square) - filled square using PDF graphics
                 // Side ~0.22em (~63% of level 1 diameter) for visual hierarchy
-                let size = style.fontSize.length.value * 0.22
+                let squareSize = style.fontSize * 0.22
                 // Rectangle will be positioned when marker is rendered
                 let rect = PDF.UserSpace.Rectangle(
                     x: 0, y: 0,
-                    width: PDF.UserSpace.Width(size),
-                    height: PDF.UserSpace.Height(size)
+                    width: squareSize.width,
+                    height: squareSize.height
                 )
                 return .filledSquare(rect)
             }
@@ -431,13 +431,12 @@ extension PDF.Context {
 
     /// Check if adding the given height would exceed the page boundary.
     public func wouldExceedPage(adding height: PDF.UserSpace.Height) -> Bool {
-        layoutBox.lly.value + height.value > maxY.value
+        layoutBox.lly + height > maxY
     }
 
     /// Remaining space on current page.
     public var remainingHeight: PDF.UserSpace.Height {
-        let remaining = PDF.UserSpace.Height(maxY.value - layoutBox.lly.value)
-        return remaining.value > 0 ? remaining : .zero
+        .max(.zero, maxY - layoutBox.lly)
     }
 
     /// All pages (completed + current).
@@ -525,12 +524,14 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Execute a closure in measurement mode, returning the height consumed.
-    public mutating func measure(_ work: (inout PDF.Context) -> Void) -> PDF.UserSpace.Height {
+    public mutating func measure(
+        _ work: (inout PDF.Context) -> Void
+    ) -> PDF.UserSpace.Height {
         let startY = layoutBox.lly
         measurementMode = true
         work(&self)
         measurementMode = false
-        let height = PDF.UserSpace.Height(layoutBox.lly.value - startY.value)
+        let height: PDF.UserSpace.Height = layoutBox.lly - startY
         layoutBox.lly = startY
         return height
     }
@@ -542,7 +543,7 @@ extension PDF.Context {
     /// Convert Y coordinate from top-left origin to PDF bottom-left origin.
     @inlinable
     public func convertY(_ y: PDF.UserSpace.Y) -> PDF.UserSpace.Y {
-        PDF.UserSpace.Y(pageHeight.value - y.value)
+        pageHeight - y
     }
     
     /// Emit WinAnsi-encoded bytes at a position.
@@ -626,7 +627,7 @@ extension PDF.Context {
         guard !measurementMode else { return }
 
         // Transform Y coordinate (rect uses top-left origin, PDF uses bottom-left)
-        let pdfY: PDF.UserSpace.Y = .init(pageHeight.value - rect.lly.value - rect.height.value)
+        let pdfY = pageHeight - rect.lly - rect.height
 
         if let fill = fill {
             switch fill {

@@ -203,7 +203,7 @@ extension PDF.Context {
             var isFirstLine = true
             for line in lines {
                 // Check if this line would exceed the page
-                let lineHeight = context.style.lineHeightPoints
+                let lineHeight = context.style.line.height
                 context.checkPageBreak(needing: lineHeight)
 
                 // Emit pending list marker on the first line
@@ -233,22 +233,22 @@ extension PDF.Context {
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
                         // Center at 60% of x-height above baseline for better optical alignment
                         // (slightly higher than mathematical center looks better with hollow circles)
-                        let centerY = baselineY - PDF.UserSpace.Height(xHeight.value * 0.6)
+                        let centerY = baselineY - xHeight * 0.6
                         // Center circle horizontally at marker position
-                        let centerX = pending.x + PDF.UserSpace.Width(circle.radius.value)
+                        let centerX = pending.x + circle.radius
                         context.emitCircle(
                             center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
                             radius: circle.radius,
                             fill: nil,
                             stroke: context.style.color,
-                            strokeWidth: PDF.UserSpace.Width(strokeWidth.value)
+                            strokeWidth: strokeWidth
                         )
 
                     case .filledCircle(let circle):
                         // Position circle vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let centerY = baselineY - PDF.UserSpace.Height(xHeight.value / 2.0)
-                        let centerX = pending.x + PDF.UserSpace.Width(circle.radius.value)
+                        let centerY = baselineY - xHeight / 2
+                        let centerX = pending.x + circle.radius
                         context.emitCircle(
                             center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
                             radius: circle.radius,
@@ -259,7 +259,7 @@ extension PDF.Context {
                     case .filledSquare(let square):
                         // Position square vertically centered on x-height
                         let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
-                        let squareY = baselineY - PDF.UserSpace.Height(xHeight.value / 2.0) - PDF.UserSpace.Height(square.height.value / 2.0)
+                        let squareY = baselineY - xHeight / 2 - square.height / 2
                         let rect = PDF.UserSpace.Rectangle(
                             x: pending.x,
                             y: squareY,
@@ -568,9 +568,9 @@ extension PDF.Context.TextRun {
         case .leading:
             alignmentOffset = 0
         case .center:
-            alignmentOffset = PDF.UserSpace.Width(Swift.max(0, (availableWidth.value - totalLineWidth.value) / 2.0))
+            alignmentOffset = .max(.zero, (availableWidth - totalLineWidth) / 2)
         case .trailing:
-            alignmentOffset = PDF.UserSpace.Width(Swift.max(0, availableWidth.value - totalLineWidth.value))
+            alignmentOffset = .max(.zero, availableWidth - totalLineWidth)
         }
 
         var currentX = context.layoutBox.llx + alignmentOffset
@@ -579,7 +579,7 @@ extension PDF.Context.TextRun {
         // This ensures symmetric spacing above and below text within the line box.
         // The baselineOffset includes halfLeading + ascender, positioning text
         // centered within the line height rather than anchored at the top.
-        let lineBaselineY = context.layoutBox.lly + context.style.baselineOffset
+        let lineBaselineY = context.layoutBox.lly + context.style.line.baselineOffset
 
         // Group consecutive tokens with same styling
         var currentSegment: [UInt8] = []
@@ -646,7 +646,7 @@ extension PDF.Context.TextRun {
                 case .strikeOut:
                     // Position strikethrough at middle of x-height
                     let xHeight = font.metrics.xHeight(atSize: size)
-                    let strikeY = textY - PDF.UserSpace.Height(xHeight.value / 2.0)
+                    let strikeY = textY - xHeight / 2
                     let lineWidth = max((size * 0.05).width, PDF.UserSpace.Width(0.5))
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: strikeY),

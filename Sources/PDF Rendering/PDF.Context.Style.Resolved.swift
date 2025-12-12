@@ -63,7 +63,7 @@ extension PDF.Context.Style.Resolved {
             let ascender = style.font.metrics.ascender(atSize: style.fontSize)
             let descender = style.font.metrics.descender(atSize: style.fontSize)
             let contentHeight = ascender - descender
-            return PDF.UserSpace.Height(max(0, (height.value - contentHeight.value) / 2.0))
+            return .max(.zero, (height - contentHeight) / 2)
         }
 
         /// Distance from top of line box to baseline.

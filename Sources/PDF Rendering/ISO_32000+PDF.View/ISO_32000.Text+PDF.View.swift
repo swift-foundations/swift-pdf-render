@@ -41,7 +41,7 @@ extension ISO_32000.Text: PDF.View {
 
         for line in lines {
             // Check for page break before each line
-            context.checkPageBreak(needing: context.style.lineHeightPoints)
+            context.checkPageBreak(needing: context.style.line.height)
 
             // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
@@ -66,13 +66,13 @@ extension ISO_32000.Text: PDF.View {
         // and advance X by the text width
 
         // Check for page break
-        context.checkPageBreak(needing: context.style.lineHeightPoints)
+        context.checkPageBreak(needing: context.style.line.height)
 
         // Calculate text width
         let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
 
         // In top-left coordinates, context.layoutBox.lly is the top of the line box.
-        let baselineY = PDF.UserSpace.Y(context.layoutBox.lly.value + font.metrics.ascender(atSize: fontSize).value)
+        let baselineY = context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
 
         // Emit text
         context.emitText(
