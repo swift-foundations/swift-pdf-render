@@ -1,7 +1,7 @@
 // PDF.Context.TextRun.swift
 
-public import PDF_Standard
 import INCITS_4_1986
+public import PDF_Standard
 
 extension PDF.Context {
     /// A styled text segment for inline text flow.
@@ -114,31 +114,35 @@ extension PDF.Context {
 
             func flushWinAnsi() {
                 guard !currentWinAnsiBytes.isEmpty else { return }
-                runs.append(TextRun(
-                    bytes: currentWinAnsiBytes,
-                    font: font,
-                    fontSize: fontSize,
-                    color: color,
-                    textDecoration: textDecoration,
-                    verticalOffset: verticalOffset,
-                    linkURL: linkURL,
-                    internalLinkId: internalLinkId
-                ))
+                runs.append(
+                    TextRun(
+                        bytes: currentWinAnsiBytes,
+                        font: font,
+                        fontSize: fontSize,
+                        color: color,
+                        textDecoration: textDecoration,
+                        verticalOffset: verticalOffset,
+                        linkURL: linkURL,
+                        internalLinkId: internalLinkId
+                    )
+                )
                 currentWinAnsiBytes = []
             }
 
             func flushDingbats() {
                 guard !currentDingbatsBytes.isEmpty else { return }
-                runs.append(TextRun(
-                    bytes: currentDingbatsBytes,
-                    font: .zapfDingbats,
-                    fontSize: fontSize,
-                    color: color,
-                    textDecoration: textDecoration,
-                    verticalOffset: verticalOffset,
-                    linkURL: linkURL,
-                    internalLinkId: internalLinkId
-                ))
+                runs.append(
+                    TextRun(
+                        bytes: currentDingbatsBytes,
+                        font: .zapfDingbats,
+                        fontSize: fontSize,
+                        color: color,
+                        textDecoration: textDecoration,
+                        verticalOffset: verticalOffset,
+                        linkURL: linkURL,
+                        internalLinkId: internalLinkId
+                    )
+                )
                 currentDingbatsBytes = []
             }
 
@@ -165,10 +169,9 @@ extension PDF.Context {
                 else if let fallback = ISO_32000.unicodeFallbackMap[value] {
                     flushDingbats()
                     currentWinAnsiBytes.append(contentsOf: fallback)
-                }
-                else {
+                } else {
                     flushDingbats()
-                    currentWinAnsiBytes.append(0x3F) // '?'
+                    currentWinAnsiBytes.append(0x3F)  // '?'
                 }
             }
 
@@ -197,7 +200,11 @@ extension PDF.Context {
             guard !tokens.isEmpty else { return }
 
             // Build lines from tokens
-            let lines = buildLines(tokens, maxWidth: context.layoutBox.width, preserveWhitespace: context.preserveWhitespace)
+            let lines = buildLines(
+                tokens,
+                maxWidth: context.layoutBox.width,
+                preserveWhitespace: context.preserveWhitespace
+            )
 
             // Render lines with pagination support
             var isFirstLine = true
@@ -316,89 +323,27 @@ extension PDF.Context.TextRun {
                 if byte == .ascii.newline {
                     // Flush current word
                     if !currentWord.isEmpty {
-                        tokens.append(Token(
-                            bytes: currentWord,
-                            font: run.font,
-                            fontSize: run.fontSize,
-                            color: run.color,
-                            textDecoration: run.textDecoration,
-                            verticalOffset: run.verticalOffset,
-                            linkURL: run.linkURL,
-                            internalLinkId: run.internalLinkId,
-                            isWhitespace: false,
-                            isNewline: false,
-                            isTab: false
-                        ))
+                        tokens.append(
+                            Token(
+                                bytes: currentWord,
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL,
+                                internalLinkId: run.internalLinkId,
+                                isWhitespace: false,
+                                isNewline: false,
+                                isTab: false
+                            )
+                        )
                         currentWord = []
                     }
                     // Add newline token
-                    tokens.append(Token(
-                        bytes: [],
-                        font: run.font,
-                        fontSize: run.fontSize,
-                        color: run.color,
-                        textDecoration: run.textDecoration,
-                        verticalOffset: run.verticalOffset,
-                        linkURL: run.linkURL,
-                        internalLinkId: run.internalLinkId,
-                        isWhitespace: true,
-                        isNewline: true,
-                        isTab: false
-                    ))
-                } else if byte == .ascii.htab {
-                    // Flush current word
-                    if !currentWord.isEmpty {
-                        tokens.append(Token(
-                            bytes: currentWord,
-                            font: run.font,
-                            fontSize: run.fontSize,
-                            color: run.color,
-                            textDecoration: run.textDecoration,
-                            verticalOffset: run.verticalOffset,
-                            linkURL: run.linkURL,
-                            internalLinkId: run.internalLinkId,
-                            isWhitespace: false,
-                            isNewline: false,
-                            isTab: false
-                        ))
-                        currentWord = []
-                    }
-                    // Add tab token
-                    tokens.append(Token(
-                        bytes: [],
-                        font: run.font,
-                        fontSize: run.fontSize,
-                        color: run.color,
-                        textDecoration: run.textDecoration,
-                        verticalOffset: run.verticalOffset,
-                        linkURL: run.linkURL,
-                        internalLinkId: run.internalLinkId,
-                        isWhitespace: true,
-                        isNewline: false,
-                        isTab: true
-                    ))
-                } else if byte == .ascii.space {
-                    // Flush current word
-                    if !currentWord.isEmpty {
-                        tokens.append(Token(
-                            bytes: currentWord,
-                            font: run.font,
-                            fontSize: run.fontSize,
-                            color: run.color,
-                            textDecoration: run.textDecoration,
-                            verticalOffset: run.verticalOffset,
-                            linkURL: run.linkURL,
-                            internalLinkId: run.internalLinkId,
-                            isWhitespace: false,
-                            isNewline: false,
-                            isTab: false
-                        ))
-                        currentWord = []
-                    }
-                    // Add space token (preserve for inline flow)
-                    if preserveWhitespace {
-                        tokens.append(Token(
-                            bytes: [.ascii.space],
+                    tokens.append(
+                        Token(
+                            bytes: [],
                             font: run.font,
                             fontSize: run.fontSize,
                             color: run.color,
@@ -407,12 +352,33 @@ extension PDF.Context.TextRun {
                             linkURL: run.linkURL,
                             internalLinkId: run.internalLinkId,
                             isWhitespace: true,
-                            isNewline: false,
+                            isNewline: true,
                             isTab: false
-                        ))
-                    } else {
-                        // Mark space but don't include bytes (will be added during line building)
-                        tokens.append(Token(
+                        )
+                    )
+                } else if byte == .ascii.htab {
+                    // Flush current word
+                    if !currentWord.isEmpty {
+                        tokens.append(
+                            Token(
+                                bytes: currentWord,
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL,
+                                internalLinkId: run.internalLinkId,
+                                isWhitespace: false,
+                                isNewline: false,
+                                isTab: false
+                            )
+                        )
+                        currentWord = []
+                    }
+                    // Add tab token
+                    tokens.append(
+                        Token(
                             bytes: [],
                             font: run.font,
                             fontSize: run.fontSize,
@@ -423,8 +389,63 @@ extension PDF.Context.TextRun {
                             internalLinkId: run.internalLinkId,
                             isWhitespace: true,
                             isNewline: false,
-                            isTab: false
-                        ))
+                            isTab: true
+                        )
+                    )
+                } else if byte == .ascii.space {
+                    // Flush current word
+                    if !currentWord.isEmpty {
+                        tokens.append(
+                            Token(
+                                bytes: currentWord,
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL,
+                                internalLinkId: run.internalLinkId,
+                                isWhitespace: false,
+                                isNewline: false,
+                                isTab: false
+                            )
+                        )
+                        currentWord = []
+                    }
+                    // Add space token (preserve for inline flow)
+                    if preserveWhitespace {
+                        tokens.append(
+                            Token(
+                                bytes: [.ascii.space],
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL,
+                                internalLinkId: run.internalLinkId,
+                                isWhitespace: true,
+                                isNewline: false,
+                                isTab: false
+                            )
+                        )
+                    } else {
+                        // Mark space but don't include bytes (will be added during line building)
+                        tokens.append(
+                            Token(
+                                bytes: [],
+                                font: run.font,
+                                fontSize: run.fontSize,
+                                color: run.color,
+                                textDecoration: run.textDecoration,
+                                verticalOffset: run.verticalOffset,
+                                linkURL: run.linkURL,
+                                internalLinkId: run.internalLinkId,
+                                isWhitespace: true,
+                                isNewline: false,
+                                isTab: false
+                            )
+                        )
                     }
                 } else {
                     currentWord.append(byte)
@@ -433,19 +454,21 @@ extension PDF.Context.TextRun {
 
             // Flush remaining word
             if !currentWord.isEmpty {
-                tokens.append(Token(
-                    bytes: currentWord,
-                    font: run.font,
-                    fontSize: run.fontSize,
-                    color: run.color,
-                    textDecoration: run.textDecoration,
-                    verticalOffset: run.verticalOffset,
-                    linkURL: run.linkURL,
-                    internalLinkId: run.internalLinkId,
-                    isWhitespace: false,
-                    isNewline: false,
-                    isTab: false
-                ))
+                tokens.append(
+                    Token(
+                        bytes: currentWord,
+                        font: run.font,
+                        fontSize: run.fontSize,
+                        color: run.color,
+                        textDecoration: run.textDecoration,
+                        verticalOffset: run.verticalOffset,
+                        linkURL: run.linkURL,
+                        internalLinkId: run.internalLinkId,
+                        isWhitespace: false,
+                        isNewline: false,
+                        isTab: false
+                    )
+                )
             }
         }
 
@@ -471,7 +494,11 @@ extension PDF.Context.TextRun {
     }
 
     /// Build lines from tokens
-    static func buildLines(_ tokens: [Token], maxWidth: PDF.UserSpace.Width, preserveWhitespace: Bool = false) -> [Line] {
+    static func buildLines(
+        _ tokens: [Token],
+        maxWidth: PDF.UserSpace.Width,
+        preserveWhitespace: Bool = false
+    ) -> [Line] {
         var lines: [Line] = []
         var currentLine = Line(tokens: [])
         var currentWidth: PDF.UserSpace.Width = 0
@@ -491,10 +518,13 @@ extension PDF.Context.TextRun {
 
             // Handle tabs (convert to spaces for now)
             if token.isTab {
-                let tabWidth = token.font.winAnsi.width(of: [.ascii.space, .ascii.space, .ascii.space, .ascii.space], atSize: token.fontSize)
+                let tabWidth = token.font.winAnsi.width(
+                    of: [.ascii.space, .ascii.space, .ascii.space, .ascii.space],
+                    atSize: token.fontSize
+                )
                 if currentWidth + tabWidth <= maxWidth {
                     currentLine.tokens.append(token)
-                    currentWidth = currentWidth + tabWidth
+                    currentWidth += tabWidth
                 }
                 lastWasWhitespace = true
                 continue
@@ -506,7 +536,7 @@ extension PDF.Context.TextRun {
                     // In preformatted mode, always add whitespace
                     // Otherwise, add space only between words
                     currentLine.tokens.append(token)
-                    currentWidth = currentWidth + token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+                    currentWidth += token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
                 }
                 lastWasWhitespace = true
                 continue
@@ -523,7 +553,7 @@ extension PDF.Context.TextRun {
             } else if currentWidth + wordWidth <= maxWidth {
                 // Word fits
                 currentLine.tokens.append(token)
-                currentWidth = currentWidth + wordWidth
+                currentWidth += wordWidth
             } else {
                 // Word doesn't fit - start new line
                 lines.append(currentLine)
@@ -554,10 +584,10 @@ extension PDF.Context.TextRun {
         // Calculate total line width for alignment
         var totalLineWidth: PDF.UserSpace.Width = 0
         for (index, token) in tokens.enumerated() {
-            totalLineWidth = totalLineWidth + token.width
+            totalLineWidth += token.width
             // Add space width between words (same logic as rendering below)
             if token.isWhitespace && index < tokens.count - 1 {
-                totalLineWidth = totalLineWidth + token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+                totalLineWidth += token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
             }
         }
 
@@ -594,9 +624,10 @@ extension PDF.Context.TextRun {
 
         func flushSegment() {
             guard !currentSegment.isEmpty,
-                  let font = currentFont,
-                  let size = currentSize,
-                  let color = currentColor else { return }
+                let font = currentFont,
+                let size = currentSize,
+                let color = currentColor
+            else { return }
 
             let segmentWidth = font.winAnsi.width(of: currentSegment, atSize: size)
             // Use the line's consistent baseline, adjusted for vertical offset (sub/superscript)
@@ -605,12 +636,13 @@ extension PDF.Context.TextRun {
             // Draw highlight background BEFORE text (so text appears on top)
             if case .highlight(let annotationColor) = currentDecoration {
                 // Convert annotation color to graphics color
-                let fillColor: PDF.Color = switch annotationColor {
-                case .transparent: .gray(1) // fallback to white
-                case .gray(let g): .gray(g)
-                case .rgb(let r, let g, let b): .rgb(r: r, g: g, b: b)
-                case .cmyk(let c, let m, let y, let k): .cmyk(c: c, m: m, y: y, k: k)
-                }
+                let fillColor: PDF.Color =
+                    switch annotationColor {
+                    case .transparent: .gray(1)  // fallback to white
+                    case .gray(let g): .gray(g)
+                    case .rgb(let r, let g, let b): .rgb(r: r, g: g, b: b)
+                    case .cmyk(let c, let m, let y, let k): .cmyk(c: c, m: m, y: y, k: k)
+                    }
                 let bgRect = PDF.UserSpace.Rectangle(
                     x: segmentStartX,
                     y: textY - (size * 0.85).height,
@@ -638,7 +670,10 @@ extension PDF.Context.TextRun {
                     let lineWidth = max((size * 0.05).width, PDF.UserSpace.Width(0.5))
                     context.emitLine(
                         from: PDF.UserSpace.Coordinate(x: segmentStartX, y: underlineY),
-                        to: PDF.UserSpace.Coordinate(x: segmentStartX + segmentWidth, y: underlineY),
+                        to: PDF.UserSpace.Coordinate(
+                            x: segmentStartX + segmentWidth,
+                            y: underlineY
+                        ),
                         color: color,
                         width: lineWidth
                     )
@@ -687,22 +722,23 @@ extension PDF.Context.TextRun {
             // Handle whitespace
             if token.isWhitespace {
                 flushSegment()
-                let spaceWidth = token.font.winAnsi.width(of: [.ascii.space], atSize: token.fontSize)
+                let spaceWidth = token.font.winAnsi.width(
+                    of: [.ascii.space],
+                    atSize: token.fontSize
+                )
+                // swiftlint:disable:next shorthand_operator
                 currentX = currentX + spaceWidth
                 segmentStartX = currentX
                 continue
             }
 
             // Check if styling changed
-            let stylingChanged = (
-                currentFont != token.font ||
-                currentSize != token.fontSize ||
-                currentColor != token.color ||
-                currentDecoration != token.textDecoration ||
-                currentVerticalOffset != token.verticalOffset ||
-                currentLinkURL != token.linkURL ||
-                currentInternalLinkId != token.internalLinkId
-            )
+            let stylingChanged =
+                (currentFont != token.font || currentSize != token.fontSize
+                    || currentColor != token.color || currentDecoration != token.textDecoration
+                    || currentVerticalOffset != token.verticalOffset
+                    || currentLinkURL != token.linkURL
+                    || currentInternalLinkId != token.internalLinkId)
 
             if stylingChanged {
                 flushSegment()

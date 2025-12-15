@@ -1,13 +1,13 @@
 // _Array+PDF.View.swift
 // PDF.View conformance for _Array
 
-public import Rendering
 public import PDF_Standard
+public import Rendering
 
 extension _Array: PDF.View where Element: PDF.View {
     public typealias Content = Never
 
-    public var body: Never { fatalError() }
+    public var body: Never { fatalError("_Array uses direct rendering") }
 
     public static func _render(_ view: Self, context: inout PDF.Context) {
         // Check if we're in horizontal layout mode
@@ -22,8 +22,8 @@ extension _Array: PDF.View where Element: PDF.View {
         for element in view.elements {
             // Apply spacing before this element if there was a previous element
             if let spacing = context.stackSpacing,
-               let lastY = context.lastElementY,
-               context.layoutBox.lly > lastY {
+            let lastY = context.lastElementY,
+            context.layoutBox.lly > lastY {
                 context.advance(spacing)
             }
 
@@ -47,8 +47,8 @@ extension _Array: PDF.View where Element: PDF.View {
         for element in view.elements {
             // Apply horizontal spacing before this element if there was a previous element
             if let spacing = context.horizontalSpacing,
-               let lastX = context.lastElementX,
-               context.layoutBox.llx > lastX {
+                let lastX = context.lastElementX,
+                context.layoutBox.llx > lastX {
                 context.advanceX(spacing)
             }
 

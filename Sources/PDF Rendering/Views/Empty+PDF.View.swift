@@ -1,8 +1,8 @@
 // Empty+PDF.View.swift
 // PDF.View conformance for Empty
 
-public import Rendering
 public import PDF_Standard
+public import Rendering
 
 extension Empty: PDF.View {
     public typealias Content = Never
@@ -11,5 +11,5 @@ extension Empty: PDF.View {
         // Produces no output
     }
 
-    public var body: Never { fatalError() }
+    public var body: Never { fatalError("Empty uses direct rendering") }
 }

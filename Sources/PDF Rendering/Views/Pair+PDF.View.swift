@@ -1,16 +1,16 @@
 // Pair+PDF.View.swift
 // PDF.View conformance for Pair - renders first as background, second as foreground.
 
-public import PDF_Standard
 public import Algebra
 public import Layout
+public import PDF_Standard
 
 // MARK: - Generic Pair Rendering
 
 extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
     public typealias Content = Never
 
-    public var body: Never { fatalError() }
+    public var body: Never { fatalError("Pair uses direct rendering") }
 
     /// Renders first as background, second as foreground.
     /// When first is PDF.Rectangle, applies padding and vertical centering.

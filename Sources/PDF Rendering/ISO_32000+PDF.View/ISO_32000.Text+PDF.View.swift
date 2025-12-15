@@ -46,7 +46,8 @@ extension ISO_32000.Text: PDF.View {
             // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
-            let baselineY: PDF.UserSpace.Y = context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
+            let baselineY: PDF.UserSpace.Y =
+                context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
 
             // Emit bytes directly to content stream
             context.emitText(
@@ -61,7 +62,12 @@ extension ISO_32000.Text: PDF.View {
         }
     }
 
-    private static func _renderHorizontal(_ text: Self, font: PDF.Font, fontSize: PDF.UserSpace.Size<1>, context: inout PDF.Context) {
+    private static func _renderHorizontal(
+        _ text: Self,
+        font: PDF.Font,
+        fontSize: PDF.UserSpace.Size<1>,
+        context: inout PDF.Context
+    ) {
         // In horizontal layout, render text on a single line without wrapping
         // and advance X by the text width
 

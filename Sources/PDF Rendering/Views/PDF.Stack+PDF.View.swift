@@ -7,8 +7,6 @@ extension PDF {
     public typealias Stack = Layout.Stack
 }
 
-
-
 // MARK: - Typealiases
 
 extension PDF {
@@ -87,7 +85,7 @@ extension Layout.Stack.Vertical: PDF.View where StackContent: PDF.View {
         self.content = build()
         self.spacing = spacing
     }
-    
+
     public var body: some PDF.View {
         content
     }

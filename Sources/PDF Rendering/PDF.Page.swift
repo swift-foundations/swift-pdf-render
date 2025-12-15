@@ -18,7 +18,7 @@ extension PDF.Page {
         for font in contentStream.fontsUsed {
             fontResources[font.resourceName] = font
         }
-        
+
         self.init(
             mediaBox: mediaBox,
             content: contentStream,

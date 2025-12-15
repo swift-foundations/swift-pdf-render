@@ -1,8 +1,8 @@
 // ISO 32000 Table+PDF.View.swift
 // callAsFunction extensions for ISO 32000-2:2020 table structure types.
 
-public import PDF_Standard
 import ISO_32000
+public import PDF_Standard
 
 // MARK: - Table (14.8.4.8.3)
 

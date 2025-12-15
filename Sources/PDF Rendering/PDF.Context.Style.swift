@@ -1,9 +1,9 @@
 // PDF.Context.Style.swift
 // Text styling as a product type with monoid structure.
 
-public import PDF_Standard
 import Geometry
 public import Layout
+public import PDF_Standard
 
 extension PDF.Context {
     /// Text styling configuration for rendering.
@@ -204,15 +204,17 @@ extension PDF.Context.Style {
     ///
     /// - Parameter defaults: The default values to use for any nil properties
     /// - Returns: A resolved style with all properties defined
-    public func resolved(against defaults: Resolved = .init(
-        font: .helvetica,
-        fontSize: 12,
-        color: .black,
-        lineHeight: 1.2,
-        textMarkup: nil,
-        verticalOffset: 0,
-        textAlign: .leading
-    )) -> Resolved {
+    public func resolved(
+        against defaults: Resolved = .init(
+            font: .helvetica,
+            fontSize: 12,
+            color: .black,
+            lineHeight: 1.2,
+            textMarkup: nil,
+            verticalOffset: 0,
+            textAlign: .leading
+        )
+    ) -> Resolved {
         Resolved(
             font: font ?? defaults.font,
             fontSize: fontSize ?? defaults.fontSize,

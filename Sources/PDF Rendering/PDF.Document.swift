@@ -10,8 +10,8 @@
 //
 // This file provides the composition as a convenience init.
 
-public import PDF_Standard
 import ISO_32000_Flate
+public import PDF_Standard
 
 extension PDF.Document {
     /// Create a document with configuration and builder syntax.
@@ -52,7 +52,8 @@ extension PDF.Document {
         View._render(view, context: &context)
 
         // Only include viewer if it differs from defaults
-        let viewer: ISO_32000.Viewer? = configuration.viewer == .init()
+        let viewer: ISO_32000.Viewer? =
+            configuration.viewer == .init()
             ? nil
             : configuration.viewer
 

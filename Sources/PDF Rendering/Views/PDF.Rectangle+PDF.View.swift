@@ -38,4 +38,3 @@ extension PDF.Rectangle: PDF.View {
         }
     }
 }
-

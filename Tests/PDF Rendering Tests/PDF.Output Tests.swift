@@ -1,10 +1,11 @@
 // PDF.Output Tests.swift
 // Visual inspection tests - writes PDFs to /tmp
 
-import Testing
 import Foundation
-@testable import PDF_Rendering
 import PDF_Standard
+import Testing
+
+@testable import PDF_Rendering
 
 @Suite
 struct `PDF.Output Tests` {
@@ -26,7 +27,9 @@ struct `PDF.Output Tests` {
 
                     // Section 1: Basic Text
                     PDF.Text("1. Basic Text", state: .init(fontSize: 16))
-                    PDF.Text("This is a paragraph of text that demonstrates basic text rendering. The text should wrap automatically when it exceeds the available width of the page content area.")
+                    PDF.Text(
+                        "This is a paragraph of text that demonstrates basic text rendering. The text should wrap automatically when it exceeds the available width of the page content area."
+                    )
 
                     PDF.Spacer(PDF.UserSpace.Height(10))
 
@@ -60,14 +63,16 @@ struct `PDF.Output Tests` {
         }
 
         // Create document
-        let pdfDocument = PDF.Document(configuration: .init(
-            version: .v1_7,
-            info: .init(
-                title: "PDF Rendering Test",
-                author: "swift-pdf-rendering",
-                creator: "PDF.Output Tests"
+        let pdfDocument = PDF.Document(
+            configuration: .init(
+                version: .v1_7,
+                info: .init(
+                    title: "PDF Rendering Test",
+                    author: "swift-pdf-rendering",
+                    creator: "PDF.Output Tests"
+                )
             )
-        )) {
+        ) {
             SampleDocument()
         }
 
@@ -79,7 +84,7 @@ struct `PDF.Output Tests` {
         try Data(bytes).write(to: url)
 
         print("PDF written to: \(url.path)")
-        #expect(bytes.count > 0)
+        #expect(!bytes.isEmpty)
     }
 
     @Test
@@ -93,7 +98,10 @@ struct `PDF.Output Tests` {
 
                     // Generate enough content to span multiple pages
                     for i in 1...50 {
-                        PDF.Text("Paragraph \(i): This is some sample text that will help fill the page. Each paragraph adds content that will eventually cause a page break when the content exceeds the available height.", state: .init(fontSize: 11))
+                        PDF.Text(
+                            "Paragraph \(i): This is some sample text that will help fill the page. Each paragraph adds content that will eventually cause a page break when the content exceeds the available height.",
+                            state: .init(fontSize: 11)
+                        )
                     }
 
                     PDF.Divider()
@@ -103,13 +111,15 @@ struct `PDF.Output Tests` {
         }
 
         // Create document using the Document builder
-        let pdfDocument = PDF.Document(configuration: .init(
-            version: .v1_7,
-            info: .init(
-                title: "Multi-Page Test",
-                author: "swift-pdf-rendering"
+        let pdfDocument = PDF.Document(
+            configuration: .init(
+                version: .v1_7,
+                info: .init(
+                    title: "Multi-Page Test",
+                    author: "swift-pdf-rendering"
+                )
             )
-        )) {
+        ) {
             MultiPageDocument()
         }
 
@@ -120,19 +130,21 @@ struct `PDF.Output Tests` {
 
         print("Multi-page PDF written to: \(url.path)")
 
-        #expect(bytes.count > 0)
+        #expect(!bytes.isEmpty)
     }
 
     @Test
     func `Writes graphics PDF to tmp`() throws {
         // Create a page with graphics using the document builder
-        let pdfDocument = PDF.Document(configuration: .init(
-            version: .v1_7,
-            info: .init(
-                title: "Graphics Test",
-                author: "swift-pdf-rendering"
+        let pdfDocument = PDF.Document(
+            configuration: .init(
+                version: .v1_7,
+                info: .init(
+                    title: "Graphics Test",
+                    author: "swift-pdf-rendering"
+                )
             )
-        )) {
+        ) {
             PDF.VStack(spacing: PDF.UserSpace.Height(10)) {
                 PDF.Text("Graphics Test", state: .init(fontSize: 24))
                 PDF.Divider()
@@ -185,7 +197,12 @@ struct `PDF.Output Tests` {
                 PDF.Spacer(PDF.UserSpace.Height(10))
 
                 PDF.Text("Filled and Stroked:", state: .init(fontSize: 12))
-                PDF.Rectangle(width: 150, height: 50, fill: .rgb(r: 0.9, g: 0.9, b: 1.0), stroke: .init(.blue, width: 1))
+                PDF.Rectangle(
+                    width: 150,
+                    height: 50,
+                    fill: .rgb(r: 0.9, g: 0.9, b: 1.0),
+                    stroke: .init(.blue, width: 1)
+                )
             }
         }
 
@@ -195,6 +212,6 @@ struct `PDF.Output Tests` {
         try Data(bytes).write(to: url)
 
         print("Graphics PDF written to: \(url.path)")
-        #expect(bytes.count > 0)
+        #expect(!bytes.isEmpty)
     }
 }

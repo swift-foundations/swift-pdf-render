@@ -1,10 +1,11 @@
 // PDF.Table Tests.swift
 // Table rendering test - writes PDF to /tmp for visual inspection
 
-import Testing
 import Foundation
-@testable import PDF_Rendering
 import PDF_Standard
+import Testing
+
+@testable import PDF_Rendering
 
 @Suite
 struct `PDF.Table Tests` {
@@ -36,13 +37,15 @@ struct `PDF.Table Tests` {
         ]
         let footerValues = ["Total", "4,780", "5,070", "4,880", "5,530", "20,260"]
 
-        let pdfDocument = PDF.Document(configuration: .init(
-            version: .v2_0,
-            info: .init(
-                title: "Table Test",
-                author: "swift-pdf-rendering"
+        let pdfDocument = PDF.Document(
+            configuration: .init(
+                version: .v2_0,
+                info: .init(
+                    title: "Table Test",
+                    author: "swift-pdf-rendering"
+                )
             )
-        )) {
+        ) {
             PDF.VStack(spacing: 16) {
                 PDF.Text("ISO 32000-2:2020 Table Structure Types", state: .init(fontSize: 18))
                 PDF.Spacer(8)
@@ -94,6 +97,6 @@ struct `PDF.Table Tests` {
         try Data(bytes).write(to: url)
 
         print("Table PDF written to: \(url.path)")
-        #expect(bytes.count > 0)
+        #expect(!bytes.isEmpty)
     }
 }

@@ -1,8 +1,9 @@
 // PDF.Context Tests.swift
 
-import Testing
-@testable import PDF_Rendering
 import PDF_Standard
+import Testing
+
+@testable import PDF_Rendering
 
 @Suite
 struct `PDF.Context Tests` {

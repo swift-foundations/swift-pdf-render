@@ -1,8 +1,9 @@
 // PDF.Stack Tests.swift
 
-import Testing
-@testable import PDF_Rendering
 import PDF_Standard
+import Testing
+
+@testable import PDF_Rendering
 
 // MARK: - Vertical Stack Tests
 

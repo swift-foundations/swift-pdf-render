@@ -3,8 +3,8 @@
 //  swift-pdf-rendering
 //
 
-public import PDF_Standard
 public import Geometry
+public import PDF_Standard
 
 // MARK: - List Marker
 

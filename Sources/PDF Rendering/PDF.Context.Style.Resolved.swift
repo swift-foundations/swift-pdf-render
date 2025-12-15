@@ -1,9 +1,9 @@
 // PDF.Context.Style.Resolved.swift
 // Fully resolved style with concrete values.
 
-public import PDF_Standard
 import Geometry
 public import Layout
+public import PDF_Standard
 
 extension PDF.Context.Style {
     /// A style with all properties resolved to concrete values.

@@ -1,8 +1,8 @@
 // PDF.Context.swift
 // Rendering context decomposed into categorical primitives.
 
-public import PDF_Standard
 import Geometry
+public import PDF_Standard
 
 extension PDF {
     /// Rendering context for PDF layout.
@@ -58,15 +58,15 @@ extension PDF {
         ///
         /// This is populated when fonts are set via `style.font`.
         public var fontRegistry: [String: PDF.Font] = [:]
-        
+
         // MARK: - Inline Text Flow
-        
+
         /// Accumulated inline text runs.
         ///
         /// Block elements flush this buffer to render accumulated inline content
         /// as a single wrapped unit. Inline elements append without rendering.
         public var inlineRuns: [PDF.Context.TextRun] = []
-        
+
         // MARK: - List State
 
         /// Stack of active lists (for nested list support).
@@ -75,7 +75,7 @@ extension PDF {
         /// Pending list marker to be rendered with the first line of text.
         /// Stores the marker and X position where it should be rendered.
         public var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)? = nil
-        
+
         // MARK: - Modes
 
         /// Preformatted mode - preserves whitespace in `<pre>` blocks.
@@ -103,7 +103,7 @@ extension PDF {
 
         /// Maximum Y reached in current horizontal row.
         internal var horizontalRowMaxY: PDF.UserSpace.Y? = nil
-        
+
         // MARK: - Pagination
 
         /// Initial layout box (for page reset).
@@ -165,7 +165,9 @@ extension PDF.Context {
             color: .black,
             lineHeight: 1.2
         ),
-        graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState> = .init(initial: .init())
+        graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState> = .init(
+            initial: .init()
+        )
     ) {
         self.layoutBox = layoutBox
         self.mediaBox = mediaBox
@@ -188,7 +190,8 @@ extension PDF.Context {
         lineHeight: Scale<1, Double> = 1.2
     ) {
         let box = PDF.UserSpace.Rectangle(
-            x: x, y: y,
+            x: x,
+            y: y,
             width: availableWidth,
             height: availableHeight
         )
@@ -226,16 +229,19 @@ extension PDF.Context {
 extension PDF.Context {
     /// Advance Y position by one line.
     public mutating func advanceLine() {
+        // swiftlint:disable:next shorthand_operator
         layoutBox.lly = layoutBox.lly + style.line.height
     }
 
     /// Advance Y position by specified amount.
     public mutating func advance(_ amount: PDF.UserSpace.Height) {
+        // swiftlint:disable:next shorthand_operator
         layoutBox.lly = layoutBox.lly + amount
     }
 
     /// Advance X position by specified amount (for horizontal layout).
     public mutating func advanceX(_ amount: PDF.UserSpace.Width) {
+        // swiftlint:disable:next shorthand_operator
         layoutBox.llx = layoutBox.llx + amount
     }
 
@@ -270,7 +276,7 @@ extension PDF.Context {
         inlineRuns = []
         PDF.Context.TextRun.renderRuns(runs, context: &self)
     }
-    
+
     /// Check if there are pending inline runs.
     public var hasInlineRuns: Bool {
         !inlineRuns.isEmpty
@@ -291,12 +297,12 @@ extension PDF.Context {
         }
         listStack.append((type: type, currentIndex: startIndex))
     }
-    
+
     /// Pop the current list from the stack.
     public mutating func popList() {
         _ = listStack.popLast()
     }
-    
+
     /// Get the next list marker and advance the counter.
     ///
     /// Returns a ListMarker for the current list item.
@@ -309,7 +315,9 @@ extension PDF.Context {
     /// For ordered lists:
     /// - Numbers with period (1., 2., etc.) in text font
     public mutating func nextListMarker() -> ListMarker {
-        guard !listStack.isEmpty else { return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font) }
+        guard !listStack.isEmpty else {
+            return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
+        }
         let index = listStack.count - 1
         switch listStack[index].type {
         case .unordered:
@@ -335,7 +343,8 @@ extension PDF.Context {
                 let squareSize = style.fontSize * 0.22
                 // Rectangle will be positioned when marker is rendered
                 let rect = PDF.UserSpace.Rectangle(
-                    x: 0, y: 0,
+                    x: 0,
+                    y: 0,
                     width: squareSize.width,
                     height: squareSize.height
                 )
@@ -412,11 +421,13 @@ extension PDF.Context {
         // Use completedPages.count + 1 for correct 1-indexed page number
         // pages.count includes current page if non-empty, which would overcount
         let pageNumber = completedPages.count + 1
-        pendingInternalLinks.append(PendingInternalLink(
-            targetId: targetId,
-            pageNumber: pageNumber,
-            bounds: rect
-        ))
+        pendingInternalLinks.append(
+            PendingInternalLink(
+                targetId: targetId,
+                pageNumber: pageNumber,
+                bounds: rect
+            )
+        )
     }
 
     /// Check if we need a page break and start new page if so.
@@ -586,9 +597,15 @@ extension PDF.Context {
         size: PDF.UserSpace.Size<1>,
         color: PDF.Color
     ) {
-        emitText([UInt8](winAnsi: text, withFallback: true), at: position, font: font, size: size, color: color)
+        emitText(
+            [UInt8](winAnsi: text, withFallback: true),
+            at: position,
+            font: font,
+            size: size,
+            color: color
+        )
     }
-    
+
     /// Emit a line.
     public mutating func emitLine(
         from: PDF.UserSpace.Coordinate,
@@ -615,7 +632,7 @@ extension PDF.Context {
         currentPageBuilder.lineTo(x: to.x, y: pdfToY)
         currentPageBuilder.stroke()
     }
-    
+
     /// Emit a rectangle.
     public mutating func emitRectangle(
         _ rect: PDF.UserSpace.Rectangle,
@@ -724,4 +741,3 @@ extension PDF.Context {
         }
     }
 }
-

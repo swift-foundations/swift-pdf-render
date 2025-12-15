@@ -75,7 +75,9 @@ extension PDF.Element: PDF.View {
     ///
     /// Uses static type dispatch to determine the structure type and extract
     /// any non-default attributes (RowSpan, ColSpan, Scope, Headers, etc.).
-    private static func markedContentInfo(for tag: Tag) -> (ISO_32000.COS.Name, ISO_32000.COS.Dictionary?) {
+    private static func markedContentInfo(
+        for tag: Tag
+    ) -> (ISO_32000.COS.Name, ISO_32000.COS.Dictionary?) {
         // Table (14.8.4.8.3)
         if Tag.self == ISO_32000.Table.self {
             let table = unsafeBitCast(tag, to: ISO_32000.Table.self)
@@ -147,6 +149,7 @@ extension PDF.Element: PDF.View {
         // Fallback: use type name as tag (for custom/future structure types)
         let typeName = String(describing: Tag.self)
         // Type names from Swift are valid PDF names (alphanumeric)
+        // swiftlint:disable:next force_try
         return (try! ISO_32000.COS.Name(typeName), nil)
     }
 }

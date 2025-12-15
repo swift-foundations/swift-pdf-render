@@ -1,13 +1,13 @@
 // _Tuple+PDF.View.swift
 // PDF.View conformance for _Tuple
 
-public import Rendering
 public import PDF_Standard
+public import Rendering
 
 extension _Tuple: PDF.View where repeat each Content: PDF.View {
     public typealias Content = Never
 
-    public var body: Never { fatalError() }
+    public var body: Never { fatalError("_Tuple uses direct rendering") }
 
     public static func _render(_ view: Self, context: inout PDF.Context) {
         // Check if we're in horizontal layout mode
@@ -22,8 +22,8 @@ extension _Tuple: PDF.View where repeat each Content: PDF.View {
         func render<T: PDF.View>(_ element: T) {
             // Apply spacing before this element if there was a previous element
             if let spacing = context.stackSpacing,
-               let lastY = context.lastElementY,
-               context.layoutBox.lly > lastY {
+                let lastY = context.lastElementY,
+                context.layoutBox.lly > lastY {
                 // Only add spacing if Y actually advanced (element rendered something)
                 context.advance(spacing)
             }
@@ -49,8 +49,8 @@ extension _Tuple: PDF.View where repeat each Content: PDF.View {
         func render<T: PDF.View>(_ element: T) {
             // Apply horizontal spacing before this element if there was a previous element
             if let spacing = context.horizontalSpacing,
-               let lastX = context.lastElementX,
-               context.layoutBox.llx > lastX {
+                let lastX = context.lastElementX,
+                context.layoutBox.llx > lastX {
                 context.advanceX(spacing)
             }
 
