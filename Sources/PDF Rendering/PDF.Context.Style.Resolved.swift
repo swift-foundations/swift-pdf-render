@@ -52,7 +52,7 @@ extension PDF.Context.Style.Resolved {
 
         /// Total line height in points (fontSize × lineHeight multiplier).
         public var height: PDF.UserSpace.Height {
-            style.fontSize.height * style.lineHeight.value
+            style.fontSize.height * style.lineHeight
         }
 
         /// Half-leading value using CSS half-leading model.
@@ -73,15 +73,4 @@ extension PDF.Context.Style.Resolved {
             halfLeading + style.font.metrics.ascender(atSize: style.fontSize)
         }
     }
-
-    // MARK: - Convenience (deprecated, use style.line.*)
-
-    @available(*, deprecated, renamed: "line.height")
-    public var lineHeightPoints: PDF.UserSpace.Height { line.height }
-
-    @available(*, deprecated, renamed: "line.halfLeading")
-    public var halfLeading: PDF.UserSpace.Height { line.halfLeading }
-
-    @available(*, deprecated, renamed: "line.baselineOffset")
-    public var baselineOffset: PDF.UserSpace.Height { line.baselineOffset }
 }

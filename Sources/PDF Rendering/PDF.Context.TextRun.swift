@@ -210,7 +210,7 @@ extension PDF.Context {
                 if isFirstLine, let pending = context.pendingListMarker {
                     // Calculate baseline Y for the marker using half-leading model
                     // This ensures the marker aligns with text that is centered within its line box.
-                    let baselineY = context.layoutBox.lly + context.style.baselineOffset
+                    let baselineY = context.layoutBox.lly + context.style.line.baselineOffset
 
                     // For circle/square markers, we need font metrics for x-height positioning
                     let baseFont = context.style.font

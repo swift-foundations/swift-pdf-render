@@ -86,7 +86,8 @@ struct `PDF.Context Tests` {
         )
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        #expect(abs(context.style.lineHeightPoints - 14.4) < 0.001)
+        let lineHeight = context.style.line.height
+        #expect(lineHeight > 14.39 && lineHeight < 14.41)
     }
 
     @Test
@@ -107,7 +108,7 @@ struct `PDF.Context Tests` {
             lineHeight: 1.2
         )
 
-        #expect(large.style.lineHeightPoints == small.style.lineHeightPoints * 2.0)
+        #expect(large.style.line.height == small.style.line.height * 2.0)
     }
 
     // MARK: - Advance Methods
@@ -126,8 +127,8 @@ struct `PDF.Context Tests` {
         context.advanceLine()
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        let advancedHeight = context.layoutBox.lly - startY
-        #expect(abs(advancedHeight.value - 14.4) < 0.001)
+        let advancedHeight: PDF.UserSpace.Dy = context.layoutBox.lly - startY
+        #expect(advancedHeight > 14.39 && advancedHeight < 14.41)
     }
 
     @Test

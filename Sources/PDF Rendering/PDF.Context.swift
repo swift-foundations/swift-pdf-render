@@ -115,10 +115,10 @@ extension PDF {
         /// The page's media box (defines page geometry).
         public var mediaBox: ISO_32000.UserSpace.Rectangle
 
-        /// Page height for coordinate conversion (top-left to bottom-left).
+        /// Page top Y coordinate for coordinate conversion (top-left to bottom-left).
         /// Computed from mediaBox.
-        public var pageHeight: PDF.UserSpace.Height {
-            mediaBox.height
+        public var pageTop: PDF.UserSpace.Y {
+            mediaBox.ury
         }
 
         /// Completed pages (fully built).
@@ -212,8 +212,8 @@ extension PDF.Context {
         let contentWidth = mediaBox.width - margins.horizontal
         let contentHeight = mediaBox.height - margins.vertical
         self.init(
-            x: PDF.UserSpace.X(margins.leading),
-            y: PDF.UserSpace.Y(margins.top),
+            x: .zero + margins.leading,
+            y: .zero + margins.top,
             availableWidth: contentWidth,
             availableHeight: contentHeight,
             mediaBox: mediaBox
@@ -436,7 +436,7 @@ extension PDF.Context {
 
     /// Remaining space on current page.
     public var remainingHeight: PDF.UserSpace.Height {
-        .max(.zero, maxY - layoutBox.lly)
+        .max(.zero, height(maxY - layoutBox.lly))
     }
 
     /// All pages (completed + current).
@@ -531,21 +531,15 @@ extension PDF.Context {
         measurementMode = true
         work(&self)
         measurementMode = false
-        let height: PDF.UserSpace.Height = layoutBox.lly - startY
+        let measuredHeight: PDF.UserSpace.Height = height(layoutBox.lly - startY)
         layoutBox.lly = startY
-        return height
+        return measuredHeight
     }
 }
 
 // MARK: - Content Stream Emission
 
 extension PDF.Context {
-    /// Convert Y coordinate from top-left origin to PDF bottom-left origin.
-    @inlinable
-    public func convertY(_ y: PDF.UserSpace.Y) -> PDF.UserSpace.Y {
-        pageHeight - y
-    }
-    
     /// Emit WinAnsi-encoded bytes at a position.
     ///
     /// Handles coordinate conversion and font/color setup.
@@ -558,7 +552,7 @@ extension PDF.Context {
     ) {
         guard !measurementMode else { return }
 
-        let pdfY = convertY(position.y)
+        let pdfY = pageTop - (position.y - PDF.UserSpace.Y.zero)
 
         currentPageBuilder.beginText()
 
@@ -573,7 +567,11 @@ extension PDF.Context {
         }
 
         currentPageBuilder.setFont(font, size: size)
-        currentPageBuilder.moveText(x: position.x, y: pdfY)
+        // moveText takes displacements from current position (origin after beginText)
+        currentPageBuilder.moveText(
+            dx: position.x - .zero,
+            dy: pdfY - .zero
+        )
         currentPageBuilder.showText(bytes)
         currentPageBuilder.endText()
     }
@@ -600,8 +598,8 @@ extension PDF.Context {
     ) {
         guard !measurementMode else { return }
 
-        let pdfFromY = convertY(from.y)
-        let pdfToY = convertY(to.y)
+        let pdfFromY = pageTop - (from.y - PDF.UserSpace.Y.zero)
+        let pdfToY = pageTop - (to.y - PDF.UserSpace.Y.zero)
 
         switch color {
         case .gray(let g):
@@ -626,8 +624,9 @@ extension PDF.Context {
     ) {
         guard !measurementMode else { return }
 
-        // Transform Y coordinate (rect uses top-left origin, PDF uses bottom-left)
-        let pdfY = pageHeight - rect.lly - rect.height
+        // In top-left coords: rect.lly is top, rect.lly + rect.height is bottom
+        // In PDF bottom-left coords: pdfLly = pageTop - (bottom position as displacement)
+        let pdfLly = pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
 
         if let fill = fill {
             switch fill {
@@ -652,7 +651,7 @@ extension PDF.Context {
             currentPageBuilder.setLineWidth(stroke.width)
         }
 
-        currentPageBuilder.rectangle(x: rect.llx, y: pdfY, width: rect.width, height: rect.height)
+        currentPageBuilder.rectangle(x: rect.llx, y: pdfLly, width: rect.width, height: rect.height)
 
         if fill != nil && stroke != nil {
             currentPageBuilder.fillAndStroke()
@@ -681,7 +680,7 @@ extension PDF.Context {
         guard !measurementMode else { return }
 
         // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
-        let pdfCenterY = convertY(center.y)
+        let pdfCenterY = pageTop - (center.y - PDF.UserSpace.Y.zero)
         let pdfCenter = PDF.UserSpace.Point(
             x: center.x,
             y: pdfCenterY

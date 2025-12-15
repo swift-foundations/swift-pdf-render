@@ -75,7 +75,7 @@ struct `PDF.Text Tests` {
         PDF.Text._render(text, context: &context)
 
         // Y should have advanced
-        #expect(context.layoutBox.lly.value > startY.value)
+        #expect(context.layoutBox.lly > startY)
     }
 
     @Test
@@ -110,8 +110,8 @@ struct `PDF.Text Tests` {
         PDF.Text._render(text, context: &context)
 
         // Y should have advanced by more than one line
-        let lineHeight = context.style.lineHeightPoints
-        #expect(context.layoutBox.lly.value - startY.value > lineHeight.value)
+        let lineHeight = context.style.line.height
+        #expect(height(context.layoutBox.lly - startY) > lineHeight)
     }
 
     @Test

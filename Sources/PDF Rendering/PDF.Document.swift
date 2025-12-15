@@ -38,8 +38,8 @@ extension PDF.Document {
         let contentHeight = configuration.mediaBox.height - configuration.margins.vertical
 
         var context = PDF.Context(
-            x: PDF.UserSpace.X(configuration.margins.leading),
-            y: PDF.UserSpace.Y(configuration.margins.top),
+            x: .zero + configuration.margins.leading,
+            y: .zero + configuration.margins.top,
             availableWidth: contentWidth,
             availableHeight: contentHeight,
             mediaBox: configuration.mediaBox,
