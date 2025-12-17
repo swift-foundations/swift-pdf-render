@@ -138,7 +138,6 @@ struct PerformanceTests {
                 PDF.Text("This is a test paragraph with some content.")
                 PDF.Text("This is a test paragraph with some content.")
                 PDF.Text("This is a test paragraph with some content.")
-                
             }
             let _ = [UInt8](doc)
             count += 1

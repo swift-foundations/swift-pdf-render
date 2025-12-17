@@ -16,7 +16,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/coenttb/swift-renderable", from: "3.1.0"),
-        .package(url: "https://github.com/swift-standards/swift-pdf-standard", from: "0.2.0"),
+        .package(url: "https://github.com/swift-standards/swift-pdf-standard", from: "0.3.0"),
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),
         .package(url: "https://github.com/swift-standards/swift-standards", from: "0.16.1"),
     ],
