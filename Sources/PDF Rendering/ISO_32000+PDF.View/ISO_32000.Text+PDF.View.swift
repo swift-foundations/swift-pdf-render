@@ -95,58 +95,70 @@ extension ISO_32000.Text: PDF.View {
     }
 
     /// Wrap bytes to fit within max width
+    ///
+    /// Uses O(n) algorithm by tracking running line width instead of recalculating.
     private static func wrapBytes(
         _ bytes: [UInt8],
         font: PDF.Font,
         size: PDF.UserSpace.Size<1>,
         maxWidth: PDF.UserSpace.Width
     ) -> [[UInt8]] {
-        // Split bytes on spaces
-        var words: [[UInt8]] = []
+        guard !bytes.isEmpty else { return [[]] }
+
+        // Pre-calculate space width once
+        let spaceWidth = font.winAnsi.width(of: [.ascii.space], atSize: size)
+
+        var lines: [[UInt8]] = []
+        var currentLine: [UInt8] = []
+        var currentLineWidth: PDF.UserSpace.Width = .zero
         var currentWord: [UInt8] = []
+
+        // Reserve capacity to reduce reallocations
+        currentLine.reserveCapacity(256)
+        currentWord.reserveCapacity(64)
+
+        /// Process a completed word - add to current line or start new line
+        func processWord() {
+            guard !currentWord.isEmpty else { return }
+
+            let wordWidth = font.winAnsi.width(of: currentWord, atSize: size)
+
+            if currentLine.isEmpty {
+                // First word on line
+                if wordWidth > maxWidth {
+                    // Word too long - put on its own line
+                    lines.append(currentWord)
+                } else {
+                    currentLine = currentWord
+                    currentLineWidth = wordWidth
+                }
+            } else {
+                // Check if word fits on current line (O(1) - no line recalculation!)
+                let potentialWidth = currentLineWidth + spaceWidth + wordWidth
+                if potentialWidth <= maxWidth {
+                    currentLine.append(.ascii.space)
+                    currentLine.append(contentsOf: currentWord)
+                    currentLineWidth = potentialWidth
+                } else {
+                    // Start new line
+                    lines.append(currentLine)
+                    currentLine = currentWord
+                    currentLineWidth = wordWidth
+                }
+            }
+            currentWord = []
+        }
 
         for byte in bytes {
             if byte == .ascii.space {
-                if !currentWord.isEmpty {
-                    words.append(currentWord)
-                    currentWord = []
-                }
-                // Add empty word for consecutive spaces
-                words.append([])
+                processWord()
             } else {
                 currentWord.append(byte)
             }
         }
-        if !currentWord.isEmpty {
-            words.append(currentWord)
-        }
 
-        var lines: [[UInt8]] = []
-        var currentLine: [UInt8] = []
-        let spaceWidth = font.winAnsi.width(of: [.ascii.space], atSize: size)
-
-        for word in words {
-            let wordWidth = font.winAnsi.width(of: word, atSize: size)
-
-            if currentLine.isEmpty {
-                if wordWidth > maxWidth {
-                    lines.append(word)
-                } else {
-                    currentLine = word
-                }
-            } else {
-                let lineWidth = font.winAnsi.width(of: currentLine, atSize: size)
-                let potentialWidth = lineWidth + spaceWidth + wordWidth
-
-                if potentialWidth <= maxWidth {
-                    currentLine.append(.ascii.space)
-                    currentLine.append(contentsOf: word)
-                } else {
-                    lines.append(currentLine)
-                    currentLine = word
-                }
-            }
-        }
+        // Handle last word
+        processWord()
 
         if !currentLine.isEmpty {
             lines.append(currentLine)

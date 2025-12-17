@@ -167,9 +167,11 @@ struct PerformanceTests {
         let paragraph = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. "
         let fullText = String(repeating: paragraph, count: 3700) // ~700K chars
         let charCount = fullText.count
+        let wordCount = fullText.split(separator: " ").count
 
         print("📊 Large Document Benchmark")
         print("   Characters: \(charCount)")
+        print("   Words: ~\(wordCount)")
 
         // Warm up
         for _ in 0..<2 {
