@@ -313,7 +313,7 @@ extension PDF.Context.TextRun {
         }
 
         // Advance Y
-        context.layoutBox.lly = context.layoutBox.lly - lineHeight
+        context.layoutBox.lly = context.layoutBox.lly + lineHeight
     }
 
     /// Style key for batching - avoids repeated property comparisons
