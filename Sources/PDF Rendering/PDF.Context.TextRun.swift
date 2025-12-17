@@ -306,9 +306,33 @@ extension PDF.Context.TextRun {
         let isWhitespace: Bool
         let isNewline: Bool
         let isTab: Bool
+        let width: PDF.UserSpace.Width  // Cached at creation
 
-        var width: PDF.UserSpace.Width {
-            font.winAnsi.width(of: bytes, atSize: fontSize)
+        init(
+            bytes: [UInt8],
+            font: PDF.Font,
+            fontSize: PDF.UserSpace.Size<1>,
+            color: PDF.Color,
+            textDecoration: PDF.Annotation.TextMarkup.Kind?,
+            verticalOffset: PDF.UserSpace.Height,
+            linkURL: String?,
+            internalLinkId: String?,
+            isWhitespace: Bool,
+            isNewline: Bool,
+            isTab: Bool
+        ) {
+            self.bytes = bytes
+            self.font = font
+            self.fontSize = fontSize
+            self.color = color
+            self.textDecoration = textDecoration
+            self.verticalOffset = verticalOffset
+            self.linkURL = linkURL
+            self.internalLinkId = internalLinkId
+            self.isWhitespace = isWhitespace
+            self.isNewline = isNewline
+            self.isTab = isTab
+            self.width = font.winAnsi.width(of: bytes, atSize: fontSize)
         }
     }
 
