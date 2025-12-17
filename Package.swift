@@ -18,6 +18,7 @@ let package = Package(
         .package(url: "https://github.com/coenttb/swift-renderable", from: "3.1.0"),
         .package(url: "https://github.com/swift-standards/swift-pdf-standard", from: "0.1.1"),
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),
+        .package(url: "https://github.com/swift-standards/swift-standards", from: "0.16.1"),
     ],
     targets: [
         .target(
@@ -32,6 +33,7 @@ let package = Package(
             dependencies: [
                 "PDF Rendering",
                 .product(name: "InlineSnapshotTesting", package: "swift-snapshot-testing"),
+                .product(name: "StandardsTestSupport", package: "swift-standards"),
             ]
         ),
     ]
