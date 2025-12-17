@@ -133,6 +133,29 @@ struct PerformanceTests {
         print("📊 Throughput: \(Int(throughput)) docs/sec (\(count) in \(String(format: "%.2f", seconds))s)")
     }
 
+    // MARK: - TextRun Rendering Benchmarks
+
+    @Test("Render 10 runs", .timed(iterations: 100, warmup: 10))
+    func render10Runs() {
+        let runs = createRuns(count: 10)
+        var context = createContext()
+        PDF.Context.TextRun.renderRuns(runs, context: &context)
+    }
+
+    @Test("Render 100 runs", .timed(iterations: 20, warmup: 5))
+    func render100Runs() {
+        let runs = createRuns(count: 100)
+        var context = createContext()
+        PDF.Context.TextRun.renderRuns(runs, context: &context)
+    }
+
+    @Test("Render 500 runs", .timed(iterations: 5, warmup: 2))
+    func render500Runs() {
+        let runs = createRuns(count: 500)
+        var context = createContext()
+        PDF.Context.TextRun.renderRuns(runs, context: &context)
+    }
+
     // MARK: - Helpers
 
     private func createContext() -> PDF.Context {
@@ -140,5 +163,16 @@ struct PerformanceTests {
             mediaBox: .letter,
             margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
         )
+    }
+
+    private func createRuns(count: Int) -> [PDF.Context.TextRun] {
+        (0..<count).map { i in
+            PDF.Context.TextRun(
+                text: "This is paragraph \(i) with some content to make it realistic.",
+                font: .helvetica,
+                fontSize: 12,
+                color: .black
+            )
+        }
     }
 }
