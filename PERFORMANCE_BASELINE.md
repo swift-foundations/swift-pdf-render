@@ -48,12 +48,24 @@
 2. **Document overhead is low** - 147µs for single-element doc
 3. **Throughput ceiling** - ~4,300 simple docs/sec
 
-## Optimization Targets
+## Optimization Results
 
-Based on profiling plan, expected gains from:
-- Font metric caching: ~30%
-- Buffer reuse: ~10%
-- Style hash comparison: ~15%
-- Pre-scan encoding: ~40%
+| Optimization | Expected | Actual | Notes |
+|-------------|----------|--------|-------|
+| Token.width caching | ~30% | **+3%** | Width rarely accessed multiple times |
+| Buffer reuse | ~10% | **0%** | CoW makes `= []` already efficient |
 
-**Target throughput:** 6,000-8,000 docs/sec after quick wins
+**Final throughput:** 4,432 docs/sec (+3.3% from baseline)
+
+### Analysis
+
+The bottleneck analysis overestimated gains because:
+1. Font width calculation is already O(n) per-byte lookup - very fast
+2. Swift's CoW semantics make array operations efficient
+3. The real cost is in the rendering pipeline, not data structures
+
+### Remaining Opportunities
+
+- Pre-scan encoding (medium complexity)
+- Style hash comparison (low impact expected)
+- Structural changes in upstream dependencies (high complexity)
