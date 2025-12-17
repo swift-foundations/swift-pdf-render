@@ -104,6 +104,23 @@ extension PDF {
         /// Maximum Y reached in current horizontal row.
         internal var horizontalRowMaxY: PDF.UserSpace.Y? = nil
 
+        // MARK: - Text State (for batching BT/ET blocks)
+
+        /// Whether we're inside a BT (begin text) block.
+        internal var textBlockOpen: Bool = false
+
+        /// Current font set in the open text block.
+        internal var currentTextFont: PDF.Font? = nil
+
+        /// Current font size set in the open text block.
+        internal var currentTextFontSize: PDF.UserSpace.Size<1>? = nil
+
+        /// Current fill color set in the open text block.
+        internal var currentTextColor: PDF.Color? = nil
+
+        /// Current text position (PDF coordinates, for relative positioning).
+        internal var currentTextPosition: PDF.UserSpace.Coordinate? = nil
+
         // MARK: - Pagination
 
         /// Initial layout box (for page reset).
@@ -369,6 +386,9 @@ extension PDF.Context {
 extension PDF.Context {
     /// Start a new page, building the current page and resetting state.
     public mutating func startNewPage() {
+        // Close any open text block before finalizing page
+        flushText()
+
         // Build current page
         let currentStream = ISO_32000.ContentStream(
             data: currentPageBuilder.data,
@@ -455,9 +475,17 @@ extension PDF.Context {
     /// This is the final output of rendering: `[PDF.Page]`
     public var pages: [PDF.Page] {
         var allPages = completedPages
-        if !currentPageBuilder.data.isEmpty {
+        if !currentPageBuilder.data.isEmpty || textBlockOpen {
+            // Build data, appending ET if text block is open
+            var data = currentPageBuilder.data
+            if textBlockOpen {
+                if !data.isEmpty {
+                    data.append(.ascii.lf)
+                }
+                data.append(contentsOf: [UInt8]("ET".utf8))
+            }
             let currentStream = ISO_32000.ContentStream(
-                data: currentPageBuilder.data,
+                data: data,
                 fontsUsed: currentPageBuilder.fontsUsed
             )
             let currentPage = PDF.Page(
@@ -554,6 +582,7 @@ extension PDF.Context {
     /// Emit WinAnsi-encoded bytes at a position.
     ///
     /// Handles coordinate conversion and font/color setup.
+    /// Batches multiple text emissions within a single BT/ET block for efficiency.
     public mutating func emitText(
         _ bytes: [UInt8],
         at position: PDF.UserSpace.Coordinate,
@@ -564,27 +593,51 @@ extension PDF.Context {
         guard !measurementMode else { return }
 
         let pdfY = pageTop - (position.y - PDF.UserSpace.Y.zero)
+        let pdfPosition = PDF.UserSpace.Coordinate(x: position.x, y: pdfY)
 
-        currentPageBuilder.beginText()
-
-        // Set color
-        switch color {
-        case .gray(let g):
-            currentPageBuilder.setFillColorGray(g)
-        case .rgb(let r, let g, let b):
-            currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
-        case .cmyk(let c, let m, let y, let k):
-            currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+        // Open text block if not already open
+        if !textBlockOpen {
+            currentPageBuilder.beginText()
+            textBlockOpen = true
+            currentTextPosition = nil  // Reset position tracking
         }
 
-        currentPageBuilder.setFont(font, size: size)
-        // moveText takes displacements from current position (origin after beginText)
-        currentPageBuilder.moveText(
-            dx: position.x - .zero,
-            dy: pdfY - .zero
-        )
+        // Set color only if changed
+        if currentTextColor != color {
+            switch color {
+            case .gray(let g):
+                currentPageBuilder.setFillColorGray(g)
+            case .rgb(let r, let g, let b):
+                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+            case .cmyk(let c, let m, let y, let k):
+                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+            }
+            currentTextColor = color
+        }
+
+        // Set font only if changed
+        if currentTextFont != font || currentTextFontSize != size {
+            currentPageBuilder.setFont(font, size: size)
+            currentTextFont = font
+            currentTextFontSize = size
+        }
+
+        // Position text - use relative positioning if we have a previous position
+        if let lastPos = currentTextPosition {
+            currentPageBuilder.moveText(
+                dx: pdfPosition.x - lastPos.x,
+                dy: pdfPosition.y - lastPos.y
+            )
+        } else {
+            // First text in block - position from origin
+            currentPageBuilder.moveText(
+                dx: pdfPosition.x - .zero,
+                dy: pdfPosition.y - .zero
+            )
+        }
+        currentTextPosition = pdfPosition
+
         currentPageBuilder.showText(bytes)
-        currentPageBuilder.endText()
     }
 
     /// Emit a text string at a position (encodes to WinAnsi).
@@ -606,6 +659,20 @@ extension PDF.Context {
         )
     }
 
+    /// Flush any open text block.
+    ///
+    /// Call this before switching to graphics operations (lines, rectangles)
+    /// or before finalizing the page. Text blocks cannot contain graphics operators.
+    public mutating func flushText() {
+        guard textBlockOpen else { return }
+        currentPageBuilder.endText()
+        textBlockOpen = false
+        currentTextFont = nil
+        currentTextFontSize = nil
+        currentTextColor = nil
+        currentTextPosition = nil
+    }
+
     /// Emit a line.
     public mutating func emitLine(
         from: PDF.UserSpace.Coordinate,
@@ -614,6 +681,9 @@ extension PDF.Context {
         width: PDF.UserSpace.Width
     ) {
         guard !measurementMode else { return }
+
+        // Must close text block before graphics operations
+        flushText()
 
         let pdfFromY = pageTop - (from.y - PDF.UserSpace.Y.zero)
         let pdfToY = pageTop - (to.y - PDF.UserSpace.Y.zero)
@@ -640,6 +710,9 @@ extension PDF.Context {
         stroke: PDF.Stroke?
     ) {
         guard !measurementMode else { return }
+
+        // Must close text block before graphics operations
+        flushText()
 
         // In top-left coords: rect.lly is top, rect.lly + rect.height is bottom
         // In PDF bottom-left coords: pdfLly = pageTop - (bottom position as displacement)
@@ -695,6 +768,9 @@ extension PDF.Context {
         strokeWidth: PDF.UserSpace.Width = .init(1)
     ) {
         guard !measurementMode else { return }
+
+        // Must close text block before graphics operations
+        flushText()
 
         // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
         let pdfCenterY = pageTop - (center.y - PDF.UserSpace.Y.zero)

@@ -121,6 +121,24 @@ struct PerformanceTests {
             let doc = PDF.Document {
                 PDF.Text("Document \(count)")
                 PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                PDF.Text("This is a test paragraph with some content.")
+                
             }
             let _ = [UInt8](doc)
             count += 1
