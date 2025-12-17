@@ -273,7 +273,7 @@ extension PDF.Context {
     public mutating func flushInlineRuns() {
         guard !inlineRuns.isEmpty else { return }
         let runs = inlineRuns
-        inlineRuns = []
+        inlineRuns.removeAll(keepingCapacity: true)  // Reuse buffer
         PDF.Context.TextRun.renderRuns(runs, context: &self)
     }
 
