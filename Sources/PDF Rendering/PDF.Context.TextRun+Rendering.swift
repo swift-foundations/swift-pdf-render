@@ -264,6 +264,12 @@ extension PDF.Context.TextRun {
 
         for word in state.words {
             let run = runs[word.runIndex]
+            // IMPORTANT: Must pass word.runIndex here, not rely on default (0).
+            // StyleKey.runIndex is used later in runs[style.runIndex] to fetch the
+            // correct run when emitting segments (lines ~278, ~304, ~322).
+            // If runIndex defaults to 0, ALL segments emit with runs[0]'s font/style,
+            // causing: (1) bold/italic leaking into normal text, (2) wrong spacing
+            // due to incorrect font metrics. This was a critical bug fixed in v0.4.2.
             let wordStyle = StyleKey(run: run, index: word.runIndex)
 
             // Check if style changed
@@ -345,7 +351,7 @@ extension PDF.Context.TextRun {
             self.fontSize = run.fontSize
             self.color = run.color
             self.textDecoration = run.textDecoration
-            self.verticalOffset = run.verticalOffset
+            self.ve rticalOffset = run.verticalOffset
             self.linkURL = run.linkURL
             self.internalLinkId = run.internalLinkId
         }
