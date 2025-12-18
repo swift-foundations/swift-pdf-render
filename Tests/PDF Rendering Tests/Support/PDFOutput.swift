@@ -3,7 +3,7 @@
 import Foundation
 
 enum PDFOutput {
-    static let directory = "/tmp/pdf-tests"
+    static let directory = "/tmp/swift-pdf-rendering"
 
     static func write(_ bytes: [UInt8], name: String) throws -> String {
         let fm = FileManager.default

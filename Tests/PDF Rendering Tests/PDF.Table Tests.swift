@@ -93,10 +93,10 @@ struct `PDF.Table Tests` {
         }
 
         let bytes = [UInt8](pdfDocument)
-        let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-table.pdf")
-        try Data(bytes).write(to: url)
 
-        print("Table PDF written to: \(url.path)")
+        let path = try PDFOutput.write(bytes, name: "table")
+
+        print("PDF written to: \(path)")
         #expect(!bytes.isEmpty)
     }
 }

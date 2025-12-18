@@ -76,14 +76,11 @@ struct `PDF.Output Tests` {
             SampleDocument()
         }
 
-        // Serialize to bytes
         let bytes = [UInt8](pdfDocument)
 
-        // Write to /tmp
-        let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-test.pdf")
-        try Data(bytes).write(to: url)
+        let path = try PDFOutput.write(bytes, name: "test")
 
-        print("PDF written to: \(url.path)")
+        print("PDF written to: \(path)")
         #expect(!bytes.isEmpty)
     }
 
@@ -125,11 +122,9 @@ struct `PDF.Output Tests` {
 
         let bytes = [UInt8](pdfDocument)
 
-        let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-multipage.pdf")
-        try Data(bytes).write(to: url)
+        let path = try PDFOutput.write(bytes, name: "multi-page")
 
-        print("Multi-page PDF written to: \(url.path)")
-
+        print("PDF written to: \(path)")
         #expect(!bytes.isEmpty)
     }
 
@@ -208,10 +203,9 @@ struct `PDF.Output Tests` {
 
         let bytes = [UInt8](pdfDocument)
 
-        let url = URL(fileURLWithPath: "/tmp/swift-pdf-rendering-graphics.pdf")
-        try Data(bytes).write(to: url)
+        let path = try PDFOutput.write(bytes, name: "graphics")
 
-        print("Graphics PDF written to: \(url.path)")
+        print("PDF written to: \(path)")
         #expect(!bytes.isEmpty)
     }
 }

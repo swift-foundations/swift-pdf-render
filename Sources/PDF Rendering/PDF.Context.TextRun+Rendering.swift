@@ -19,6 +19,18 @@ extension PDF.Context.TextRun {
     ) {
         guard !runs.isEmpty else { return }
 
+        // Build ActualText for proper copy-paste behavior
+        // This provides the semantic text for extraction, separate from visual line wrapping
+        let actualText = buildActualText(from: runs)
+        if !actualText.isEmpty {
+            context.currentPageBuilder.beginActualTextSpan(actualText)
+        }
+        defer {
+            if !actualText.isEmpty {
+                context.currentPageBuilder.endActualTextSpan()
+            }
+        }
+
         let maxWidth = context.layoutBox.width
         let preserveWhitespace = context.preserveWhitespace
 
@@ -252,7 +264,7 @@ extension PDF.Context.TextRun {
 
         for word in state.words {
             let run = runs[word.runIndex]
-            let wordStyle = StyleKey(run: run)
+            let wordStyle = StyleKey(run: run, index: word.runIndex)
 
             // Check if style changed
             if let current = currentStyle, current != wordStyle {
@@ -472,5 +484,62 @@ extension PDF.Context.TextRun {
             )
             context.emitRectangle(rect, fill: context.style.color, stroke: nil)
         }
+    }
+
+    // MARK: - ActualText for Copy-Paste
+
+    /// Build the ActualText string from runs for proper copy-paste behavior.
+    ///
+    /// This combines all runs into a single continuous string, properly handling
+    /// spacing between runs with different styles. The ActualText is used by
+    /// PDF readers when extracting text for copy-paste operations.
+    ///
+    /// Performance optimizations (Swift 6.2):
+    /// - O(1) boolean tracking instead of O(n) `hasSuffix` checks
+    /// - ASCII fast-path (bytes < 0x80) avoids decode table lookup
+    /// - Direct UTF-8 buffer building, single String conversion at end
+    ///
+    /// - Parameter runs: The text runs to combine
+    /// - Returns: The combined text with proper spacing
+    private static func buildActualText(from runs: [PDF.Context.TextRun]) -> String {
+        // Pre-calculate capacity: total bytes
+        // UTF-8 may expand extended chars (0x80-0xFF) to 2-3 bytes
+        let totalBytes = runs.reduce(0) { $0 + $1.bytes.count }
+        var utf8Buffer: [UInt8] = []
+        utf8Buffer.reserveCapacity(totalBytes)
+
+        var lastWasSpace = true  // O(1) tracking for whitespace collapsing
+
+        for run in runs {
+            guard !run.bytes.isEmpty else { continue }
+
+            // Process bytes with ASCII fast-path
+            for byte in run.bytes {
+                if byte.ascii.isWhitespace {
+                    // Collapse whitespace to single space
+                    if !lastWasSpace {
+                        utf8Buffer.append(.ascii.space)
+                        lastWasSpace = true
+                    }
+                } else if byte < 0x80 {
+                    // ASCII fast-path: direct passthrough (~95% of English text)
+                    utf8Buffer.append(byte)
+                    lastWasSpace = false
+                } else if let scalar = ISO_32000.WinAnsiEncoding.decode(byte) {
+                    // Extended chars (0x80-0xFF): encode to UTF-8
+                    for unit in scalar.utf8 {
+                        utf8Buffer.append(unit)
+                    }
+                    lastWasSpace = false
+                } else {
+                    // Unmapped byte: replace with '?'
+                    utf8Buffer.append(0x3F)
+                    lastWasSpace = false
+                }
+            }
+        }
+
+        // Single String conversion at end
+        return String(decoding: utf8Buffer, as: UTF8.self)
     }
 }
