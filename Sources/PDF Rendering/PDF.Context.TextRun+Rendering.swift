@@ -351,7 +351,7 @@ extension PDF.Context.TextRun {
             self.fontSize = run.fontSize
             self.color = run.color
             self.textDecoration = run.textDecoration
-            self.ve rticalOffset = run.verticalOffset
+            self.verticalOffset = run.verticalOffset
             self.linkURL = run.linkURL
             self.internalLinkId = run.internalLinkId
         }

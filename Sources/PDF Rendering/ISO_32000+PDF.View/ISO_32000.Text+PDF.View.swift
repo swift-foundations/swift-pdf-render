@@ -140,7 +140,10 @@ extension ISO_32000.Text: PDF.View {
                     currentLine.append(contentsOf: currentWord)
                     currentLineWidth = potentialWidth
                 } else {
-                    // Start new line
+                    // Start new line - add trailing space to preserve word boundary.
+                    // This ensures copy-paste from PDF viewers extracts proper spacing
+                    // between the last word of this line and first word of next line.
+                    currentLine.append(.ascii.space)
                     lines.append(currentLine)
                     currentLine = currentWord
                     currentLineWidth = wordWidth
