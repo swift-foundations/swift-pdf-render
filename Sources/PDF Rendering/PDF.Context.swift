@@ -1,6 +1,7 @@
 // PDF.Context.swift
 // Rendering context decomposed into categorical primitives.
 
+import CopyOnWrite
 import Geometry
 public import PDF_Standard
 
@@ -40,412 +41,108 @@ extension PDF {
     /// mutating a shared instance, the storage is copied first. This prevents
     /// stack overflow during deep recursive rendering while maintaining value
     /// semantics.
+    @`Copy on Write`
     public struct Context: Sendable {
-        // MARK: - Copy-on-Write Storage
-
-        private final class Storage: @unchecked Sendable {
-            // MARK: - Categorical Primitives
-
-            /// The layout box (position + available size).
-            var layoutBox: PDF.UserSpace.Rectangle
-
-            /// Resolved text style.
-            var style: Style.Resolved
-
-            /// Graphics state stack for save/restore operations.
-            var graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
-
-            /// Font registry mapping font reference names to Font objects.
-            var fontRegistry: [String: PDF.Font]
-
-            // MARK: - Inline Text Flow
-
-            /// Accumulated inline text runs.
-            var inlineRuns: [PDF.Context.TextRun]
-
-            // MARK: - List State
-
-            /// Stack of active lists (for nested list support).
-            var listStack: [(type: ListType, currentIndex: Int)]
-
-            /// Pending list marker to be rendered with the first line of text.
-            var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)?
-
-            // MARK: - Modes
-
-            /// Preformatted mode - preserves whitespace in `<pre>` blocks.
-            var preserveWhitespace: Bool
-
-            /// Stack spacing - applied between elements in a VStack.
-            var stackSpacing: PDF.UserSpace.Height?
-
-            /// Track Y position before last element rendered (for spacing logic).
-            var lastElementY: PDF.UserSpace.Y?
-
-            /// Measurement mode - when true, operations are not added.
-            var measurementMode: Bool
-
-            // MARK: - Horizontal Layout
-
-            /// Horizontal stack spacing - applied between elements in an HStack.
-            var horizontalSpacing: PDF.UserSpace.Width?
-
-            /// Track X position before last element rendered (for horizontal spacing).
-            var lastElementX: PDF.UserSpace.X?
-
-            /// Starting Y position for current horizontal row (to track max height).
-            var horizontalRowStartY: PDF.UserSpace.Y?
-
-            /// Maximum Y reached in current horizontal row.
-            var horizontalRowMaxY: PDF.UserSpace.Y?
-
-            // MARK: - Text State (for batching BT/ET blocks)
-
-            /// Whether we're inside a BT (begin text) block.
-            var textBlockOpen: Bool
-
-            /// Current font set in the open text block.
-            var currentTextFont: PDF.Font?
-
-            /// Current font size set in the open text block.
-            var currentTextFontSize: PDF.UserSpace.Size<1>?
-
-            /// Current fill color set in the open text block.
-            var currentTextColor: PDF.Color?
-
-            /// Current text position (PDF coordinates, for relative positioning).
-            var currentTextPosition: PDF.UserSpace.Coordinate?
-
-            // MARK: - Pagination
-
-            /// Initial layout box (for page reset).
-            var initialLayoutBox: PDF.UserSpace.Rectangle
-
-            /// Maximum Y position (bottom boundary).
-            var maxY: PDF.UserSpace.Y
-
-            /// The page's media box (defines page geometry).
-            var mediaBox: ISO_32000.UserSpace.Rectangle
-
-            /// Completed pages (fully built).
-            var completedPages: [PDF.Page]
-
-            /// Current page's content stream builder.
-            var currentPageBuilder: ISO_32000.ContentStream.Builder
-
-            /// Annotations for current page.
-            var currentPageAnnotations: [PDF.Annotation]
-
-            /// Pending internal links to be resolved after rendering.
-            var pendingInternalLinks: [PendingInternalLink]
-
-            // MARK: - Initializers
-
-            init(
-                layoutBox: PDF.UserSpace.Rectangle,
-                mediaBox: ISO_32000.UserSpace.Rectangle,
-                style: Style.Resolved,
-                graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
-            ) {
-                self.layoutBox = layoutBox
-                self.mediaBox = mediaBox
-                self.style = style
-                self.graphicsStack = graphicsStack
-                self.initialLayoutBox = layoutBox
-                self.maxY = layoutBox.maxY
-                self.fontRegistry = [:]
-                self.inlineRuns = []
-                self.listStack = []
-                self.pendingListMarker = nil
-                self.preserveWhitespace = false
-                self.stackSpacing = nil
-                self.lastElementY = nil
-                self.measurementMode = false
-                self.horizontalSpacing = nil
-                self.lastElementX = nil
-                self.horizontalRowStartY = nil
-                self.horizontalRowMaxY = nil
-                self.textBlockOpen = false
-                self.currentTextFont = nil
-                self.currentTextFontSize = nil
-                self.currentTextColor = nil
-                self.currentTextPosition = nil
-                self.completedPages = []
-                self.currentPageBuilder = .init()
-                self.currentPageAnnotations = []
-                self.pendingInternalLinks = []
-            }
-
-            init(copying other: Storage) {
-                self.layoutBox = other.layoutBox
-                self.mediaBox = other.mediaBox
-                self.style = other.style
-                self.graphicsStack = other.graphicsStack
-                self.initialLayoutBox = other.initialLayoutBox
-                self.maxY = other.maxY
-                self.fontRegistry = other.fontRegistry
-                self.inlineRuns = other.inlineRuns
-                self.listStack = other.listStack
-                self.pendingListMarker = other.pendingListMarker
-                self.preserveWhitespace = other.preserveWhitespace
-                self.stackSpacing = other.stackSpacing
-                self.lastElementY = other.lastElementY
-                self.measurementMode = other.measurementMode
-                self.horizontalSpacing = other.horizontalSpacing
-                self.lastElementX = other.lastElementX
-                self.horizontalRowStartY = other.horizontalRowStartY
-                self.horizontalRowMaxY = other.horizontalRowMaxY
-                self.textBlockOpen = other.textBlockOpen
-                self.currentTextFont = other.currentTextFont
-                self.currentTextFontSize = other.currentTextFontSize
-                self.currentTextColor = other.currentTextColor
-                self.currentTextPosition = other.currentTextPosition
-                self.completedPages = other.completedPages
-                self.currentPageBuilder = other.currentPageBuilder
-                self.currentPageAnnotations = other.currentPageAnnotations
-                self.pendingInternalLinks = other.pendingInternalLinks
-            }
-        }
-
-        private var storage: Storage
-
-        /// Ensures unique ownership of storage before mutation (CoW).
-        private mutating func ensureUnique() {
-            if !isKnownUniquelyReferenced(&storage) {
-                storage = Storage(copying: storage)
-            }
-        }
-
-        // MARK: - Public Properties (Computed with CoW)
+        // MARK: - Categorical Primitives
 
         /// The layout box (position + available size).
-        public var layoutBox: PDF.UserSpace.Rectangle {
-            get { storage.layoutBox }
-            set {
-                ensureUnique()
-                storage.layoutBox = newValue
-            }
-        }
+        public var layoutBox: PDF.UserSpace.Rectangle
 
         /// Resolved text style.
-        public var style: Style.Resolved {
-            get { storage.style }
-            set {
-                ensureUnique()
-                storage.style = newValue
-            }
-        }
+        public var style: Style.Resolved
 
         /// Graphics state stack for save/restore operations.
-        public var graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState> {
-            get { storage.graphicsStack }
-            set {
-                ensureUnique()
-                storage.graphicsStack = newValue
-            }
-        }
+        public var graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
 
         /// Font registry mapping font reference names to Font objects.
-        public var fontRegistry: [String: PDF.Font] {
-            get { storage.fontRegistry }
-            set {
-                ensureUnique()
-                storage.fontRegistry = newValue
-            }
-        }
+        public var fontRegistry: [String: PDF.Font] = [:]
+
+        // MARK: - Inline Text Flow
 
         /// Accumulated inline text runs.
-        public var inlineRuns: [PDF.Context.TextRun] {
-            get { storage.inlineRuns }
-            set {
-                ensureUnique()
-                storage.inlineRuns = newValue
-            }
-        }
+        public var inlineRuns: [PDF.Context.TextRun] = []
+
+        // MARK: - List State
 
         /// Stack of active lists (for nested list support).
-        public var listStack: [(type: ListType, currentIndex: Int)] {
-            get { storage.listStack }
-            set {
-                ensureUnique()
-                storage.listStack = newValue
-            }
-        }
+        public var listStack: [(type: ListType, currentIndex: Int)] = []
 
         /// Pending list marker to be rendered with the first line of text.
-        public var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)? {
-            get { storage.pendingListMarker }
-            set {
-                ensureUnique()
-                storage.pendingListMarker = newValue
-            }
-        }
+        public var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)?
+
+        // MARK: - Modes
 
         /// Preformatted mode - preserves whitespace in `<pre>` blocks.
-        public var preserveWhitespace: Bool {
-            get { storage.preserveWhitespace }
-            set {
-                ensureUnique()
-                storage.preserveWhitespace = newValue
-            }
-        }
+        public var preserveWhitespace: Bool = false
 
         /// Stack spacing - applied between elements in a VStack.
-        public var stackSpacing: PDF.UserSpace.Height? {
-            get { storage.stackSpacing }
-            set {
-                ensureUnique()
-                storage.stackSpacing = newValue
-            }
-        }
+        public var stackSpacing: PDF.UserSpace.Height?
 
         /// Track Y position before last element rendered (for spacing logic).
-        internal var lastElementY: PDF.UserSpace.Y? {
-            get { storage.lastElementY }
-            set {
-                ensureUnique()
-                storage.lastElementY = newValue
-            }
-        }
+        internal var lastElementY: PDF.UserSpace.Y?
 
         /// Measurement mode - when true, operations are not added.
-        public var measurementMode: Bool {
-            get { storage.measurementMode }
-            set {
-                ensureUnique()
-                storage.measurementMode = newValue
-            }
-        }
+        public var measurementMode: Bool = false
+
+        // MARK: - Horizontal Layout
 
         /// Horizontal stack spacing - applied between elements in an HStack.
-        public var horizontalSpacing: PDF.UserSpace.Width? {
-            get { storage.horizontalSpacing }
-            set {
-                ensureUnique()
-                storage.horizontalSpacing = newValue
-            }
-        }
+        public var horizontalSpacing: PDF.UserSpace.Width?
 
         /// Track X position before last element rendered (for horizontal spacing).
-        internal var lastElementX: PDF.UserSpace.X? {
-            get { storage.lastElementX }
-            set {
-                ensureUnique()
-                storage.lastElementX = newValue
-            }
-        }
+        internal var lastElementX: PDF.UserSpace.X?
 
         /// Starting Y position for current horizontal row (to track max height).
-        internal var horizontalRowStartY: PDF.UserSpace.Y? {
-            get { storage.horizontalRowStartY }
-            set {
-                ensureUnique()
-                storage.horizontalRowStartY = newValue
-            }
-        }
+        internal var horizontalRowStartY: PDF.UserSpace.Y?
 
         /// Maximum Y reached in current horizontal row.
-        internal var horizontalRowMaxY: PDF.UserSpace.Y? {
-            get { storage.horizontalRowMaxY }
-            set {
-                ensureUnique()
-                storage.horizontalRowMaxY = newValue
-            }
-        }
+        internal var horizontalRowMaxY: PDF.UserSpace.Y?
+
+        // MARK: - Text State (for batching BT/ET blocks)
 
         /// Whether we're inside a BT (begin text) block.
-        internal var textBlockOpen: Bool {
-            get { storage.textBlockOpen }
-            set {
-                ensureUnique()
-                storage.textBlockOpen = newValue
-            }
-        }
+        internal var textBlockOpen: Bool = false
 
         /// Current font set in the open text block.
-        internal var currentTextFont: PDF.Font? {
-            get { storage.currentTextFont }
-            set {
-                ensureUnique()
-                storage.currentTextFont = newValue
-            }
-        }
+        internal var currentTextFont: PDF.Font?
 
         /// Current font size set in the open text block.
-        internal var currentTextFontSize: PDF.UserSpace.Size<1>? {
-            get { storage.currentTextFontSize }
-            set {
-                ensureUnique()
-                storage.currentTextFontSize = newValue
-            }
-        }
+        internal var currentTextFontSize: PDF.UserSpace.Size<1>?
 
         /// Current fill color set in the open text block.
-        internal var currentTextColor: PDF.Color? {
-            get { storage.currentTextColor }
-            set {
-                ensureUnique()
-                storage.currentTextColor = newValue
-            }
-        }
+        internal var currentTextColor: PDF.Color?
 
         /// Current text position (PDF coordinates, for relative positioning).
-        internal var currentTextPosition: PDF.UserSpace.Coordinate? {
-            get { storage.currentTextPosition }
-            set {
-                ensureUnique()
-                storage.currentTextPosition = newValue
-            }
-        }
+        internal var currentTextPosition: PDF.UserSpace.Coordinate?
+
+        // MARK: - Pagination
+
+        /// Initial layout box (for page reset).
+        internal var initialLayoutBox: PDF.UserSpace.Rectangle
+
+        /// Maximum Y position (bottom boundary).
+        internal var maxY: PDF.UserSpace.Y
 
         /// The page's media box (defines page geometry).
-        public var mediaBox: ISO_32000.UserSpace.Rectangle {
-            get { storage.mediaBox }
-            set {
-                ensureUnique()
-                storage.mediaBox = newValue
-            }
-        }
+        public var mediaBox: ISO_32000.UserSpace.Rectangle
+
+        /// Completed pages (fully built).
+        public var completedPages: [PDF.Page] = []
+
+        /// Current page's content stream builder.
+        public var currentPageBuilder: ISO_32000.ContentStream.Builder = .init()
+
+        /// Annotations for current page.
+        public var currentPageAnnotations: [PDF.Annotation] = []
+
+        /// Pending internal links to be resolved after rendering.
+        public var pendingInternalLinks: [PendingInternalLink] = []
+
+        // MARK: - Computed Properties
 
         /// Page top Y coordinate for coordinate conversion (top-left to bottom-left).
         public var pageTop: PDF.UserSpace.Y {
             mediaBox.ury
-        }
-
-        /// Completed pages (fully built).
-        public var completedPages: [PDF.Page] {
-            get { storage.completedPages }
-            set {
-                ensureUnique()
-                storage.completedPages = newValue
-            }
-        }
-
-        /// Current page's content stream builder.
-        public var currentPageBuilder: ISO_32000.ContentStream.Builder {
-            get { storage.currentPageBuilder }
-            set {
-                ensureUnique()
-                storage.currentPageBuilder = newValue
-            }
-        }
-
-        /// Annotations for current page.
-        public var currentPageAnnotations: [PDF.Annotation] {
-            get { storage.currentPageAnnotations }
-            set {
-                ensureUnique()
-                storage.currentPageAnnotations = newValue
-            }
-        }
-
-        /// Pending internal links to be resolved after rendering.
-        public var pendingInternalLinks: [PendingInternalLink] {
-            get { storage.pendingInternalLinks }
-            set {
-                ensureUnique()
-                storage.pendingInternalLinks = newValue
-            }
         }
 
         /// A pending internal link that needs to be resolved
@@ -483,11 +180,13 @@ extension PDF.Context {
             initial: .init()
         )
     ) {
-        self.storage = Storage(
+        self.init(
             layoutBox: layoutBox,
-            mediaBox: mediaBox,
             style: style,
-            graphicsStack: graphicsStack
+            graphicsStack: graphicsStack,
+            initialLayoutBox: layoutBox,
+            maxY: layoutBox.maxY,
+            mediaBox: mediaBox
         )
     }
 
@@ -543,23 +242,20 @@ extension PDF.Context {
 extension PDF.Context {
     /// Advance Y position by one line.
     public mutating func advanceLine() {
-        ensureUnique()
         // swiftlint:disable:next shorthand_operator
-        storage.layoutBox.lly = storage.layoutBox.lly + storage.style.line.height
+        layoutBox.lly = layoutBox.lly + style.line.height
     }
 
     /// Advance Y position by specified amount.
     public mutating func advance(_ amount: PDF.UserSpace.Height) {
-        ensureUnique()
         // swiftlint:disable:next shorthand_operator
-        storage.layoutBox.lly = storage.layoutBox.lly + amount
+        layoutBox.lly = layoutBox.lly + amount
     }
 
     /// Advance X position by specified amount (for horizontal layout).
     public mutating func advanceX(_ amount: PDF.UserSpace.Width) {
-        ensureUnique()
         // swiftlint:disable:next shorthand_operator
-        storage.layoutBox.llx = storage.layoutBox.llx + amount
+        layoutBox.llx = layoutBox.llx + amount
     }
 
     /// Check if we're currently in horizontal layout mode.
@@ -583,8 +279,7 @@ extension PDF.Context {
 extension PDF.Context {
     /// Append a text run to the inline buffer.
     public mutating func append(inline run: PDF.Context.TextRun) {
-        ensureUnique()
-        storage.inlineRuns.append(run)
+        inlineRuns.append(run)
     }
 
     /// Flush accumulated inline runs, rendering them as a wrapped block.
@@ -613,14 +308,12 @@ extension PDF.Context {
         case .ordered(let start):
             startIndex = start
         }
-        ensureUnique()
-        storage.listStack.append((type: type, currentIndex: startIndex))
+        listStack.append((type: type, currentIndex: startIndex))
     }
 
     /// Pop the current list from the stack.
     public mutating func popList() {
-        ensureUnique()
-        _ = storage.listStack.popLast()
+        _ = listStack.popLast()
     }
 
     /// Get the next list marker and advance the counter.
@@ -638,13 +331,12 @@ extension PDF.Context {
         guard !listStack.isEmpty else {
             return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
         }
-        ensureUnique()
-        let index = storage.listStack.count - 1
-        switch storage.listStack[index].type {
+        let index = listStack.count - 1
+        switch listStack[index].type {
         case .unordered:
             // WebKit uses TOTAL list depth for marker style, not just unordered depth.
             // This means a <ul> nested inside an <ol> at depth 2 gets circle markers.
-            let totalDepth = storage.listStack.count
+            let totalDepth = listStack.count
             switch totalDepth {
             case 1:
                 // Level 1: • (disc) - use the bullet glyph from the font
@@ -672,8 +364,8 @@ extension PDF.Context {
                 return .filledSquare(rect)
             }
         case .ordered:
-            let num = storage.listStack[index].currentIndex
-            storage.listStack[index].currentIndex += 1
+            let num = listStack[index].currentIndex
+            listStack[index].currentIndex += 1
             // WinAnsi encoding for ordered list numbers
             return .text(bytes: [UInt8](winAnsi: "\(num).", withFallback: true), font: style.font)
         }
@@ -693,27 +385,25 @@ extension PDF.Context {
         // Close any open text block before finalizing page
         flushText()
 
-        ensureUnique()
-
         // Build current page
         let currentStream = ISO_32000.ContentStream(
-            data: storage.currentPageBuilder.data,
-            fontsUsed: storage.currentPageBuilder.fontsUsed
+            data: currentPageBuilder.data,
+            fontsUsed: currentPageBuilder.fontsUsed
         )
         let page = PDF.Page(
-            mediaBox: storage.mediaBox,
+            mediaBox: mediaBox,
             contentStream: currentStream,
-            annotations: storage.currentPageAnnotations
+            annotations: currentPageAnnotations
         )
-        storage.completedPages.append(page)
+        completedPages.append(page)
 
         // Reset for new page
-        storage.currentPageBuilder = .init()
-        storage.currentPageAnnotations = []
+        currentPageBuilder = .init()
+        currentPageAnnotations = []
 
         // Reset Y position to top of page, but preserve horizontal margins (llx/urx)
         // This maintains list indentation and other horizontal context across page breaks
-        storage.layoutBox.lly = storage.initialLayoutBox.lly
+        layoutBox.lly = initialLayoutBox.lly
     }
 
     /// Add a link annotation to the current page (URI target).
@@ -723,8 +413,7 @@ extension PDF.Context {
     ) {
         let link = PDF.Annotation.Link(uri: uri)
         let annotation = PDF.Annotation(rect: rect, content: .link(link))
-        ensureUnique()
-        storage.currentPageAnnotations.append(annotation)
+        currentPageAnnotations.append(annotation)
     }
 
     /// Add a link annotation to the current page (internal destination target).
@@ -734,8 +423,7 @@ extension PDF.Context {
     ) {
         let link = PDF.Annotation.Link(destination: destination)
         let annotation = PDF.Annotation(rect: rect, content: .link(link))
-        ensureUnique()
-        storage.currentPageAnnotations.append(annotation)
+        currentPageAnnotations.append(annotation)
     }
 
     /// Add a pending internal link to be resolved after rendering.
@@ -749,8 +437,7 @@ extension PDF.Context {
         // Use completedPages.count + 1 for correct 1-indexed page number
         // pages.count includes current page if non-empty, which would overcount
         let pageNumber = completedPages.count + 1
-        ensureUnique()
-        storage.pendingInternalLinks.append(
+        pendingInternalLinks.append(
             PendingInternalLink(
                 targetId: targetId,
                 pageNumber: pageNumber,
@@ -771,12 +458,12 @@ extension PDF.Context {
 
     /// Check if adding the given height would exceed the page boundary.
     public func wouldExceedPage(adding height: PDF.UserSpace.Height) -> Bool {
-        layoutBox.lly + height > storage.maxY
+        layoutBox.lly + height > maxY
     }
 
     /// Remaining space on current page.
     public var remainingHeight: PDF.UserSpace.Height {
-        .max(.zero, height(storage.maxY - layoutBox.lly))
+        .max(.zero, height(maxY - layoutBox.lly))
     }
 
     /// All pages (completed + current).
@@ -901,54 +588,52 @@ extension PDF.Context {
     ) {
         guard !measurementMode else { return }
 
-        ensureUnique()
-
         let pdfY = pageTop - (position.y - PDF.UserSpace.Y.zero)
         let pdfPosition = PDF.UserSpace.Coordinate(x: position.x, y: pdfY)
 
         // Open text block if not already open
-        if !storage.textBlockOpen {
-            storage.currentPageBuilder.beginText()
-            storage.textBlockOpen = true
-            storage.currentTextPosition = nil  // Reset position tracking
+        if !textBlockOpen {
+            currentPageBuilder.beginText()
+            textBlockOpen = true
+            currentTextPosition = nil  // Reset position tracking
         }
 
         // Set color only if changed
-        if storage.currentTextColor != color {
+        if currentTextColor != color {
             switch color {
             case .gray(let g):
-                storage.currentPageBuilder.setFillColorGray(g)
+                currentPageBuilder.setFillColorGray(g)
             case .rgb(let r, let g, let b):
-                storage.currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
             case .cmyk(let c, let m, let y, let k):
-                storage.currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
             }
-            storage.currentTextColor = color
+            currentTextColor = color
         }
 
         // Set font only if changed
-        if storage.currentTextFont != font || storage.currentTextFontSize != size {
-            storage.currentPageBuilder.setFont(font, size: size)
-            storage.currentTextFont = font
-            storage.currentTextFontSize = size
+        if currentTextFont != font || currentTextFontSize != size {
+            currentPageBuilder.setFont(font, size: size)
+            currentTextFont = font
+            currentTextFontSize = size
         }
 
         // Position text - use relative positioning if we have a previous position
-        if let lastPos = storage.currentTextPosition {
-            storage.currentPageBuilder.moveText(
+        if let lastPos = currentTextPosition {
+            currentPageBuilder.moveText(
                 dx: pdfPosition.x - lastPos.x,
                 dy: pdfPosition.y - lastPos.y
             )
         } else {
             // First text in block - position from origin
-            storage.currentPageBuilder.moveText(
+            currentPageBuilder.moveText(
                 dx: pdfPosition.x - .zero,
                 dy: pdfPosition.y - .zero
             )
         }
-        storage.currentTextPosition = pdfPosition
+        currentTextPosition = pdfPosition
 
-        storage.currentPageBuilder.showText(bytes)
+        currentPageBuilder.showText(bytes)
     }
 
     /// Emit a text string at a position (encodes to WinAnsi).
@@ -976,13 +661,12 @@ extension PDF.Context {
     /// or before finalizing the page. Text blocks cannot contain graphics operators.
     public mutating func flushText() {
         guard textBlockOpen else { return }
-        ensureUnique()
-        storage.currentPageBuilder.endText()
-        storage.textBlockOpen = false
-        storage.currentTextFont = nil
-        storage.currentTextFontSize = nil
-        storage.currentTextColor = nil
-        storage.currentTextPosition = nil
+        currentPageBuilder.endText()
+        textBlockOpen = false
+        currentTextFont = nil
+        currentTextFontSize = nil
+        currentTextColor = nil
+        currentTextPosition = nil
     }
 
     /// Emit a line.
@@ -997,24 +681,22 @@ extension PDF.Context {
         // Must close text block before graphics operations
         flushText()
 
-        ensureUnique()
-
         let pdfFromY = pageTop - (from.y - PDF.UserSpace.Y.zero)
         let pdfToY = pageTop - (to.y - PDF.UserSpace.Y.zero)
 
         switch color {
         case .gray(let g):
-            storage.currentPageBuilder.setStrokeColorGray(g)
+            currentPageBuilder.setStrokeColorGray(g)
         case .rgb(let r, let g, let b):
-            storage.currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+            currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
         case .cmyk(let c, let m, let y, let k):
-            storage.currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+            currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
         }
 
-        storage.currentPageBuilder.setLineWidth(width)
-        storage.currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
-        storage.currentPageBuilder.lineTo(x: to.x, y: pdfToY)
-        storage.currentPageBuilder.stroke()
+        currentPageBuilder.setLineWidth(width)
+        currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
+        currentPageBuilder.lineTo(x: to.x, y: pdfToY)
+        currentPageBuilder.stroke()
     }
 
     /// Emit a rectangle.
@@ -1028,8 +710,6 @@ extension PDF.Context {
         // Must close text block before graphics operations
         flushText()
 
-        ensureUnique()
-
         // In top-left coords: rect.lly is top, rect.lly + rect.height is bottom
         // In PDF bottom-left coords: pdfLly = pageTop - (bottom position as displacement)
         let pdfLly = pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
@@ -1037,34 +717,34 @@ extension PDF.Context {
         if let fill = fill {
             switch fill {
             case .gray(let g):
-                storage.currentPageBuilder.setFillColorGray(g)
+                currentPageBuilder.setFillColorGray(g)
             case .rgb(let r, let g, let b):
-                storage.currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
             case .cmyk(let c, let m, let y, let k):
-                storage.currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
             }
         }
 
         if let stroke = stroke {
             switch stroke.color {
             case .gray(let g):
-                storage.currentPageBuilder.setStrokeColorGray(g)
+                currentPageBuilder.setStrokeColorGray(g)
             case .rgb(let r, let g, let b):
-                storage.currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+                currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
             case .cmyk(let c, let m, let y, let k):
-                storage.currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+                currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
             }
-            storage.currentPageBuilder.setLineWidth(stroke.width)
+            currentPageBuilder.setLineWidth(stroke.width)
         }
 
-        storage.currentPageBuilder.rectangle(x: rect.llx, y: pdfLly, width: rect.width, height: rect.height)
+        currentPageBuilder.rectangle(x: rect.llx, y: pdfLly, width: rect.width, height: rect.height)
 
         if fill != nil && stroke != nil {
-            storage.currentPageBuilder.fillAndStroke()
+            currentPageBuilder.fillAndStroke()
         } else if fill != nil {
-            storage.currentPageBuilder.fill()
+            currentPageBuilder.fill()
         } else if stroke != nil {
-            storage.currentPageBuilder.stroke()
+            currentPageBuilder.stroke()
         }
     }
 
@@ -1088,8 +768,6 @@ extension PDF.Context {
         // Must close text block before graphics operations
         flushText()
 
-        ensureUnique()
-
         // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
         let pdfCenterY = pageTop - (center.y - PDF.UserSpace.Y.zero)
         let pdfCenter = PDF.UserSpace.Point(
@@ -1104,34 +782,34 @@ extension PDF.Context {
         if let fill = fill {
             switch fill {
             case .gray(let g):
-                storage.currentPageBuilder.setFillColorGray(g)
+                currentPageBuilder.setFillColorGray(g)
             case .rgb(let r, let g, let b):
-                storage.currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
             case .cmyk(let c, let m, let y, let k):
-                storage.currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
             }
         }
 
         if let stroke = stroke {
             switch stroke {
             case .gray(let g):
-                storage.currentPageBuilder.setStrokeColorGray(g)
+                currentPageBuilder.setStrokeColorGray(g)
             case .rgb(let r, let g, let b):
-                storage.currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+                currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
             case .cmyk(let c, let m, let y, let k):
-                storage.currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+                currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
             }
-            storage.currentPageBuilder.setLineWidth(strokeWidth)
+            currentPageBuilder.setLineWidth(strokeWidth)
         }
 
-        storage.currentPageBuilder.circle(circle)
+        currentPageBuilder.circle(circle)
 
         if fill != nil && stroke != nil {
-            storage.currentPageBuilder.fillAndStroke()
+            currentPageBuilder.fillAndStroke()
         } else if fill != nil {
-            storage.currentPageBuilder.fill()
+            currentPageBuilder.fill()
         } else if stroke != nil {
-            storage.currentPageBuilder.stroke()
+            currentPageBuilder.stroke()
         }
     }
 }
