@@ -1,9 +1,9 @@
 // PDF.Context.swift
 // Rendering context decomposed into categorical primitives.
 
-import CopyOnWrite
 import Geometry
 public import PDF_Standard
+public import Copy_on_Write
 
 extension PDF {
     /// Rendering context for PDF layout.
@@ -33,15 +33,7 @@ extension PDF {
     ///     // Render with bold font and inset
     /// }
     /// ```
-    ///
-    /// ## Copy-on-Write Semantics
-    ///
-    /// This struct uses Copy-on-Write (CoW) for efficiency. The struct holds
-    /// a single reference to heap-allocated storage (8 bytes on stack). When
-    /// mutating a shared instance, the storage is copied first. This prevents
-    /// stack overflow during deep recursive rendering while maintaining value
-    /// semantics.
-    @`Copy on Write`
+    @CoW
     public struct Context: Sendable {
         // MARK: - Categorical Primitives
 
