@@ -34,20 +34,8 @@ extension PDF.Document {
         configuration: PDF.Configuration = .init(),
         @PDF.Builder _ build: () -> View
     ) {
-        let contentWidth = configuration.mediaBox.width - configuration.margins.horizontal
-        let contentHeight = configuration.mediaBox.height - configuration.margins.vertical
-
-        var context = PDF.Context(
-            x: .zero + configuration.margins.leading,
-            y: .zero + configuration.margins.top,
-            availableWidth: contentWidth,
-            availableHeight: contentHeight,
-            mediaBox: configuration.mediaBox,
-            font: configuration.defaultFont,
-            fontSize: configuration.defaultFontSize,
-            color: configuration.defaultColor,
-            lineHeight: Scale(configuration.lineHeight)
-        )
+        var context = PDF.Context(configuration)
+        
         let view = build()
         View._render(view, context: &context)
 
@@ -64,5 +52,4 @@ extension PDF.Document {
             viewer: viewer
         )
     }
-
 }
