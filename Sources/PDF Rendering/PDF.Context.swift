@@ -229,6 +229,27 @@ extension PDF.Context {
     }
 }
 
+extension PDF.Context {
+    public init(
+        _ configuration: PDF.Configuration
+    ){
+        let contentWidth = configuration.mediaBox.width - configuration.margins.horizontal
+        let contentHeight = configuration.mediaBox.height - configuration.margins.vertical
+        
+        self = PDF.Context(
+            x: .zero + configuration.margins.leading,
+            y: .zero + configuration.margins.top,
+            availableWidth: contentWidth,
+            availableHeight: contentHeight,
+            mediaBox: configuration.mediaBox,
+            font: configuration.defaultFont,
+            fontSize: configuration.defaultFontSize,
+            color: configuration.defaultColor,
+            lineHeight: configuration.lineHeight
+        )
+    }
+}
+
 // MARK: - Position Operations
 
 extension PDF.Context {

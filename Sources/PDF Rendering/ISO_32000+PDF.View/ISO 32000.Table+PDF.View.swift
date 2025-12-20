@@ -3,6 +3,7 @@
 
 import ISO_32000
 public import PDF_Standard
+import Rendering
 
 // MARK: - Table (14.8.4.8.3)
 
@@ -58,10 +59,10 @@ extension ISO_32000.Table.Row {
     public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
         _ data: Data,
         @PDF.Builder content: (Data.Element) -> Content
-    ) -> PDF.Element<Self, PDF.HStack<PDF.ForEach<Content>>> {
+    ) -> PDF.Element<Self, PDF.HStack<ForEach<Content>>> {
         PDF.Element(tag: self) {
             PDF.HStack {
-                PDF.ForEach(data, content: content)
+                ForEach(data, content: content)
             }
         }
     }
@@ -213,7 +214,7 @@ extension ISO_32000.Table.Body {
     ) -> some PDF.View {
         PDF.Element(tag: self) {
             PDF.VStack(spacing: 0) {
-                PDF.ForEach(data, content: content)
+                ForEach(data, content: content)
             }
         }
     }

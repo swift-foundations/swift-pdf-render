@@ -28,6 +28,7 @@ let package = Package(
                 .product(name: "PDF Standard", package: "swift-pdf-standard"),
                 .product(name: "Rendering", package: "swift-renderable"),
                 .product(name: "Copy on Write", package: "swift-copy-on-write"),
+                .product(name: "Layout", package: "swift-standards"),
             ]
         ),
         .testTarget(

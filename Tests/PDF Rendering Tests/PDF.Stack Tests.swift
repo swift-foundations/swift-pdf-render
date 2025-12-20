@@ -112,7 +112,7 @@ struct `PDF.Stack.Horizontal Tests` {
 
     @Test
     func `Creates HStack with builder`() {
-        let stack = PDF.HStack(spacing: 10) {
+        let stack = PDF.HStack.horizontal(spacing: 10) {
             PDF.Text("A")
             PDF.Text("B")
         }
@@ -122,7 +122,7 @@ struct `PDF.Stack.Horizontal Tests` {
 
     @Test
     func `Default spacing is zero`() {
-        let stack = PDF.HStack {
+        let stack = PDF.HStack.horizontal {
             PDF.Text("Item")
         }
 
@@ -139,7 +139,7 @@ struct `PDF.Stack.Horizontal Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.HStack {
+        let stack = PDF.HStack.horizontal {
             PDF.Text("A")
             PDF.Text("B")
             PDF.Text("C")
@@ -163,7 +163,7 @@ struct `PDF.Stack.Horizontal Tests` {
             lineHeight: 1.0
         )
 
-        let stack = PDF.HStack {
+        let stack = PDF.HStack.horizontal {
             PDF.Text("Short")
             PDF.Text("Also Short")
         }
@@ -177,8 +177,8 @@ struct `PDF.Stack.Horizontal Tests` {
 
     @Test
     func `HStack type exists`() {
-        // Verify HStack is a typealias for Stack.Horizontal
-        let _: PDF.HStack<PDF.Text> = PDF.HStack { PDF.Text("Test") }
+        // Verify HStack is a typealias for Stack
+        let _: PDF.HStack<PDF.Text> = PDF.HStack.horizontal { PDF.Text("Test") }
         #expect(Bool(true))
     }
 }
@@ -199,7 +199,7 @@ struct `PDF.Stack Nested Tests` {
         )
 
         let stack = PDF.VStack {
-            PDF.HStack {
+            PDF.HStack.horizontal {
                 PDF.Text("Left")
                 PDF.Text("Right")
             }
@@ -221,7 +221,7 @@ struct `PDF.Stack Nested Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.HStack {
+        let stack = PDF.HStack.horizontal {
             PDF.VStack {
                 PDF.Text("Top")
                 PDF.Text("Bottom")
