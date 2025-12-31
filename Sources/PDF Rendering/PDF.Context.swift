@@ -401,7 +401,8 @@ extension PDF.Context {
         // Build current page
         let currentStream = ISO_32000.ContentStream(
             data: currentPageBuilder.data,
-            fontsUsed: currentPageBuilder.fontsUsed
+            fontsUsed: currentPageBuilder.fontsUsed,
+            imagesUsed: currentPageBuilder.imagesUsed
         )
         let page = PDF.Page(
             mediaBox: mediaBox,
@@ -495,7 +496,8 @@ extension PDF.Context {
             }
             let currentStream = ISO_32000.ContentStream(
                 data: data,
-                fontsUsed: currentPageBuilder.fontsUsed
+                fontsUsed: currentPageBuilder.fontsUsed,
+                imagesUsed: currentPageBuilder.imagesUsed
             )
             let currentPage = PDF.Page(
                 mediaBox: mediaBox,
@@ -759,6 +761,35 @@ extension PDF.Context {
         } else if stroke != nil {
             currentPageBuilder.stroke()
         }
+    }
+
+    /// Emit an image.
+    ///
+    /// - Parameters:
+    ///   - image: The image to draw
+    ///   - rect: Target rectangle in top-left coordinate system
+    public mutating func emitImage(
+        _ image: ISO_32000.Image,
+        in rect: PDF.UserSpace.Rectangle
+    ) {
+        guard !measurementMode else { return }
+
+        // Must close text block before graphics operations
+        flushText()
+
+        // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
+        // In top-left: rect.lly is top edge, rect.lly + height is bottom edge
+        // In PDF: bottom edge becomes pdfLly
+        let pdfLly = pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
+
+        let pdfRect = PDF.UserSpace.Rectangle(
+            x: rect.llx,
+            y: pdfLly,
+            width: rect.width,
+            height: rect.height
+        )
+
+        currentPageBuilder.drawImage(image, in: pdfRect)
     }
 
     /// Emit a circle.
