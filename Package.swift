@@ -17,9 +17,9 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/coenttb/swift-renderable", from: "3.2.1"),
         .package(url: "https://github.com/coenttb/swift-copy-on-write", from: "0.3.1"),
-        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.7"),
         .package(url: "https://github.com/swift-standards/swift-pdf-standard", from: "0.3.2"),
-        .package(url: "https://github.com/swift-standards/swift-standards", from: "0.20.0"),
+        .package(url: "https://github.com/swift-standards/swift-standards", from: "0.21.0"),
     ],
     targets: [
         .target(
