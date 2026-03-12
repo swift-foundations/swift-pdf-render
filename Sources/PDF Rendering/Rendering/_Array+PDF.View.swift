@@ -49,7 +49,7 @@ extension Rendering._Array: PDF.View where Element: PDF.View {
             if let spacing = context.horizontalSpacing,
                 let lastX = context.lastElementX,
                 context.layoutBox.llx > lastX {
-                context.advanceX(spacing)
+                context.advance.x(spacing)
             }
 
             // Track X before rendering

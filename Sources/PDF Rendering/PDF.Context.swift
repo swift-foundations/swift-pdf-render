@@ -286,33 +286,6 @@ extension PDF.Context {
 // MARK: - Position Operations
 
 extension PDF.Context {
-    /// Advance Y position by one line.
-    public mutating func advanceLine() {
-        // WORKAROUND: Cannot use += with typed geometric values
-        // WHY: PDF.UserSpace types don't provide compound assignment operators
-        // WHEN TO REMOVE: When typed += operators are added to geometric types
-        // swiftlint:disable:next shorthand_operator
-        layoutBox.lly = layoutBox.lly + style.line.height
-    }
-
-    /// Advance Y position by specified amount.
-    public mutating func advance(_ amount: PDF.UserSpace.Height) {
-        // WORKAROUND: Cannot use += with typed geometric values
-        // WHY: PDF.UserSpace types don't provide compound assignment operators
-        // WHEN TO REMOVE: When typed += operators are added to geometric types
-        // swiftlint:disable:next shorthand_operator
-        layoutBox.lly = layoutBox.lly + amount
-    }
-
-    /// Advance X position by specified amount (for horizontal layout).
-    public mutating func advanceX(_ amount: PDF.UserSpace.Width) {
-        // WORKAROUND: Cannot use += with typed geometric values
-        // WHY: PDF.UserSpace types don't provide compound assignment operators
-        // WHEN TO REMOVE: When typed += operators are added to geometric types
-        // swiftlint:disable:next shorthand_operator
-        layoutBox.llx = layoutBox.llx + amount
-    }
-
     /// Check if we're currently in horizontal layout mode.
     public var isHorizontalLayout: Bool {
         horizontalSpacing != nil
@@ -335,14 +308,6 @@ extension PDF.Context {
     /// Append a text run to the inline buffer.
     public mutating func append(inline run: PDF.Context.Text.Run) {
         inlineRuns.append(run)
-    }
-
-    /// Flush accumulated inline runs, rendering them as a wrapped block.
-    public mutating func flushInlineRuns() {
-        guard !inlineRuns.isEmpty else { return }
-        let runs = inlineRuns
-        inlineRuns.removeAll(keepingCapacity: true)  // Reuse buffer
-        PDF.Context.Text.Run.renderRuns(runs, context: &self)
     }
 
     /// Check if there are pending inline runs.
@@ -435,33 +400,6 @@ extension PDF.Context {
 // MARK: - Pagination
 
 extension PDF.Context {
-    /// Start a new page, building the current page and resetting state.
-    public mutating func startNewPage() {
-        // Close any open text block before finalizing page
-        flushText()
-
-        // Build current page
-        let currentStream = ISO_32000.ContentStream(
-            data: currentPageBuilder.data,
-            fontsUsed: currentPageBuilder.fontsUsed,
-            imagesUsed: currentPageBuilder.imagesUsed
-        )
-        let page = PDF.Page(
-            mediaBox: mediaBox,
-            contentStream: currentStream,
-            annotations: currentPageAnnotations
-        )
-        completedPages.append(page)
-
-        // Reset for new page
-        currentPageBuilder = .init()
-        currentPageAnnotations = []
-
-        // Reset Y position to top of page, but preserve horizontal margins (llx/urx)
-        // This maintains list indentation and other horizontal context across page breaks
-        layoutBox.lly = initialLayoutBox.lly
-    }
-
     /// Add a link annotation to the current page (URI target).
     public mutating func addLinkAnnotation(
         rect: PDF.UserSpace.Rectangle,
@@ -500,21 +438,6 @@ extension PDF.Context {
                 bounds: rect
             )
         )
-    }
-
-    /// Check if we need a page break and start new page if so.
-    @discardableResult
-    public mutating func checkPageBreak(needing height: PDF.UserSpace.Height) -> Bool {
-        if wouldExceedPage(adding: height) {
-            startNewPage()
-            return true
-        }
-        return false
-    }
-
-    /// Check if adding the given height would exceed the page boundary.
-    public func wouldExceedPage(adding height: PDF.UserSpace.Height) -> Bool {
-        layoutBox.lly + height > maxY
     }
 
     /// Remaining space on current page.
@@ -633,7 +556,7 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Set the fill color on the current page builder.
-    private mutating func setFillColor(_ color: PDF.Color) {
+    internal mutating func setFillColor(_ color: PDF.Color) {
         switch color {
         case .gray(let g):
             currentPageBuilder.setFillColorGray(g)
@@ -645,7 +568,7 @@ extension PDF.Context {
     }
 
     /// Set the stroke color on the current page builder.
-    private mutating func setStrokeColor(_ color: PDF.Color) {
+    internal mutating func setStrokeColor(_ color: PDF.Color) {
         switch color {
         case .gray(let g):
             currentPageBuilder.setStrokeColorGray(g)
@@ -653,235 +576,6 @@ extension PDF.Context {
             currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
         case .cmyk(let c, let m, let y, let k):
             currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
-        }
-    }
-}
-
-// MARK: - Content Stream Emission
-
-extension PDF.Context {
-    /// Emit WinAnsi-encoded bytes at a position.
-    ///
-    /// Handles coordinate conversion and font/color setup.
-    /// Batches multiple text emissions within a single BT/ET block for efficiency.
-    public mutating func emitText(
-        _ bytes: [UInt8],
-        at position: PDF.UserSpace.Coordinate,
-        font: PDF.Font,
-        size: PDF.UserSpace.Size<1>,
-        color: PDF.Color
-    ) {
-        guard !measurementMode else { return }
-
-        let pdfY = pageTop - (position.y - PDF.UserSpace.Y.zero)
-        let pdfPosition = PDF.UserSpace.Coordinate(x: position.x, y: pdfY)
-
-        // Open text block if not already open
-        if !textBlockOpen {
-            currentPageBuilder.beginText()
-            textBlockOpen = true
-            currentTextPosition = nil  // Reset position tracking
-        }
-
-        // Set color only if changed
-        if currentTextColor != color {
-            setFillColor(color)
-            currentTextColor = color
-        }
-
-        // Set font only if changed
-        if currentTextFont != font || currentTextFontSize != size {
-            currentPageBuilder.setFont(font, size: size)
-            currentTextFont = font
-            currentTextFontSize = size
-        }
-
-        // Position text - use relative positioning if we have a previous position
-        if let lastPos = currentTextPosition {
-            currentPageBuilder.moveText(
-                dx: pdfPosition.x - lastPos.x,
-                dy: pdfPosition.y - lastPos.y
-            )
-        } else {
-            // First text in block - position from origin
-            currentPageBuilder.moveText(
-                dx: pdfPosition.x - .zero,
-                dy: pdfPosition.y - .zero
-            )
-        }
-        currentTextPosition = pdfPosition
-
-        currentPageBuilder.showText(bytes)
-    }
-
-    /// Emit a text string at a position (encodes to WinAnsi).
-    ///
-    /// Convenience overload that encodes the string to WinAnsi bytes.
-    public mutating func emitText(
-        _ text: String,
-        at position: PDF.UserSpace.Coordinate,
-        font: PDF.Font,
-        size: PDF.UserSpace.Size<1>,
-        color: PDF.Color
-    ) {
-        emitText(
-            [UInt8](winAnsi: text, withFallback: true),
-            at: position,
-            font: font,
-            size: size,
-            color: color
-        )
-    }
-
-    /// Flush any open text block.
-    ///
-    /// Call this before switching to graphics operations (lines, rectangles)
-    /// or before finalizing the page. Text blocks cannot contain graphics operators.
-    public mutating func flushText() {
-        guard textBlockOpen else { return }
-        currentPageBuilder.endText()
-        textBlockOpen = false
-        currentTextFont = nil
-        currentTextFontSize = nil
-        currentTextColor = nil
-        currentTextPosition = nil
-    }
-
-    /// Emit a line.
-    public mutating func emitLine(
-        from: PDF.UserSpace.Coordinate,
-        to: PDF.UserSpace.Coordinate,
-        color: PDF.Color,
-        width: PDF.UserSpace.Width
-    ) {
-        guard !measurementMode else { return }
-
-        // Must close text block before graphics operations
-        flushText()
-
-        let pdfFromY = pageTop - (from.y - PDF.UserSpace.Y.zero)
-        let pdfToY = pageTop - (to.y - PDF.UserSpace.Y.zero)
-
-        setStrokeColor(color)
-
-        currentPageBuilder.setLineWidth(width)
-        currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
-        currentPageBuilder.lineTo(x: to.x, y: pdfToY)
-        currentPageBuilder.stroke()
-    }
-
-    /// Emit a rectangle.
-    public mutating func emitRectangle(
-        _ rect: PDF.UserSpace.Rectangle,
-        fill: PDF.Color?,
-        stroke: PDF.Stroke?
-    ) {
-        guard !measurementMode else { return }
-
-        // Must close text block before graphics operations
-        flushText()
-
-        // In top-left coords: rect.lly is top, rect.lly + rect.height is bottom
-        // In PDF bottom-left coords: pdfLly = pageTop - (bottom position as displacement)
-        let pdfLly = pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
-
-        if let fill = fill {
-            setFillColor(fill)
-        }
-
-        if let stroke = stroke {
-            setStrokeColor(stroke.color)
-            currentPageBuilder.setLineWidth(stroke.width)
-        }
-
-        currentPageBuilder.rectangle(x: rect.llx, y: pdfLly, width: rect.width, height: rect.height)
-
-        if fill != nil && stroke != nil {
-            currentPageBuilder.fillAndStroke()
-        } else if fill != nil {
-            currentPageBuilder.fill()
-        } else if stroke != nil {
-            currentPageBuilder.stroke()
-        }
-    }
-
-    /// Emit an image.
-    ///
-    /// - Parameters:
-    ///   - image: The image to draw
-    ///   - rect: Target rectangle in top-left coordinate system
-    public mutating func emitImage(
-        _ image: ISO_32000.Image,
-        in rect: PDF.UserSpace.Rectangle
-    ) {
-        guard !measurementMode else { return }
-
-        // Must close text block before graphics operations
-        flushText()
-
-        // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
-        // In top-left: rect.lly is top edge, rect.lly + height is bottom edge
-        // In PDF: bottom edge becomes pdfLly
-        let pdfLly = pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
-
-        let pdfRect = PDF.UserSpace.Rectangle(
-            x: rect.llx,
-            y: pdfLly,
-            width: rect.width,
-            height: rect.height
-        )
-
-        currentPageBuilder.drawImage(image, in: pdfRect)
-    }
-
-    /// Emit a circle.
-    ///
-    /// - Parameters:
-    ///   - center: Circle center in top-left coordinate system
-    ///   - radius: Circle radius (typed length)
-    ///   - fill: Fill color (nil for no fill)
-    ///   - stroke: Stroke color (nil for no stroke)
-    ///   - strokeWidth: Line width for stroke
-    public mutating func emitCircle(
-        center: PDF.UserSpace.Coordinate,
-        radius: PDF.UserSpace.Length,
-        fill: PDF.Color?,
-        stroke: PDF.Color?,
-        strokeWidth: PDF.UserSpace.Width = .init(1)
-    ) {
-        guard !measurementMode else { return }
-
-        // Must close text block before graphics operations
-        flushText()
-
-        // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
-        let pdfCenterY = pageTop - (center.y - PDF.UserSpace.Y.zero)
-        let pdfCenter = PDF.UserSpace.Point(
-            x: center.x,
-            y: pdfCenterY
-        )
-        let circle = PDF.UserSpace.Circle(
-            center: pdfCenter,
-            radius: radius
-        )
-
-        if let fill = fill {
-            setFillColor(fill)
-        }
-
-        if let stroke = stroke {
-            setStrokeColor(stroke)
-            currentPageBuilder.setLineWidth(strokeWidth)
-        }
-
-        currentPageBuilder.circle(circle)
-
-        if fill != nil && stroke != nil {
-            currentPageBuilder.fillAndStroke()
-        } else if fill != nil {
-            currentPageBuilder.fill()
-        } else if stroke != nil {
-            currentPageBuilder.stroke()
         }
     }
 }

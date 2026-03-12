@@ -51,7 +51,7 @@ extension Rendering._Tuple: PDF.View where repeat each Content: PDF.View {
             if let spacing = context.horizontalSpacing,
                 let lastX = context.lastElementX,
                 context.layoutBox.llx > lastX {
-                context.advanceX(spacing)
+                context.advance.x(spacing)
             }
 
             // Track X before rendering

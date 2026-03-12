@@ -24,6 +24,9 @@ extension Target.Dependency {
     static var layoutPrimitives: Self {
         .product(name: "Layout Primitives", package: "swift-layout-primitives")
     }
+    static var propertyPrimitives: Self {
+        .product(name: "Property Primitives", package: "swift-property-primitives")
+    }
 }
 
 let package = Package(
@@ -44,6 +47,7 @@ let package = Package(
         .package(path: "../../swift-primitives/swift-rendering-primitives"),
         .package(path: "../swift-copy-on-write"),
         .package(path: "../../swift-primitives/swift-layout-primitives"),
+        .package(path: "../../swift-primitives/swift-property-primitives"),
         .package(path: "../../swift-primitives/swift-dimension-primitives"),
     ],
     targets: [
@@ -54,6 +58,7 @@ let package = Package(
                 .renderingPrimitives,
                 .copyOnWrite,
                 .layoutPrimitives,
+                .propertyPrimitives,
             ]
         ),
         .target(

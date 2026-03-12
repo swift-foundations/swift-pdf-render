@@ -223,7 +223,7 @@ extension PDF.Context.Text.Run {
         guard !state.words.isEmpty else { return }
 
         let lineHeight = context.style.line.height
-        context.checkPageBreak(needing: lineHeight)
+        context.page.ensure(height: lineHeight)
 
         // Handle list marker
         if isFirstLine, let pending = context.pendingListMarker {
@@ -383,11 +383,11 @@ extension PDF.Context.Text.Run {
                 width: width,
                 height: (run.fontSize * 1.15).height
             )
-            context.emitRectangle(bgRect, fill: fillColor, stroke: nil)
+            context.emit.rectangle(bgRect, fill: fillColor, stroke: nil)
         }
 
         // Text
-        context.emitText(
+        context.emit.text(
             bytes,
             at: PDF.UserSpace.Coordinate(x: x, y: textY),
             font: run.font,
@@ -401,7 +401,7 @@ extension PDF.Context.Text.Run {
             case .underline:
                 let underlineY = textY + (run.fontSize * 0.15).height
                 let lineWidth = max((run.fontSize * 0.05).width, PDF.UserSpace.Width(0.5))
-                context.emitLine(
+                context.emit.line(
                     from: PDF.UserSpace.Coordinate(x: x, y: underlineY),
                     to: PDF.UserSpace.Coordinate(x: x + width, y: underlineY),
                     color: run.color,
@@ -411,7 +411,7 @@ extension PDF.Context.Text.Run {
                 let xHeight = run.font.metrics.xHeight(atSize: run.fontSize)
                 let strikeY = textY - xHeight / 2
                 let lineWidth = max((run.fontSize * 0.05).width, PDF.UserSpace.Width(0.5))
-                context.emitLine(
+                context.emit.line(
                     from: PDF.UserSpace.Coordinate(x: x, y: strikeY),
                     to: PDF.UserSpace.Coordinate(x: x + width, y: strikeY),
                     color: run.color,
@@ -447,7 +447,7 @@ extension PDF.Context.Text.Run {
 
         switch marker {
         case .text(let bytes, let font):
-            context.emitText(
+            context.emit.text(
                 bytes,
                 at: PDF.UserSpace.Coordinate(x: markerX, y: markerBaselineY),
                 font: font,
@@ -459,7 +459,7 @@ extension PDF.Context.Text.Run {
             let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
             let centerY = markerBaselineY - xHeight * 0.6
             let centerX = markerX + circle.radius
-            context.emitCircle(
+            context.emit.circle(
                 center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
                 radius: circle.radius,
                 fill: nil,
@@ -471,7 +471,7 @@ extension PDF.Context.Text.Run {
             let xHeight = baseFont.metrics.xHeight(atSize: baseFontSize)
             let centerY = markerBaselineY - xHeight / 2
             let centerX = markerX + circle.radius
-            context.emitCircle(
+            context.emit.circle(
                 center: PDF.UserSpace.Coordinate(x: centerX, y: centerY),
                 radius: circle.radius,
                 fill: context.style.color,
@@ -489,7 +489,7 @@ extension PDF.Context.Text.Run {
                 width: square.width,
                 height: square.height
             )
-            context.emitRectangle(rect, fill: context.style.color, stroke: nil)
+            context.emit.rectangle(rect, fill: context.style.color, stroke: nil)
         }
     }
 

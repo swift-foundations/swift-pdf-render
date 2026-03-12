@@ -42,7 +42,7 @@ extension ISO_32000.Text: PDF.View {
 
         for line in lines {
             // Check for page break before each line
-            context.checkPageBreak(needing: context.style.line.height)
+            context.page.ensure(height: context.style.line.height)
 
             // In top-left coordinates, context.layoutBox.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
@@ -51,7 +51,7 @@ extension ISO_32000.Text: PDF.View {
                 context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
 
             // Emit bytes directly to content stream
-            context.emitText(
+            context.emit.text(
                 line,
                 at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
                 font: font,
@@ -59,7 +59,7 @@ extension ISO_32000.Text: PDF.View {
                 color: context.style.color
             )
 
-            context.advanceLine()
+            context.advance.line()
         }
     }
 
@@ -73,7 +73,7 @@ extension ISO_32000.Text: PDF.View {
         // and advance X by the text width
 
         // Check for page break
-        context.checkPageBreak(needing: context.style.line.height)
+        context.page.ensure(height: context.style.line.height)
 
         // Calculate text width
         let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
@@ -82,7 +82,7 @@ extension ISO_32000.Text: PDF.View {
         let baselineY = context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
 
         // Emit text
-        context.emitText(
+        context.emit.text(
             text.content,
             at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
             font: font,
@@ -91,8 +91,8 @@ extension ISO_32000.Text: PDF.View {
         )
 
         // Advance X by text width and track Y for max height
-        context.advanceX(textWidth)
-        context.advanceLine()
+        context.advance.x(textWidth)
+        context.advance.line()
     }
 
     /// Wrap bytes to fit within max width

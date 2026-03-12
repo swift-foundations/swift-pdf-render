@@ -33,7 +33,7 @@ extension PDF {
 
         public static func _render(_ view: Self, context: inout PDF.Context) {
             // Check for page break before rendering
-            context.checkPageBreak(needing: view.padding + view.thickness.height + view.padding)
+            context.page.ensure(height: view.padding + view.thickness.height + view.padding)
 
             context.advance(view.padding)
 
@@ -43,7 +43,7 @@ extension PDF {
             context.advance(view.thickness.height + view.padding)
 
             // Emit line directly to content stream
-            context.emitLine(
+            context.emit.line(
                 from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
                 to: PDF.UserSpace.Coordinate(
                     x: context.layoutBox.llx + context.layoutBox.width,
