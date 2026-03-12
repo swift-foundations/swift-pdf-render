@@ -231,7 +231,7 @@ extension PDF.Context.Text.Run {
             context.pendingListMarker = nil
         }
 
-        let baselineY = context.layoutBox.lly + context.style.line.baselineOffset
+        let baselineY = context.layoutBox.lly + context.style.line.ascent
 
         // Calculate total width (words + gaps, excluding trailing gap)
         var totalWidth: PDF.UserSpace.Width = .init(0)
@@ -441,7 +441,7 @@ extension PDF.Context.Text.Run {
         at markerX: PDF.UserSpace.X,
         context: inout PDF.Context
     ) {
-        let markerBaselineY = context.layoutBox.lly + context.style.line.baselineOffset
+        let markerBaselineY = context.layoutBox.lly + context.style.line.ascent
         let baseFont = context.style.font
         let baseFontSize = context.style.fontSize
 

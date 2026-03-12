@@ -2,6 +2,7 @@
 // Rendering context decomposed into categorical primitives.
 
 import Geometry_Primitives
+import Layout_Primitives
 public import PDF_Standard
 public import Copy_on_Write
 

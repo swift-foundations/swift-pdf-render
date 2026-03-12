@@ -5,6 +5,7 @@
 //  Created by Coen ten Thije Boonkkamp on 05/12/2025.
 //
 
+import Layout_Primitives
 import PDF_Standard
 
 extension ISO_32000.Text: PDF.View {

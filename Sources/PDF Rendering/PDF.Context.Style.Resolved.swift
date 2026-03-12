@@ -39,38 +39,12 @@ extension PDF.Context.Style {
 }
 
 extension PDF.Context.Style.Resolved {
-    /// Line box metrics computed from font and line height.
-    public var line: Line { Line(style: self) }
-
-    /// Line box metrics for text layout.
-    public struct Line: Sendable {
-        private let style: PDF.Context.Style.Resolved
-
-        init(style: PDF.Context.Style.Resolved) {
-            self.style = style
-        }
-
-        /// Total line height in points (fontSize × lineHeight multiplier).
-        public var height: PDF.UserSpace.Height {
-            style.fontSize.height * style.lineHeight
-        }
-
-        /// Half-leading value using CSS half-leading model.
-        ///
-        /// The leading is the extra space beyond the font's natural content height
-        /// (ascender - descender), distributed symmetrically above and below text.
-        public var halfLeading: PDF.UserSpace.Height {
-            let ascender = style.font.metrics.ascender(atSize: style.fontSize)
-            let descender = style.font.metrics.descender(atSize: style.fontSize)
-            let contentHeight = ascender - descender
-            return .max(.zero, (height - contentHeight) / 2)
-        }
-
-        /// Distance from top of line box to baseline.
-        ///
-        /// This equals: `halfLeading + ascender`
-        public var baselineOffset: PDF.UserSpace.Height {
-            halfLeading + style.font.metrics.ascender(atSize: style.fontSize)
-        }
+    /// Line box geometry computed from font metrics and line height multiplier.
+    public var line: PDF.Layout.Line.Box {
+        .init(
+            ascender: font.metrics.ascender(atSize: fontSize),
+            descender: (-font.metrics.descender(atSize: fontSize)),
+            height: fontSize.height * lineHeight
+        )
     }
 }
