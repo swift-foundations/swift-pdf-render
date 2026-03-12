@@ -2,6 +2,7 @@
 // Visual inspection tests - writes PDFs to /tmp
 
 import Foundation
+import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
 

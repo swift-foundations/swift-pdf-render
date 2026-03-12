@@ -1,54 +1,49 @@
-// Performance Tests.swift
+// PDF Rendering Performance Tests.swift
 
 import Testing
-import TestingPerformance
-import PDF_Standard
 @testable import PDF_Rendering
+import PDF_Standard
 
-extension Tag {
-    @Tag static var performance: Self
-}
+@Suite(.serialized)
+struct `PDF Rendering - Performance` {
 
-@Suite("Performance Tests", .serialized, .tags(.performance))
-struct PerformanceTests {
+    // MARK: - Text Rendering
 
-    // MARK: - Text Rendering Benchmarks
-
-    @Test("Render short text (10 chars)", .timed(iterations: 100, warmup: 10))
-    func shortText() {
+    @Test(.timed(iterations: 100, warmup: 10))
+    func `render short text`() {
         var context = createContext()
         let text = PDF.Text("Hello World")
         PDF.Text._render(text, context: &context)
     }
 
-    @Test("Render medium text (100 chars)", .timed(iterations: 100, warmup: 10))
-    func mediumText() {
+    @Test(.timed(iterations: 100, warmup: 10))
+    func `render medium text`() {
         var context = createContext()
         let content = String(repeating: "Lorem ipsum dolor sit amet. ", count: 4)
         let text = PDF.Text(content)
         PDF.Text._render(text, context: &context)
     }
 
-    @Test("Render long text (1000 chars)", .timed(iterations: 50, warmup: 5))
-    func longText() {
+    @Test(.timed(iterations: 50, warmup: 5))
+    func `render long text`() {
         var context = createContext()
         let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", count: 18)
         let text = PDF.Text(content)
         PDF.Text._render(text, context: &context)
     }
 
-    @Test("Render very long text (10000 chars)", .timed(iterations: 10, warmup: 2))
-    func veryLongText() {
+    @Test(.timed(iterations: 10, warmup: 2))
+    func `render very long text`() {
         var context = createContext()
         let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore. ", count: 100)
         let text = PDF.Text(content)
         PDF.Text._render(text, context: &context)
     }
 
-    // MARK: - Text.Run Creation Benchmarks (WinAnsi encoding)
+    // MARK: - Text.Run Encoding
 
-    @Test("Text.Run encoding short (10 chars)", .timed(iterations: 1000, warmup: 100))
-    func textRunShort() {
+    @Test(.timed(iterations: 1000, warmup: 100))
+    func `Text.Run encoding short`() {
         let _ = PDF.Context.Text.Run(
             text: "Hello World",
             font: .helvetica,
@@ -57,8 +52,8 @@ struct PerformanceTests {
         )
     }
 
-    @Test("Text.Run encoding medium (100 chars)", .timed(iterations: 500, warmup: 50))
-    func textRunMedium() {
+    @Test(.timed(iterations: 500, warmup: 50))
+    func `Text.Run encoding medium`() {
         let content = String(repeating: "Lorem ipsum dolor sit amet. ", count: 4)
         let _ = PDF.Context.Text.Run(
             text: content,
@@ -68,8 +63,8 @@ struct PerformanceTests {
         )
     }
 
-    @Test("Text.Run encoding long (1000 chars)", .timed(iterations: 100, warmup: 10))
-    func textRunLong() {
+    @Test(.timed(iterations: 100, warmup: 10))
+    func `Text.Run encoding long`() {
         let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", count: 18)
         let _ = PDF.Context.Text.Run(
             text: content,
@@ -79,18 +74,18 @@ struct PerformanceTests {
         )
     }
 
-    // MARK: - Document Generation Benchmarks
+    // MARK: - Document Generation
 
-    @Test("Document with 1 text element", .timed(iterations: 100, warmup: 10))
-    func documentSingle() {
+    @Test(.timed(iterations: 100, warmup: 10))
+    func `document with 1 text element`() {
         let doc = PDF.Document {
             PDF.Text("Hello, World!")
         }
         let _ = [UInt8](doc)
     }
 
-    @Test("Document with 10 text elements", .timed(iterations: 50, warmup: 5))
-    func document10() {
+    @Test(.timed(iterations: 50, warmup: 5))
+    func `document with 10 text elements`() {
         let doc = PDF.Document {
             for i in 0..<10 {
                 PDF.Text("This is paragraph \(i) with some content.")
@@ -99,8 +94,8 @@ struct PerformanceTests {
         let _ = [UInt8](doc)
     }
 
-    @Test("Document with 100 text elements", .timed(iterations: 10, warmup: 2))
-    func document100() {
+    @Test(.timed(iterations: 10, warmup: 2))
+    func `document with 100 text elements`() {
         let doc = PDF.Document {
             for i in 0..<100 {
                 PDF.Text("This is paragraph \(i) with some content to make it longer.")
@@ -109,10 +104,10 @@ struct PerformanceTests {
         let _ = [UInt8](doc)
     }
 
-    // MARK: - Throughput Test
+    // MARK: - Throughput
 
-    @Test("Throughput (5 second run)")
-    func throughput() {
+    @Test
+    func `throughput over 5 seconds`() {
         let duration: Duration = .seconds(5)
         let start = ContinuousClock.now
         var count = 0
@@ -147,28 +142,20 @@ struct PerformanceTests {
         let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
         let throughput = Double(count) / seconds
 
-        print("📊 Throughput: \(Int(throughput)) docs/sec (\(count) in \(String(format: "%.2f", seconds))s)")
+        print("Throughput: \(Int(throughput)) docs/sec (\(count) in \(String(format: "%.2f", seconds))s)")
     }
 
-    // MARK: - Large Document Benchmark (HexaPDF comparison)
+    // MARK: - Large Document (HexaPDF Comparison)
 
     /// Benchmark comparable to HexaPDF's raw_text benchmark using ~700,000 characters.
-    /// HexaPDF benchmark results (2025-01-04):
-    /// - ReportLab/C: 256ms
-    /// - fpdf2: 347ms
-    /// - Prawn: 308ms
-    /// - jPDFWriter: 391ms
-    /// - PDFKit: 840ms
-    @Test("Large document (~700K chars) - HexaPDF comparison")
-    func largeDocumentBenchmark() {
-        // Generate ~700,000 characters of text (similar to Homer's Odyssey used in HexaPDF benchmark)
-        // Using lorem ipsum style text, ~100 chars per repetition
+    @Test
+    func `large document HexaPDF comparison`() {
         let paragraph = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. "
-        let fullText = String(repeating: paragraph, count: 3700) // ~700K chars
+        let fullText = String(repeating: paragraph, count: 3700)
         let charCount = fullText.count
         let wordCount = fullText.split(separator: " ").count
 
-        print("📊 Large Document Benchmark")
+        print("Large Document Benchmark")
         print("   Characters: \(charCount)")
         print("   Words: ~\(wordCount)")
 
@@ -210,24 +197,24 @@ struct PerformanceTests {
         print("   - PDFKit: 840ms")
     }
 
-    // MARK: - Text.Run Rendering Benchmarks
+    // MARK: - Text.Run Rendering
 
-    @Test("Render 10 runs", .timed(iterations: 100, warmup: 10))
-    func render10Runs() {
+    @Test(.timed(iterations: 100, warmup: 10))
+    func `render 10 runs`() {
         let runs = createRuns(count: 10)
         var context = createContext()
         PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
 
-    @Test("Render 100 runs", .timed(iterations: 20, warmup: 5))
-    func render100Runs() {
+    @Test(.timed(iterations: 20, warmup: 5))
+    func `render 100 runs`() {
         let runs = createRuns(count: 100)
         var context = createContext()
         PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
 
-    @Test("Render 500 runs", .timed(iterations: 5, warmup: 2))
-    func render500Runs() {
+    @Test(.timed(iterations: 5, warmup: 2))
+    func `render 500 runs`() {
         let runs = createRuns(count: 500)
         var context = createContext()
         PDF.Context.Text.Run.renderRuns(runs, context: &context)

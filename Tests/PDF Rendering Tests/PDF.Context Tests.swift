@@ -1,5 +1,6 @@
 // PDF.Context Tests.swift
 
+import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
 
@@ -125,7 +126,7 @@ struct `PDF.Context Tests` {
         )
 
         let startY = context.layoutBox.lly
-        context.advanceLine()
+        context.advance.line()
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
         let advancedHeight: PDF.UserSpace.Dy = context.layoutBox.lly - startY

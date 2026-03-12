@@ -1,5 +1,6 @@
 // PDF.View Tests.swift
 
+import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
 
