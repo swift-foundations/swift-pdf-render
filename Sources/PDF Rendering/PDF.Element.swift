@@ -148,7 +148,9 @@ extension PDF.Element: PDF.View {
 
         // Fallback: use type name as tag (for custom/future structure types)
         let typeName = String(describing: Tag.self)
-        // Type names from Swift are valid PDF names (alphanumeric)
+        // WORKAROUND: Force-unwrap COS.Name init for Swift type names
+        // WHY: Type names used here are simple ASCII identifiers from Swift's type system
+        // WHEN TO REMOVE: When COS.Name provides a non-throwing init for known-valid strings
         // swiftlint:disable:next force_try
         return (try! ISO_32000.COS.Name(typeName), nil)
     }

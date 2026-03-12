@@ -52,15 +52,15 @@ extension PDF {
         // MARK: - Inline Text Flow
 
         /// Accumulated inline text runs.
-        public var inlineRuns: [PDF.Context.TextRun] = []
+        public var inlineRuns: [PDF.Context.Text.Run] = []
 
         // MARK: - List State
 
         /// Stack of active lists (for nested list support).
-        public var listStack: [(type: ListType, currentIndex: Int)] = []
+        public var listStack: [(type: List.Kind, currentIndex: Int)] = []
 
         /// Pending list marker to be rendered with the first line of text.
-        public var pendingListMarker: (marker: ListMarker, x: PDF.UserSpace.X)?
+        public var pendingListMarker: (marker: List.Marker, x: PDF.UserSpace.X)?
 
         // MARK: - Modes
 
@@ -287,18 +287,27 @@ extension PDF.Context {
 extension PDF.Context {
     /// Advance Y position by one line.
     public mutating func advanceLine() {
+        // WORKAROUND: Cannot use += with typed geometric values
+        // WHY: PDF.UserSpace types don't provide compound assignment operators
+        // WHEN TO REMOVE: When typed += operators are added to geometric types
         // swiftlint:disable:next shorthand_operator
         layoutBox.lly = layoutBox.lly + style.line.height
     }
 
     /// Advance Y position by specified amount.
     public mutating func advance(_ amount: PDF.UserSpace.Height) {
+        // WORKAROUND: Cannot use += with typed geometric values
+        // WHY: PDF.UserSpace types don't provide compound assignment operators
+        // WHEN TO REMOVE: When typed += operators are added to geometric types
         // swiftlint:disable:next shorthand_operator
         layoutBox.lly = layoutBox.lly + amount
     }
 
     /// Advance X position by specified amount (for horizontal layout).
     public mutating func advanceX(_ amount: PDF.UserSpace.Width) {
+        // WORKAROUND: Cannot use += with typed geometric values
+        // WHY: PDF.UserSpace types don't provide compound assignment operators
+        // WHEN TO REMOVE: When typed += operators are added to geometric types
         // swiftlint:disable:next shorthand_operator
         layoutBox.llx = layoutBox.llx + amount
     }
@@ -323,7 +332,7 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Append a text run to the inline buffer.
-    public mutating func append(inline run: PDF.Context.TextRun) {
+    public mutating func append(inline run: PDF.Context.Text.Run) {
         inlineRuns.append(run)
     }
 
@@ -332,7 +341,7 @@ extension PDF.Context {
         guard !inlineRuns.isEmpty else { return }
         let runs = inlineRuns
         inlineRuns.removeAll(keepingCapacity: true)  // Reuse buffer
-        PDF.Context.TextRun.renderRuns(runs, context: &self)
+        PDF.Context.Text.Run.renderRuns(runs, context: &self)
     }
 
     /// Check if there are pending inline runs.
@@ -345,7 +354,7 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Push a new list onto the context stack.
-    public mutating func push(list type: ListType) {
+    public mutating func push(list type: List.Kind) {
         let startIndex: Int
         switch type {
         case .unordered:
@@ -363,7 +372,7 @@ extension PDF.Context {
 
     /// Get the next list marker and advance the counter.
     ///
-    /// Returns a ListMarker for the current list item.
+    /// Returns a List.Marker for the current list item.
     ///
     /// For unordered lists (matches WebKit/CSS default markers):
     /// - Level 1: • (disc) - filled circle using text bullet
@@ -372,7 +381,7 @@ extension PDF.Context {
     ///
     /// For ordered lists:
     /// - Numbers with period (1., 2., etc.) in text font
-    public mutating func nextListMarker() -> ListMarker {
+    public mutating func nextListMarker() -> List.Marker {
         guard !listStack.isEmpty else {
             return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
         }
@@ -619,6 +628,34 @@ extension PDF.Context {
     }
 }
 
+// MARK: - Color Helpers
+
+extension PDF.Context {
+    /// Set the fill color on the current page builder.
+    private mutating func setFillColor(_ color: PDF.Color) {
+        switch color {
+        case .gray(let g):
+            currentPageBuilder.setFillColorGray(g)
+        case .rgb(let r, let g, let b):
+            currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+        case .cmyk(let c, let m, let y, let k):
+            currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
+        }
+    }
+
+    /// Set the stroke color on the current page builder.
+    private mutating func setStrokeColor(_ color: PDF.Color) {
+        switch color {
+        case .gray(let g):
+            currentPageBuilder.setStrokeColorGray(g)
+        case .rgb(let r, let g, let b):
+            currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+        case .cmyk(let c, let m, let y, let k):
+            currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
+        }
+    }
+}
+
 // MARK: - Content Stream Emission
 
 extension PDF.Context {
@@ -647,14 +684,7 @@ extension PDF.Context {
 
         // Set color only if changed
         if currentTextColor != color {
-            switch color {
-            case .gray(let g):
-                currentPageBuilder.setFillColorGray(g)
-            case .rgb(let r, let g, let b):
-                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
-            case .cmyk(let c, let m, let y, let k):
-                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
-            }
+            setFillColor(color)
             currentTextColor = color
         }
 
@@ -731,14 +761,7 @@ extension PDF.Context {
         let pdfFromY = pageTop - (from.y - PDF.UserSpace.Y.zero)
         let pdfToY = pageTop - (to.y - PDF.UserSpace.Y.zero)
 
-        switch color {
-        case .gray(let g):
-            currentPageBuilder.setStrokeColorGray(g)
-        case .rgb(let r, let g, let b):
-            currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
-        case .cmyk(let c, let m, let y, let k):
-            currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
-        }
+        setStrokeColor(color)
 
         currentPageBuilder.setLineWidth(width)
         currentPageBuilder.moveTo(x: from.x, y: pdfFromY)
@@ -762,25 +785,11 @@ extension PDF.Context {
         let pdfLly = pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
 
         if let fill = fill {
-            switch fill {
-            case .gray(let g):
-                currentPageBuilder.setFillColorGray(g)
-            case .rgb(let r, let g, let b):
-                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
-            case .cmyk(let c, let m, let y, let k):
-                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
-            }
+            setFillColor(fill)
         }
 
         if let stroke = stroke {
-            switch stroke.color {
-            case .gray(let g):
-                currentPageBuilder.setStrokeColorGray(g)
-            case .rgb(let r, let g, let b):
-                currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
-            case .cmyk(let c, let m, let y, let k):
-                currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
-            }
+            setStrokeColor(stroke.color)
             currentPageBuilder.setLineWidth(stroke.width)
         }
 
@@ -856,25 +865,11 @@ extension PDF.Context {
         )
 
         if let fill = fill {
-            switch fill {
-            case .gray(let g):
-                currentPageBuilder.setFillColorGray(g)
-            case .rgb(let r, let g, let b):
-                currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
-            case .cmyk(let c, let m, let y, let k):
-                currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
-            }
+            setFillColor(fill)
         }
 
         if let stroke = stroke {
-            switch stroke {
-            case .gray(let g):
-                currentPageBuilder.setStrokeColorGray(g)
-            case .rgb(let r, let g, let b):
-                currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
-            case .cmyk(let c, let m, let y, let k):
-                currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
-            }
+            setStrokeColor(stroke)
             currentPageBuilder.setLineWidth(strokeWidth)
         }
 

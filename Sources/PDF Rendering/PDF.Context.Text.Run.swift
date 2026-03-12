@@ -1,15 +1,15 @@
-// PDF.Context.TextRun.swift
+// PDF.Context.Text.Run.swift
 
 import INCITS_4_1986
 public import PDF_Standard
 
-extension PDF.Context {
+extension PDF.Context.Text {
     /// A styled text segment for inline text flow.
     ///
-    /// TextRuns accumulate in the context and are rendered together
+    /// Runs accumulate in the context and are rendered together
     /// when a block element flushes them, enabling proper inline flow
     /// with mixed styling (e.g., "It supports **bold** and *italic* text.").
-    public struct TextRun: Sendable {
+    public struct Run: Sendable {
         /// The text content as WinAnsi-encoded bytes
         public let bytes: [UInt8]
 
@@ -42,7 +42,6 @@ extension PDF.Context {
             fontSize: PDF.UserSpace.Size<1>,
             color: PDF.Color,
             textDecoration: PDF.Annotation.TextMarkup.Kind? = .none,
-            backgroundColor: PDF.Color? = nil,
             verticalOffset: PDF.UserSpace.Height = .init(0),
             linkURL: String? = nil,
             internalLinkId: String? = nil
@@ -84,9 +83,9 @@ extension PDF.Context {
         /// Create text runs from a String, automatically switching to ZapfDingbats for symbols.
         ///
         /// This method scans the text for characters that:
-        /// - Can be encoded in WinAnsi → uses the provided font
-        /// - Can be encoded in ZapfDingbats but not WinAnsi → switches to ZapfDingbats font
-        /// - Cannot be encoded in either → uses the fallback character
+        /// - Can be encoded in WinAnsi -> uses the provided font
+        /// - Can be encoded in ZapfDingbats but not WinAnsi -> switches to ZapfDingbats font
+        /// - Cannot be encoded in either -> uses the fallback character
         ///
         /// - Parameters:
         ///   - text: The text to convert
@@ -97,7 +96,7 @@ extension PDF.Context {
         ///   - verticalOffset: Vertical offset for sub/superscript
         ///   - linkURL: Optional external link URL
         ///   - internalLinkId: Optional internal link target ID (for #anchor links)
-        /// - Returns: Array of TextRuns, possibly with different fonts
+        /// - Returns: Array of Runs, possibly with different fonts
         public static func runsWithSymbolSupport(
             text: String,
             font: PDF.Font,
@@ -107,15 +106,15 @@ extension PDF.Context {
             verticalOffset: PDF.UserSpace.Height = .init(0),
             linkURL: String? = nil,
             internalLinkId: String? = nil
-        ) -> [TextRun] {
-            var runs: [TextRun] = []
+        ) -> [Run] {
+            var runs: [Run] = []
             var currentWinAnsiBytes: [UInt8] = []
             var currentDingbatsBytes: [UInt8] = []
 
             func flushWinAnsi() {
                 guard !currentWinAnsiBytes.isEmpty else { return }
                 runs.append(
-                    TextRun(
+                    Run(
                         bytes: currentWinAnsiBytes,
                         font: font,
                         fontSize: fontSize,
@@ -132,7 +131,7 @@ extension PDF.Context {
             func flushDingbats() {
                 guard !currentDingbatsBytes.isEmpty else { return }
                 runs.append(
-                    TextRun(
+                    Run(
                         bytes: currentDingbatsBytes,
                         font: .zapfDingbats,
                         fontSize: fontSize,

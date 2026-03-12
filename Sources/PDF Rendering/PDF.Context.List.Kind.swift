@@ -1,15 +1,15 @@
 //
-//  PDF.Context.ListType.swift
+//  PDF.Context.List.Kind.swift
 //  swift-pdf-rendering
 //
 //  Created by Coen ten Thije Boonkkamp on 05/12/2025.
 //
 
-// MARK: - List Type
+// MARK: - List Kind
 
-extension PDF.Context {
+extension PDF.Context.List {
     /// Type of list being rendered.
-    public enum ListType: Sendable {
+    public enum Kind: Sendable {
         case unordered
         case ordered(startNumber: Int)
     }

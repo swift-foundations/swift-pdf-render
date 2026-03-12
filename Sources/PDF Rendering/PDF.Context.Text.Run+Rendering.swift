@@ -1,4 +1,4 @@
-// PDF.Context.TextRun+Rendering.swift
+// PDF.Context.Text.Run+Rendering.swift
 // Optimized text renderer with minimal allocations
 
 import INCITS_4_1986
@@ -7,7 +7,7 @@ public import PDF_Standard
 
 // MARK: - Text Run Rendering
 
-extension PDF.Context.TextRun {
+extension PDF.Context.Text.Run {
     /// Render multiple text runs with proper line wrapping.
     ///
     /// This implementation minimizes allocations by:
@@ -15,7 +15,7 @@ extension PDF.Context.TextRun {
     /// - Storing compact word descriptors instead of copying bytes
     /// - Reusing buffers across lines
     public static func renderRuns(
-        _ runs: [PDF.Context.TextRun],
+        _ runs: [PDF.Context.Text.Run],
         context: inout PDF.Context
     ) {
         guard !runs.isEmpty else { return }
@@ -216,7 +216,7 @@ extension PDF.Context.TextRun {
 
     private static func emitLine(
         _ state: inout RenderState,
-        runs: [PDF.Context.TextRun],
+        runs: [PDF.Context.Text.Run],
         context: inout PDF.Context,
         isFirstLine: Bool
     ) {
@@ -346,7 +346,7 @@ extension PDF.Context.TextRun {
         let linkURL: String?
         let internalLinkId: String?
 
-        init(run: PDF.Context.TextRun, index: Int = 0) {
+        init(run: PDF.Context.Text.Run, index: Int) {
             self.runIndex = index
             self.font = run.font
             self.fontSize = run.fontSize
@@ -363,7 +363,7 @@ extension PDF.Context.TextRun {
         at x: PDF.UserSpace.X,
         width: PDF.UserSpace.Width,
         baselineY: PDF.UserSpace.Y,
-        run: PDF.Context.TextRun,
+        run: PDF.Context.Text.Run,
         context: inout PDF.Context
     ) {
         let textY = baselineY - run.verticalOffset
@@ -437,7 +437,7 @@ extension PDF.Context.TextRun {
     }
 
     private static func emitListMarker(
-        _ marker: PDF.Context.ListMarker,
+        _ marker: PDF.Context.List.Marker,
         at markerX: PDF.UserSpace.X,
         context: inout PDF.Context
     ) {
@@ -508,7 +508,7 @@ extension PDF.Context.TextRun {
     ///
     /// - Parameter runs: The text runs to combine
     /// - Returns: The combined text with proper spacing
-    private static func buildActualText(from runs: [PDF.Context.TextRun]) -> String {
+    private static func buildActualText(from runs: [PDF.Context.Text.Run]) -> String {
         // Pre-calculate capacity: total bytes
         // UTF-8 may expand extended chars (0x80-0xFF) to 2-3 bytes
         let totalBytes = runs.reduce(0) { $0 + $1.bytes.count }

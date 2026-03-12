@@ -45,11 +45,11 @@ struct PerformanceTests {
         PDF.Text._render(text, context: &context)
     }
 
-    // MARK: - TextRun Creation Benchmarks (WinAnsi encoding)
+    // MARK: - Text.Run Creation Benchmarks (WinAnsi encoding)
 
-    @Test("TextRun encoding short (10 chars)", .timed(iterations: 1000, warmup: 100))
+    @Test("Text.Run encoding short (10 chars)", .timed(iterations: 1000, warmup: 100))
     func textRunShort() {
-        let _ = PDF.Context.TextRun(
+        let _ = PDF.Context.Text.Run(
             text: "Hello World",
             font: .helvetica,
             fontSize: 12,
@@ -57,10 +57,10 @@ struct PerformanceTests {
         )
     }
 
-    @Test("TextRun encoding medium (100 chars)", .timed(iterations: 500, warmup: 50))
+    @Test("Text.Run encoding medium (100 chars)", .timed(iterations: 500, warmup: 50))
     func textRunMedium() {
         let content = String(repeating: "Lorem ipsum dolor sit amet. ", count: 4)
-        let _ = PDF.Context.TextRun(
+        let _ = PDF.Context.Text.Run(
             text: content,
             font: .helvetica,
             fontSize: 12,
@@ -68,10 +68,10 @@ struct PerformanceTests {
         )
     }
 
-    @Test("TextRun encoding long (1000 chars)", .timed(iterations: 100, warmup: 10))
+    @Test("Text.Run encoding long (1000 chars)", .timed(iterations: 100, warmup: 10))
     func textRunLong() {
         let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", count: 18)
-        let _ = PDF.Context.TextRun(
+        let _ = PDF.Context.Text.Run(
             text: content,
             font: .helvetica,
             fontSize: 12,
@@ -210,27 +210,27 @@ struct PerformanceTests {
         print("   - PDFKit: 840ms")
     }
 
-    // MARK: - TextRun Rendering Benchmarks
+    // MARK: - Text.Run Rendering Benchmarks
 
     @Test("Render 10 runs", .timed(iterations: 100, warmup: 10))
     func render10Runs() {
         let runs = createRuns(count: 10)
         var context = createContext()
-        PDF.Context.TextRun.renderRuns(runs, context: &context)
+        PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
 
     @Test("Render 100 runs", .timed(iterations: 20, warmup: 5))
     func render100Runs() {
         let runs = createRuns(count: 100)
         var context = createContext()
-        PDF.Context.TextRun.renderRuns(runs, context: &context)
+        PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
 
     @Test("Render 500 runs", .timed(iterations: 5, warmup: 2))
     func render500Runs() {
         let runs = createRuns(count: 500)
         var context = createContext()
-        PDF.Context.TextRun.renderRuns(runs, context: &context)
+        PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
 
     // MARK: - Helpers
@@ -242,9 +242,9 @@ struct PerformanceTests {
         )
     }
 
-    private func createRuns(count: Int) -> [PDF.Context.TextRun] {
+    private func createRuns(count: Int) -> [PDF.Context.Text.Run] {
         (0..<count).map { i in
-            PDF.Context.TextRun(
+            PDF.Context.Text.Run(
                 text: "This is paragraph \(i) with some content to make it realistic.",
                 font: .helvetica,
                 fontSize: 12,
