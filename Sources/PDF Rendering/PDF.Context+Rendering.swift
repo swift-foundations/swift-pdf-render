@@ -31,10 +31,10 @@ extension PDF.Context: Rendering.Context {
 
     // MARK: - Block Structure
 
-    public mutating func pushBlock(role: Rendering.Semantic.Block?, style: Rendering.Style) {
-        flush.inline()
-        scopeStack.append(savedScope())
-        applyRenderingStyle(style)
+    public static func _pushBlock(_ context: inout Self, role: Rendering.Semantic.Block?, style: Rendering.Style) {
+        context.flush.inline()
+        context.scopeStack.append(context.savedScope())
+        context.apply(style)
 
         guard let role else { return }
         switch role {
@@ -47,91 +47,91 @@ extension PDF.Context: Rendering.Context {
             case 5: 12
             default: 11
             }
-            self.style.fontSize = PDF.UserSpace.Size<1>(headingSize)
-            self.style.font = self.style.font.bold ?? self.style.font
-            if lastElementY != nil {
-                advance(PDF.UserSpace.Height(headingSize * 0.5))
+            context.style.fontSize = PDF.UserSpace.Size<1>(headingSize)
+            context.style.font = context.style.font.bold ?? context.style.font
+            if context.lastElementY != nil {
+                context.advance(PDF.UserSpace.Height(headingSize * 0.5))
             }
 
         case .paragraph:
-            if lastElementY != nil {
-                advance(self.style.line.height * 0.5)
+            if context.lastElementY != nil {
+                context.advance(context.style.line.height * 0.5)
             }
 
         case .blockquote:
-            layoutBox.llx = layoutBox.llx + PDF.UserSpace.Width(20)
-            self.style.color = .gray(0.4)
+            context.layoutBox.llx = context.layoutBox.llx + PDF.UserSpace.Width(20)
+            context.style.color = .gray(0.4)
 
         case .pre:
-            self.style.font = .courier
-            preserveWhitespace = true
+            context.style.font = .courier
+            context.preserveWhitespace = true
 
         case .section, .table, .row, .cell:
             break
         }
     }
 
-    public mutating func popBlock() {
-        flush.inline()
-        if let saved = scopeStack.popLast() {
-            restore(saved)
+    public static func _popBlock(_ context: inout Self) {
+        context.flush.inline()
+        if let saved = context.scopeStack.popLast() {
+            context.restore(saved)
         }
     }
 
     // MARK: - Inline Structure
 
-    public mutating func pushInline(role: Rendering.Semantic.Inline?, style: Rendering.Style) {
-        scopeStack.append(savedScope())
-        applyRenderingStyle(style)
+    public static func _pushInline(_ context: inout Self, role: Rendering.Semantic.Inline?, style: Rendering.Style) {
+        context.scopeStack.append(context.savedScope())
+        context.apply(style)
 
         guard let role else { return }
         switch role {
         case .emphasis:
-            self.style.font = self.style.font.italic ?? self.style.font
+            context.style.font = context.style.font.italic ?? context.style.font
         case .strong:
-            self.style.font = self.style.font.bold ?? self.style.font
+            context.style.font = context.style.font.bold ?? context.style.font
         case .code:
-            self.style.font = .courier
+            context.style.font = .courier
         }
     }
 
-    public mutating func popInline() {
-        if let saved = scopeStack.popLast() {
-            restore(saved)
+    public static func _popInline(_ context: inout Self) {
+        if let saved = context.scopeStack.popLast() {
+            context.restore(saved)
         }
     }
 
     // MARK: - Lists
 
-    public mutating func pushList(kind: Rendering.Semantic.List, start: Int?) {
-        flush.inline()
-        scopeStack.append(savedScope())
+    public static func _pushList(_ context: inout Self, kind: Rendering.Semantic.List, start: Int?) {
+        context.flush.inline()
+        context.scopeStack.append(context.savedScope())
 
         let pdfKind: PDF.Context.List.Kind = switch kind {
         case .ordered: .ordered(startNumber: start ?? 1)
         case .unordered: .unordered
         }
-        push(list: pdfKind)
-        layoutBox.llx = layoutBox.llx + PDF.UserSpace.Width(20)
+        context.push(list: pdfKind)
+        context.layoutBox.llx = context.layoutBox.llx + PDF.UserSpace.Width(20)
     }
 
-    public mutating func popList() {
-        flush.inline()
-        _ = listStack.popLast()
-        if let saved = scopeStack.popLast() {
-            restore(saved)
+    public static func _popList(_ context: inout Self) {
+        context.flush.inline()
+        _ = context.listStack.popLast()
+        if let saved = context.scopeStack.popLast() {
+            context.restore(saved)
         }
     }
 
-    public mutating func pushItem() {
-        flush.inline()
-        let marker = nextListMarker()
-        let markerX = layoutBox.llx - PDF.UserSpace.Width(15)
-        pendingListMarker = (marker: marker, x: markerX)
+    public static func _pushItem(_ context: inout Self) {
+        context.flush.inline()
+        let marker = context.nextListMarker()
+        let markerX = context.layoutBox.llx - PDF.UserSpace.Width(15)
+        context.pendingListMarker = (marker: marker, x: markerX)
     }
 
-    public mutating func popItem() {
-        flush.inline()
+    public static func _popItem(_ context: inout Self) {
+        context.flush.inline()
     }
 
     // MARK: - Breaks
@@ -166,17 +166,17 @@ extension PDF.Context: Rendering.Context {
 
     // MARK: - Links
 
-    public mutating func pushLink(destination: borrowing String) {
+    public static func _pushLink(_ context: inout Self, destination: borrowing String) {
         let copy = copy destination
-        scopeStack.append(savedScope())
-        style.textMarkup = .underline
-        style.color = .rgb(r: 0, g: 0, b: 0.8)
-        currentLinkURL = copy
+        context.scopeStack.append(context.savedScope())
+        context.style.textMarkup = .underline
+        context.style.color = .rgb(r: 0, g: 0, b: 0.8)
+        context.currentLinkURL = copy
     }
 
-    public mutating func popLink() {
-        if let saved = scopeStack.popLast() {
-            restore(saved)
+    public static func _popLink(_ context: inout Self) {
+        if let saved = context.scopeStack.popLast() {
+            context.restore(saved)
         }
     }
 
@@ -215,12 +215,12 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Apply Rendering.Style hints to the current PDF style.
-    private mutating func applyRenderingStyle(_ style: Rendering.Style) {
-        if let fontSize = style.fontSize {
-            self.style.fontSize = PDF.UserSpace.Size<1>(Double(fontSize))
+    private mutating func apply(_ style: Rendering.Style) {
+        if let size = style.font.size {
+            self.style.fontSize = PDF.UserSpace.Size<1>(Double(size))
         }
-        if let fontWeight = style.fontWeight {
-            switch fontWeight {
+        if let weight = style.font.weight {
+            switch weight {
             case .bold:
                 self.style.font = self.style.font.bold ?? self.style.font
             case .normal:
@@ -228,16 +228,17 @@ extension PDF.Context {
             }
         }
         if let color = style.color {
-            self.style.color = color.pdfColor
+            self.style.color = PDF.Color(color)
         }
     }
 }
 
-// MARK: - Rendering.Style.Color → PDF.Color
+// MARK: - PDF.Color ← Rendering.Style.Color
 
-extension Rendering.Style.Color {
-    var pdfColor: PDF.Color {
-        switch self {
+extension PDF.Color {
+    /// Creates a PDF color from a rendering style color hint.
+    init(_ color: Rendering.Style.Color) {
+        self = switch color {
         case .black: .gray(0)
         case .red: .rgb(r: 0.8, g: 0, b: 0)
         case .blue: .rgb(r: 0, g: 0, b: 0.8)
