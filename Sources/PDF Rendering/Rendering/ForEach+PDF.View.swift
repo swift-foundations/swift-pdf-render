@@ -1,11 +1,15 @@
-// PDF.ForEach.swift
-// ForEach for PDF rendering, using Rendering._Array internally.
+// ForEach+PDF.View.swift
+// PDF.View conformance for ForEach — delegates to Array rendering.
 
+public import PDF_Standard
 public import Rendering_Primitives
 
 extension Rendering.ForEach: PDF.View where Content: PDF.View {
-    /// The body of this component, which is the array of content.
-    public var body: Rendering._Array<Content> {
+    public var body: [Content] {
         content
+    }
+
+    public static func _render(_ view: Self, context: inout PDF.Context) {
+        [Content]._render(view.content, context: &context)
     }
 }

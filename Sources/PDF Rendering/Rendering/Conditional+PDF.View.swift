@@ -1,13 +1,13 @@
-// _Conditional+PDF.View.swift
-// PDF.View conformance for _Conditional
+// Conditional+PDF.View.swift
+// PDF.View conformance for Conditional
 
 public import PDF_Standard
 public import Rendering_Primitives
 
-extension Rendering._Conditional: PDF.View where First: PDF.View, Second: PDF.View {
+extension Rendering.Conditional: PDF.View where First: PDF.View, Second: PDF.View {
     public typealias Content = Never
 
-    public var body: Never { fatalError("_Conditional uses direct rendering") }
+    public var body: Never { fatalError("Conditional uses direct rendering") }
 
     public static func _render(_ view: Self, context: inout PDF.Context) {
         switch view {
