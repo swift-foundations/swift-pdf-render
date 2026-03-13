@@ -2,6 +2,7 @@
 // callAsFunction extensions for ISO 32000-2:2020 table structure types.
 
 import ISO_32000
+public import Layout_Primitives
 public import PDF_Standard
 import Rendering_Primitives
 
@@ -10,7 +11,7 @@ import Rendering_Primitives
 extension ISO_32000.Table {
     /// Creates a table element with content.
     ///
-    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
+    /// Content is automatically wrapped in `Stack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// Table(summary: "Sales data") {
@@ -21,9 +22,9 @@ extension ISO_32000.Table {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+    ) -> PDF.Element<Self, PDF.Stack<Content>> {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0, content)
+            PDF.Stack(spacing: 0, content)
         }
     }
 }
@@ -33,7 +34,7 @@ extension ISO_32000.Table {
 extension ISO_32000.Table.Row {
     /// Creates a table row element with cells.
     ///
-    /// Content is automatically wrapped in `HStack` for horizontal cell layout.
+    /// Content is automatically wrapped in `Stack(.horizontal)` for horizontal cell layout.
     ///
     /// ```swift
     /// TR() {
@@ -43,9 +44,9 @@ extension ISO_32000.Table.Row {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, PDF.HStack<Content>> {
+    ) -> PDF.Element<Self, PDF.Stack<Content>> {
         PDF.Element(tag: self) {
-            PDF.Stack.horizontal(content)
+            PDF.Stack(.horizontal, content)
         }
     }
 
@@ -59,9 +60,9 @@ extension ISO_32000.Table.Row {
     public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
         _ data: Data,
         @PDF.Builder content: (Data.Element) -> Content
-    ) -> PDF.Element<Self, PDF.HStack<Rendering.ForEach<Content>>> {
+    ) -> PDF.Element<Self, PDF.Stack<Rendering.ForEach<Content>>> {
         PDF.Element(tag: self) {
-            PDF.Stack.horizontal {
+            PDF.Stack(.horizontal) {
                 Rendering.ForEach(data, content: content)
             }
         }
@@ -141,7 +142,7 @@ extension ISO_32000.TD {
 extension ISO_32000.Table.Header {
     /// Creates a table header group with rows.
     ///
-    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
+    /// Content is automatically wrapped in `Stack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// THead() {
@@ -150,9 +151,9 @@ extension ISO_32000.Table.Header {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+    ) -> PDF.Element<Self, PDF.Stack<Content>> {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0, content)
+            PDF.Stack(spacing: 0, content)
         }
     }
 
@@ -170,7 +171,7 @@ extension ISO_32000.Table.Header {
         @PDF.Builder content: (Data.Element) -> Content
     ) -> some PDF.View {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0) {
+            PDF.Stack(spacing: 0) {
                 ISO_32000.TR()(data, content: content)
             }
         }
@@ -182,7 +183,7 @@ extension ISO_32000.Table.Header {
 extension ISO_32000.Table.Body {
     /// Creates a table body group with rows.
     ///
-    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
+    /// Content is automatically wrapped in `Stack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// TBody() {
@@ -191,9 +192,9 @@ extension ISO_32000.Table.Body {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+    ) -> PDF.Element<Self, PDF.Stack<Content>> {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0, content)
+            PDF.Stack(spacing: 0, content)
         }
     }
 
@@ -213,7 +214,7 @@ extension ISO_32000.Table.Body {
         @PDF.Builder content: (Data.Element) -> Content
     ) -> some PDF.View {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0) {
+            PDF.Stack(spacing: 0) {
                 Rendering.ForEach(data, content: content)
             }
         }
@@ -225,7 +226,7 @@ extension ISO_32000.Table.Body {
 extension ISO_32000.Table.Footer {
     /// Creates a table footer group with rows.
     ///
-    /// Content is automatically wrapped in `VStack(spacing: 0)` for vertical row layout.
+    /// Content is automatically wrapped in `Stack(spacing: 0)` for vertical row layout.
     ///
     /// ```swift
     /// TFoot() {
@@ -234,9 +235,9 @@ extension ISO_32000.Table.Footer {
     /// ```
     public func callAsFunction<Content: PDF.View>(
         @PDF.Builder _ content: () -> Content
-    ) -> PDF.Element<Self, PDF.VStack<Content>> {
+    ) -> PDF.Element<Self, PDF.Stack<Content>> {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0, content)
+            PDF.Stack(spacing: 0, content)
         }
     }
 
@@ -254,7 +255,7 @@ extension ISO_32000.Table.Footer {
         @PDF.Builder content: (Data.Element) -> Content
     ) -> some PDF.View {
         PDF.Element(tag: self) {
-            PDF.VStack(spacing: 0) {
+            PDF.Stack(spacing: 0) {
                 ISO_32000.TR()(data, content: content)
             }
         }

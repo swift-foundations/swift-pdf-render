@@ -47,7 +47,7 @@ struct `PDF.Table Tests` {
                 )
             )
         ) {
-            PDF.VStack(spacing: 16) {
+            PDF.Stack(.vertical, spacing: 16) {
                 PDF.Text("ISO 32000-2:2020 Table Structure Types", state: .init(fontSize: 18))
                 PDF.Spacer(8)
 

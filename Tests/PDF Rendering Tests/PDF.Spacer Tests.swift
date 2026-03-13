@@ -102,13 +102,13 @@ struct `PDF.Spacer Tests` {
             lineHeight: 1.0
         )
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("Before")
             PDF.Spacer(50)
             PDF.Text("After")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // 72 + "Before" (12) + Spacer (50) + "After" (12) = 146
         #expect(context.layout.box.lly == 146)

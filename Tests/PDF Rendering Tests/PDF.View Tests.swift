@@ -15,7 +15,7 @@ struct `PDF.View Tests` {
     func `Custom view delegates to body`() {
         struct TwoLines: PDF.View {
             var body: some PDF.View {
-                PDF.VStack {
+                PDF.Stack {
                     PDF.Text("Line 1")
                     PDF.Text("Line 2")
                 }
@@ -71,11 +71,11 @@ struct `PDF.Builder Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("Single")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // Content stream should have data
         #expect(!context.currentPageBuilder.data.isEmpty)
@@ -91,13 +91,13 @@ struct `PDF.Builder Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("One")
             PDF.Text("Two")
             PDF.Text("Three")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // Y should have advanced for 3 lines
         #expect(context.layout.box.lly > 72)
@@ -116,14 +116,14 @@ struct `PDF.Builder Tests` {
 
         let includeOptional = true
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("Always")
             if includeOptional {
                 PDF.Text("Sometimes")
             }
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
@@ -140,14 +140,14 @@ struct `PDF.Builder Tests` {
 
         let includeOptional = false
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("Always")
             if includeOptional {
                 PDF.Text("Sometimes")
             }
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
@@ -164,7 +164,7 @@ struct `PDF.Builder Tests` {
 
         let useFirst = true
 
-        let stack1 = PDF.VStack {
+        let stack1 = PDF.Stack {
             if useFirst {
                 PDF.Text("First")
             } else {
@@ -172,7 +172,7 @@ struct `PDF.Builder Tests` {
             }
         }
 
-        PDF.VStack._render(stack1, context: &context)
+        PDF.Stack._render(stack1, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
@@ -189,13 +189,13 @@ struct `PDF.Builder Tests` {
 
         let items = ["A", "B", "C", "D", "E"]
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             for item in items {
                 PDF.Text(item)
             }
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }

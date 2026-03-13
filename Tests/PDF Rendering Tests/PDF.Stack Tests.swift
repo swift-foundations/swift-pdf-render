@@ -6,33 +6,33 @@ import Testing
 
 @testable import PDF_Rendering
 
-// MARK: - Vertical Stack Tests
-
 @Suite
-struct `PDF.Stack.Vertical Tests` {
+struct `PDF.Stack Tests` {
+
+    // MARK: - Vertical
 
     @Test
-    func `Creates VStack with builder`() {
-        let stack = PDF.VStack(spacing: 10) {
+    func `Creates vertical stack with builder`() {
+        let stack = PDF.Stack(.vertical, spacing: 10) {
             PDF.Text("Line 1")
             PDF.Text("Line 2")
         }
 
-        // Content is now a typed tuple - verify spacing
         #expect(stack.spacing == 10)
     }
 
     @Test
-    func `Default spacing is zero`() {
-        let stack = PDF.VStack {
+    func `Default axis is vertical`() {
+        let stack = PDF.Stack {
             PDF.Text("Line")
         }
 
         #expect(stack.spacing == 0)
+        #expect(stack.axis == .vertical)
     }
 
     @Test
-    func `Renders all children`() {
+    func `Vertical renders all children`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
@@ -41,13 +41,13 @@ struct `PDF.Stack.Vertical Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("Line 1")
             PDF.Text("Line 2")
             PDF.Text("Line 3")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // Content stream should have data for all 3 texts
         #expect(!context.currentPageBuilder.data.isEmpty)
@@ -65,12 +65,12 @@ struct `PDF.Stack.Vertical Tests` {
             lineHeight: 1.0
         )
 
-        let stack = PDF.VStack(spacing: 20) {
+        let stack = PDF.Stack(.vertical, spacing: 20) {
             PDF.Text("Line 1")
             PDF.Text("Line 2")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
         #expect(context.layout.box.lly == 116)
@@ -88,32 +88,27 @@ struct `PDF.Stack.Vertical Tests` {
             lineHeight: 1.0
         )
 
-        let stack = PDF.VStack(spacing: 100) {
+        let stack = PDF.Stack(.vertical, spacing: 100) {
             PDF.Text("Only one")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // 72 + single line (12), no spacing added = 84
         #expect(context.layout.box.lly == 84)
     }
 
     @Test
-    func `VStack type exists`() {
-        // Verify VStack is a typealias for Stack.Vertical
-        let _: PDF.VStack<PDF.Text> = PDF.VStack { PDF.Text("Test") }
+    func `Stack type resolves correctly`() {
+        let _: PDF.Stack<PDF.Text> = PDF.Stack { PDF.Text("Test") }
         #expect(Bool(true))
     }
-}
 
-// MARK: - Horizontal Stack Tests
-
-@Suite
-struct `PDF.Stack.Horizontal Tests` {
+    // MARK: - Horizontal
 
     @Test
-    func `Creates HStack with builder`() {
-        let stack = PDF.HStack.horizontal(spacing: 10) {
+    func `Creates horizontal stack with builder`() {
+        let stack = PDF.Stack(.horizontal, spacing: 10) {
             PDF.Text("A")
             PDF.Text("B")
         }
@@ -122,8 +117,8 @@ struct `PDF.Stack.Horizontal Tests` {
     }
 
     @Test
-    func `Default spacing is zero`() {
-        let stack = PDF.HStack.horizontal {
+    func `Horizontal default spacing is zero`() {
+        let stack = PDF.Stack(.horizontal) {
             PDF.Text("Item")
         }
 
@@ -131,7 +126,7 @@ struct `PDF.Stack.Horizontal Tests` {
     }
 
     @Test
-    func `Renders all children`() {
+    func `Horizontal renders all children`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
@@ -140,13 +135,13 @@ struct `PDF.Stack.Horizontal Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.HStack.horizontal {
+        let stack = PDF.Stack(.horizontal) {
             PDF.Text("A")
             PDF.Text("B")
             PDF.Text("C")
         }
 
-        PDF.HStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // Content stream should have data
         #expect(!context.currentPageBuilder.data.isEmpty)
@@ -164,12 +159,12 @@ struct `PDF.Stack.Horizontal Tests` {
             lineHeight: 1.0
         )
 
-        let stack = PDF.HStack.horizontal {
+        let stack = PDF.Stack(.horizontal) {
             PDF.Text("Short")
             PDF.Text("Also Short")
         }
 
-        PDF.HStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // HStack positions children horizontally, Y advances by max height (one line)
         // 72 + 12 = 84
@@ -177,20 +172,15 @@ struct `PDF.Stack.Horizontal Tests` {
     }
 
     @Test
-    func `HStack type exists`() {
-        // Verify HStack is a typealias for Stack
-        let _: PDF.HStack<PDF.Text> = PDF.HStack.horizontal { PDF.Text("Test") }
+    func `Horizontal stack type resolves correctly`() {
+        let _: PDF.Stack<PDF.Text> = PDF.Stack(.horizontal) { PDF.Text("Test") }
         #expect(Bool(true))
     }
-}
 
-// MARK: - Nested Stack Tests
-
-@Suite
-struct `PDF.Stack Nested Tests` {
+    // MARK: - Nesting
 
     @Test
-    func `VStack can contain HStack`() {
+    func `Vertical can contain horizontal`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
@@ -199,21 +189,21 @@ struct `PDF.Stack Nested Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.VStack {
-            PDF.HStack.horizontal {
+        let stack = PDF.Stack {
+            PDF.Stack(.horizontal) {
                 PDF.Text("Left")
                 PDF.Text("Right")
             }
             PDF.Text("Below")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
     @Test
-    func `HStack can contain VStack`() {
+    func `Horizontal can contain vertical`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
@@ -222,15 +212,15 @@ struct `PDF.Stack Nested Tests` {
             mediaBox: .letter
         )
 
-        let stack = PDF.HStack.horizontal {
-            PDF.VStack {
+        let stack = PDF.Stack(.horizontal) {
+            PDF.Stack {
                 PDF.Text("Top")
                 PDF.Text("Bottom")
             }
             PDF.Text("Side")
         }
 
-        PDF.HStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }

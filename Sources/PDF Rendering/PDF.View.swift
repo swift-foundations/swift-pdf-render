@@ -21,7 +21,7 @@ extension PDF {
     /// ```swift
     /// struct MyDocument: PDF.View {
     ///     var body: some PDF.View {
-    ///         PDF.VStack(spacing: 12) {
+    ///         PDF.Stack(.vertical, spacing: 12) {
     ///             PDF.Text("Hello, World!")
     ///             PDF.Divider()
     ///             PDF.Text("This is a paragraph of text.")

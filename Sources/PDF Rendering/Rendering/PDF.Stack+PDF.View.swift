@@ -16,17 +16,11 @@ extension PDF {
     public typealias Layout = LayoutRaw<Double, ISO_32000_Shared.UserSpace>
 }
 
-// MARK: - Stack Typealiases
+// MARK: - Stack Typealias
 
 extension PDF {
-    /// Stack layout for arranging PDF views.
+    /// Stack layout for arranging PDF views along a horizontal or vertical axis.
     public typealias Stack<C> = PDF.Layout.Stack<C>
-
-    /// Vertical stack layout (items flow top to bottom).
-    public typealias VStack<C> = PDF.Layout.Stack<C>
-
-    /// Horizontal stack layout (items flow leading to trailing).
-    public typealias HStack<C> = PDF.Layout.Stack<C>
 }
 
 // MARK: - PDF.View Conformance
@@ -93,30 +87,21 @@ extension LayoutRaw<Double, ISO_32000_Shared.UserSpace>.Stack: PDF.View where Co
     }
 }
 
-// MARK: - Convenience Initializers
+// MARK: - Convenience Initializer
 
 extension LayoutRaw<Double, ISO_32000_Shared.UserSpace>.Stack where Content: PDF.View {
-    /// Creates a vertical stack with the specified spacing.
+    /// Creates a stack along the given axis.
+    ///
+    /// ```swift
+    /// PDF.Stack { }                    // vertical (default)
+    /// PDF.Stack(.vertical) { }        // explicit vertical
+    /// PDF.Stack(.horizontal) { }      // horizontal
+    /// ```
     public init(
+        _ axis: Axis<2> = .vertical,
         spacing: PDF.Layout.Spacing = 0,
         @PDF.Builder _ build: () -> Content
     ) {
-        self = .vertical(spacing: spacing, content: build())
-    }
-
-    /// Creates a vertical stack with the specified spacing.
-    public static func vertical(
-        spacing: PDF.Layout.Spacing = 0,
-        @PDF.Builder _ build: () -> Content
-    ) -> Self {
-        .vertical(spacing: spacing, content: build())
-    }
-
-    /// Creates a horizontal stack with the specified spacing.
-    public static func horizontal(
-        spacing: PDF.Layout.Spacing = 0,
-        @PDF.Builder _ build: () -> Content
-    ) -> Self {
-        .horizontal(spacing: spacing, content: build())
+        self.init(axis: axis, spacing: spacing, alignment: .center, content: build())
     }
 }
