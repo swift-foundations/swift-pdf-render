@@ -125,8 +125,8 @@ extension PDF {
 
         // MARK: - Cross-Format Rendering State
 
-        /// Style stack for Rendering.Context push/pop operations.
-        internal var renderingStyleStack: [Style.Resolved] = []
+        /// Scope stack for Rendering.Context push/pop operations.
+        internal var scopeStack: [Scope] = []
 
         /// Current link URL for text runs created during pushLink/popLink scope.
         internal var currentLinkURL: String?
