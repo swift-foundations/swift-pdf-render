@@ -8,23 +8,32 @@ let package = Package(
         .macOS(.v26),
     ],
     dependencies: [
-        .package(path: "../.."),
-        .package(path: "../../../swift-testing"),
+        .package(path: ".."),
+        .package(path: "../../swift-testing"),
+        .package(path: "../../swift-tests"),
+        .package(path: "../../../swift-primitives/swift-test-primitives"),
     ],
     targets: [
         .testTarget(
             name: "PDF Rendering Performance Tests",
             dependencies: [
                 .product(name: "PDF Rendering", package: "swift-pdf-rendering"),
+                .product(name: "PDF Rendering Test Support", package: "swift-pdf-rendering"),
                 .product(name: "Testing", package: "swift-testing"),
-            ]
+            ],
+            path: "PDF Rendering Performance Tests"
         ),
         .testTarget(
             name: "PDF Rendering Snapshot Tests",
             dependencies: [
                 .product(name: "PDF Rendering", package: "swift-pdf-rendering"),
+                .product(name: "PDF Rendering Test Support", package: "swift-pdf-rendering"),
                 .product(name: "Testing", package: "swift-testing"),
-            ]
+                .product(name: "Tests Inline Snapshot", package: "swift-tests"),
+                .product(name: "Test Snapshot Primitives", package: "swift-test-primitives"),
+                .product(name: "Test Primitives Test Support", package: "swift-test-primitives"),
+            ],
+            path: "PDF Rendering Snapshot Tests"
         ),
     ],
     swiftLanguageModes: [.v6]
@@ -32,14 +41,10 @@ let package = Package(
 
 for target in package.targets where ![.system, .binary, .plugin, .macro].contains(target.type) {
     let ecosystem: [SwiftSetting] = [
-        .strictMemorySafety(),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
-        .enableExperimentalFeature("Lifetimes"),
-        .enableExperimentalFeature("SuppressedAssociatedTypes"),
-        .enableExperimentalFeature("SuppressedAssociatedTypesWithDefaults"),
     ]
 
     target.swiftSettings = (target.swiftSettings ?? []) + ecosystem

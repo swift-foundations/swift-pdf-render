@@ -1,13 +1,17 @@
 // PDF Rendering Performance Tests.swift
 
 import Testing
+import PDF_Rendering_Test_Support
 @testable import PDF_Rendering
 import PDF_Standard
 
-@Suite(.serialized)
-struct `PDF Rendering - Performance` {
+extension PDF {
+    #Tests
+}
 
-    // MARK: - Text Rendering
+// MARK: - Text Rendering
+
+extension PDF.Test.Performance {
 
     @Test(.timed(iterations: 100, warmup: 10))
     func `render short text`() {
@@ -106,95 +110,42 @@ struct `PDF Rendering - Performance` {
 
     // MARK: - Throughput
 
-    @Test
-    func `throughput over 5 seconds`() {
-        let duration: Duration = .seconds(5)
-        let start = ContinuousClock.now
-        var count = 0
-
-        while ContinuousClock.now - start < duration {
-            let doc = PDF.Document {
-                PDF.Text("Document \(count)")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-                PDF.Text("This is a test paragraph with some content.")
-            }
-            let _ = [UInt8](doc)
-            count += 1
+    @Test(.timed(iterations: 500, warmup: 50))
+    func `throughput single document with 18 paragraphs`() {
+        let doc = PDF.Document {
+            PDF.Text("Document")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
+            PDF.Text("This is a test paragraph with some content.")
         }
-
-        let elapsed = ContinuousClock.now - start
-        let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
-        let throughput = Double(count) / seconds
-
-        print("Throughput: \(Int(throughput)) docs/sec (\(count) in \(String(format: "%.2f", seconds))s)")
+        let _ = [UInt8](doc)
     }
 
     // MARK: - Large Document (HexaPDF Comparison)
 
-    /// Benchmark comparable to HexaPDF's raw_text benchmark using ~700,000 characters.
-    @Test
+    @Test(.timed(iterations: 5, warmup: 2))
     func `large document HexaPDF comparison`() {
         let paragraph = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. "
         let fullText = String(repeating: paragraph, count: 3700)
-        let charCount = fullText.count
-        let wordCount = fullText.split(separator: " ").count
-
-        print("Large Document Benchmark")
-        print("   Characters: \(charCount)")
-        print("   Words: ~\(wordCount)")
-
-        // Warm up
-        for _ in 0..<2 {
-            let doc = PDF.Document {
-                PDF.Text(fullText)
-            }
-            let _ = [UInt8](doc)
+        let doc = PDF.Document {
+            PDF.Text(fullText)
         }
-
-        // Timed runs
-        var times: [Double] = []
-        for _ in 0..<5 {
-            let start = ContinuousClock.now
-            let doc = PDF.Document {
-                PDF.Text(fullText)
-            }
-            let _ = [UInt8](doc)
-            let elapsed = ContinuousClock.now - start
-            let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
-            times.append(ms)
-        }
-
-        let avgTime = times.reduce(0, +) / Double(times.count)
-        let minTime = times.min() ?? 0
-        let charsPerSec = Double(charCount) / (avgTime / 1000)
-
-        print("   Min time: \(String(format: "%.0f", minTime))ms")
-        print("   Avg time: \(String(format: "%.0f", avgTime))ms")
-        print("   Chars/sec: \(String(format: "%.0f", charsPerSec))")
-        print("")
-        print("   Comparison (HexaPDF benchmark 2025-01-04):")
-        print("   - ReportLab/C: 256ms")
-        print("   - Prawn: 308ms")
-        print("   - fpdf2: 347ms")
-        print("   - HexaPDF: 377ms")
-        print("   - jPDFWriter: 391ms")
-        print("   - PDFKit: 840ms")
+        let _ = [UInt8](doc)
     }
 
     // MARK: - Text.Run Rendering
@@ -219,24 +170,24 @@ struct `PDF Rendering - Performance` {
         var context = createContext()
         PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
+}
 
-    // MARK: - Helpers
+// MARK: - Helpers
 
-    private func createContext() -> PDF.Context {
-        PDF.Context(
-            mediaBox: .letter,
-            margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
+private func createContext() -> PDF.Context {
+    PDF.Context(
+        mediaBox: .letter,
+        margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
+    )
+}
+
+private func createRuns(count: Int) -> [PDF.Context.Text.Run] {
+    (0..<count).map { i in
+        PDF.Context.Text.Run(
+            text: "This is paragraph \(i) with some content to make it realistic.",
+            font: .helvetica,
+            fontSize: 12,
+            color: .black
         )
-    }
-
-    private func createRuns(count: Int) -> [PDF.Context.Text.Run] {
-        (0..<count).map { i in
-            PDF.Context.Text.Run(
-                text: "This is paragraph \(i) with some content to make it realistic.",
-                font: .helvetica,
-                fontSize: 12,
-                color: .black
-            )
-        }
     }
 }

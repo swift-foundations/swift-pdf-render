@@ -74,7 +74,8 @@ let package = Package(
             dependencies: [
                 .pdfRendering,
                 "PDF Rendering Test Support",
-            ]
+            ],
+            path: "Tests/PDF Rendering Tests"
         ),
     ],
     swiftLanguageModes: [.v6]
