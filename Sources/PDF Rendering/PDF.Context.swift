@@ -123,6 +123,14 @@ extension PDF {
         /// Maximum Y reached in current horizontal row.
         internal var horizontalRowMaxY: PDF.UserSpace.Y?
 
+        // MARK: - Cross-Format Rendering State
+
+        /// Style stack for Rendering.Context push/pop operations.
+        internal var renderingStyleStack: [Style.Resolved] = []
+
+        /// Current link URL for text runs created during pushLink/popLink scope.
+        internal var currentLinkURL: String?
+
         // MARK: - Text State (for batching BT/ET blocks)
 
         /// Whether we're inside a BT (begin text) block.
@@ -329,11 +337,6 @@ extension PDF.Context {
             startIndex = start
         }
         listStack.append((type: type, currentIndex: startIndex))
-    }
-
-    /// Pop the current list from the stack.
-    public mutating func popList() {
-        _ = listStack.popLast()
     }
 
     /// Get the next list marker and advance the counter.
