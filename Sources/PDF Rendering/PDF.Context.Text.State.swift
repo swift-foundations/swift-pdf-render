@@ -5,7 +5,7 @@ import PDF_Standard
 
 extension PDF.Context.Text {
     /// State for batching text operations within BT/ET blocks.
-    internal struct State: Sendable, Equatable {
+    public struct State: Sendable, Equatable {
         /// Whether we're inside a BT (begin text) block.
         internal var blockOpen: Bool = false
         /// Current font set in the open text block.
@@ -16,6 +16,6 @@ extension PDF.Context.Text {
         internal var color: PDF.Color? = nil
         /// Current text position (PDF coordinates, for relative positioning).
         internal var position: PDF.UserSpace.Coordinate? = nil
-        internal init() {}
+        public init() {}
     }
 }
