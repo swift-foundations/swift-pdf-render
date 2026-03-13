@@ -45,7 +45,7 @@ extension ISO_32000.Table.Row {
         @PDF.Builder _ content: () -> Content
     ) -> PDF.Element<Self, PDF.HStack<Content>> {
         PDF.Element(tag: self) {
-            PDF.HStack(content)
+            PDF.Stack.horizontal(content)
         }
     }
 
@@ -61,7 +61,7 @@ extension ISO_32000.Table.Row {
         @PDF.Builder content: (Data.Element) -> Content
     ) -> PDF.Element<Self, PDF.HStack<Rendering.ForEach<Content>>> {
         PDF.Element(tag: self) {
-            PDF.HStack {
+            PDF.Stack.horizontal {
                 Rendering.ForEach(data, content: content)
             }
         }
