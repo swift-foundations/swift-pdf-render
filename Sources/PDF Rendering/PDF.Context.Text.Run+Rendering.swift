@@ -32,8 +32,8 @@ extension PDF.Context.Text.Run {
             }
         }
 
-        let maxWidth = context.layoutBox.width
-        let preserveWhitespace = context.preserveWhitespace
+        let maxWidth = context.layout.box.width
+        let preserveWhitespace = context.mode.preserveWhitespace
 
         // Shared state - reused across lines
         var state = RenderState()
@@ -226,12 +226,12 @@ extension PDF.Context.Text.Run {
         context.page.ensure(height: lineHeight)
 
         // Handle list marker
-        if isFirstLine, let pending = context.pendingListMarker {
+        if isFirstLine, let pending = context.list.marker {
             emitListMarker(pending.marker, at: pending.x, context: &context)
-            context.pendingListMarker = nil
+            context.list.marker = nil
         }
 
-        let baselineY = context.layoutBox.lly + context.style.line.ascent
+        let baselineY = context.layout.box.lly + context.style.line.ascent
 
         // Calculate total width (words + gaps, excluding trailing gap)
         var totalWidth: PDF.UserSpace.Width = .init(0)
@@ -243,7 +243,7 @@ extension PDF.Context.Text.Run {
         }
 
         // Calculate alignment
-        let availableWidth = context.layoutBox.width
+        let availableWidth = context.layout.box.width
         let alignmentOffset: PDF.UserSpace.Width
         switch context.style.textAlign {
         case .leading:
@@ -254,7 +254,7 @@ extension PDF.Context.Text.Run {
             alignmentOffset = .max(.zero, availableWidth - totalWidth)
         }
 
-        var currentX = context.layoutBox.llx + alignmentOffset
+        var currentX = context.layout.box.llx + alignmentOffset
 
         // Emit words with batching for same-style segments
         var segmentBytes: [UInt8] = []
@@ -332,7 +332,7 @@ extension PDF.Context.Text.Run {
         }
 
         // Advance Y
-        context.layoutBox.lly = context.layoutBox.lly + lineHeight
+        context.layout.box.lly = context.layout.box.lly + lineHeight
     }
 
     /// Style key for batching - avoids repeated property comparisons
@@ -441,7 +441,7 @@ extension PDF.Context.Text.Run {
         at markerX: PDF.UserSpace.X,
         context: inout PDF.Context
     ) {
-        let markerBaselineY = context.layoutBox.lly + context.style.line.ascent
+        let markerBaselineY = context.layout.box.lly + context.style.line.ascent
         let baseFont = context.style.font
         let baseFontSize = context.style.fontSize
 

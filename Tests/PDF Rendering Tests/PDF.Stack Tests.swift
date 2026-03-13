@@ -73,7 +73,7 @@ struct `PDF.Stack.Vertical Tests` {
         PDF.VStack._render(stack, context: &context)
 
         // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
-        #expect(context.layoutBox.lly == 116)
+        #expect(context.layout.box.lly == 116)
     }
 
     @Test
@@ -95,7 +95,7 @@ struct `PDF.Stack.Vertical Tests` {
         PDF.VStack._render(stack, context: &context)
 
         // 72 + single line (12), no spacing added = 84
-        #expect(context.layoutBox.lly == 84)
+        #expect(context.layout.box.lly == 84)
     }
 
     @Test
@@ -173,7 +173,7 @@ struct `PDF.Stack.Horizontal Tests` {
 
         // HStack positions children horizontally, Y advances by max height (one line)
         // 72 + 12 = 84
-        #expect(context.layoutBox.lly == 84)
+        #expect(context.layout.box.lly == 84)
     }
 
     @Test

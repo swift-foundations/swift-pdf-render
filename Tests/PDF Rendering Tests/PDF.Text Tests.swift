@@ -71,13 +71,13 @@ struct `PDF.Text Tests` {
             mediaBox: .letter,
             margins: PDF.EdgeInsets(top: 72, leading: 72, bottom: 72, trailing: 72)
         )
-        let startY = context.layoutBox.lly
+        let startY = context.layout.box.lly
 
         let text = PDF.Text("Hello")
         PDF.Text._render(text, context: &context)
 
         // Y should have advanced
-        #expect(context.layoutBox.lly > startY)
+        #expect(context.layout.box.lly > startY)
     }
 
     @Test
@@ -108,12 +108,12 @@ struct `PDF.Text Tests` {
         )
 
         let text = PDF.Text("This is a longer text that should wrap to multiple lines")
-        let startY = context.layoutBox.lly
+        let startY = context.layout.box.lly
         PDF.Text._render(text, context: &context)
 
         // Y should have advanced by more than one line
         let lineHeight = context.style.line.height
-        #expect(height(context.layoutBox.lly - startY) > lineHeight)
+        #expect(height(context.layout.box.lly - startY) > lineHeight)
     }
 
     @Test

@@ -32,33 +32,33 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         size: PDF.UserSpace.Size<1>,
         color: PDF.Color
     ) {
-        guard !base.measurementMode else { return }
+        guard !base.mode.measurement else { return }
 
         let pdfY = base.pageTop - (position.y - PDF.UserSpace.Y.zero)
         let pdfPosition = PDF.UserSpace.Coordinate(x: position.x, y: pdfY)
 
         // Open text block if not already open
-        if !base.textBlockOpen {
+        if !base.text.blockOpen {
             base.currentPageBuilder.beginText()
-            base.textBlockOpen = true
-            base.currentTextPosition = nil
+            base.text.blockOpen = true
+            base.text.position = nil
         }
 
         // Set color only if changed
-        if base.currentTextColor != color {
+        if base.text.color != color {
             base.setFillColor(color)
-            base.currentTextColor = color
+            base.text.color = color
         }
 
         // Set font only if changed
-        if base.currentTextFont != font || base.currentTextFontSize != size {
+        if base.text.font != font || base.text.fontSize != size {
             base.currentPageBuilder.setFont(font, size: size)
-            base.currentTextFont = font
-            base.currentTextFontSize = size
+            base.text.font = font
+            base.text.fontSize = size
         }
 
         // Position text - use relative positioning if we have a previous position
-        if let lastPos = base.currentTextPosition {
+        if let lastPos = base.text.position {
             base.currentPageBuilder.moveText(
                 dx: pdfPosition.x - lastPos.x,
                 dy: pdfPosition.y - lastPos.y
@@ -69,7 +69,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
                 dy: pdfPosition.y - .zero
             )
         }
-        base.currentTextPosition = pdfPosition
+        base.text.position = pdfPosition
 
         base.currentPageBuilder.showText(bytes)
     }
@@ -98,7 +98,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         color: PDF.Color,
         width: PDF.UserSpace.Width
     ) {
-        guard !base.measurementMode else { return }
+        guard !base.mode.measurement else { return }
 
         // Must close text block before graphics operations
         base.flush.text()
@@ -120,7 +120,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         fill: PDF.Color?,
         stroke: PDF.Stroke?
     ) {
-        guard !base.measurementMode else { return }
+        guard !base.mode.measurement else { return }
 
         // Must close text block before graphics operations
         base.flush.text()
@@ -154,7 +154,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         _ image: ISO_32000.Image,
         in rect: PDF.UserSpace.Rectangle
     ) {
-        guard !base.measurementMode else { return }
+        guard !base.mode.measurement else { return }
 
         // Must close text block before graphics operations
         base.flush.text()
@@ -180,7 +180,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         stroke: PDF.Color?,
         strokeWidth: PDF.UserSpace.Width = .init(1)
     ) {
-        guard !base.measurementMode else { return }
+        guard !base.mode.measurement else { return }
 
         // Must close text block before graphics operations
         base.flush.text()

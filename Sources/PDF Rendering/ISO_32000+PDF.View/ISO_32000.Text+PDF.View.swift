@@ -16,10 +16,10 @@ extension ISO_32000.Text: PDF.View {
 
     public static func _render(_ text: Self, context: inout PDF.Context) {
         // Get font and size from text state, falling back to context defaults
-        let font = text.state.font.flatMap { context.fontRegistry[$0.name] } ?? context.style.font
+        let font = text.state.font.flatMap { context.fonts[$0.name] } ?? context.style.font
         let fontSize = text.state.fontSize ?? context.style.fontSize
 
-        if context.isHorizontalLayout {
+        if context.spacing.isHorizontal {
             _renderHorizontal(text, font: font, fontSize: fontSize, context: &context)
         } else {
             _renderVertical(text, font: font, fontSize: fontSize, context: &context)
@@ -37,23 +37,23 @@ extension ISO_32000.Text: PDF.View {
             text.content,
             font: font,
             size: fontSize,
-            maxWidth: context.layoutBox.width
+            maxWidth: context.layout.box.width
         )
 
         for line in lines {
             // Check for page break before each line
             context.page.ensure(height: context.style.line.height)
 
-            // In top-left coordinates, context.layoutBox.lly is the top of the line box.
+            // In top-left coordinates, context.layout.box.lly is the top of the line box.
             // PDF text is positioned at the baseline, so we offset down by the
             // ascender height (distance from baseline to top of tallest glyphs).
             let baselineY: PDF.UserSpace.Y =
-                context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
+                context.layout.box.lly + font.metrics.ascender(atSize: fontSize)
 
             // Emit bytes directly to content stream
             context.emit.text(
                 line,
-                at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
+                at: PDF.UserSpace.Coordinate(x: context.layout.box.llx, y: baselineY),
                 font: font,
                 size: fontSize,
                 color: context.style.color
@@ -78,13 +78,13 @@ extension ISO_32000.Text: PDF.View {
         // Calculate text width
         let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
 
-        // In top-left coordinates, context.layoutBox.lly is the top of the line box.
-        let baselineY = context.layoutBox.lly + font.metrics.ascender(atSize: fontSize)
+        // In top-left coordinates, context.layout.box.lly is the top of the line box.
+        let baselineY = context.layout.box.lly + font.metrics.ascender(atSize: fontSize)
 
         // Emit text
         context.emit.text(
             text.content,
-            at: PDF.UserSpace.Coordinate(x: context.layoutBox.llx, y: baselineY),
+            at: PDF.UserSpace.Coordinate(x: context.layout.box.llx, y: baselineY),
             font: font,
             size: fontSize,
             color: context.style.color

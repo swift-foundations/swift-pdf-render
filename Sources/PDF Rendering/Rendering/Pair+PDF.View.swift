@@ -29,26 +29,26 @@ extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
 
     /// Generic overlay: renders first, then second at same position.
     private static func _renderOverlay(_ view: Self, context: inout PDF.Context) {
-        let startX = context.layoutBox.llx
-        let startY = context.layoutBox.lly
+        let startX = context.layout.box.llx
+        let startY = context.layout.box.lly
 
         First._render(view.first, context: &context)
-        let bgEndX = context.layoutBox.llx
-        let bgEndY = context.layoutBox.lly
+        let bgEndX = context.layout.box.llx
+        let bgEndY = context.layout.box.lly
 
-        context.layoutBox.llx = startX
-        context.layoutBox.lly = startY
+        context.layout.box.llx = startX
+        context.layout.box.lly = startY
 
         Second._render(view.second, context: &context)
-        let fgEndX = context.layoutBox.llx
-        let fgEndY = context.layoutBox.lly
+        let fgEndX = context.layout.box.llx
+        let fgEndY = context.layout.box.lly
 
-        if context.isHorizontalLayout {
-            context.layoutBox.llx = .max(bgEndX, fgEndX)
-            context.layoutBox.lly = .max(bgEndY, fgEndY)
+        if context.spacing.isHorizontal {
+            context.layout.box.llx = .max(bgEndX, fgEndX)
+            context.layout.box.lly = .max(bgEndY, fgEndY)
         } else {
-            context.layoutBox.llx = startX
-            context.layoutBox.lly = .max(bgEndY, fgEndY)
+            context.layout.box.llx = startX
+            context.layout.box.lly = .max(bgEndY, fgEndY)
         }
     }
 
@@ -58,8 +58,8 @@ extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
         content: Second,
         context: inout PDF.Context
     ) {
-        let startX = context.layoutBox.llx
-        let startY = context.layoutBox.lly
+        let startX = context.layout.box.llx
+        let startY = context.layout.box.lly
 
         let rectWidth = rect.rect.width
         let rectHeight = rect.rect.height
@@ -82,19 +82,19 @@ extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
         let baselineFromTop = (rectHeight + capHeight) / 2
         let contentY = startY + baselineFromTop - ascender
 
-        context.layoutBox.llx = startX + padding.width
-        context.layoutBox.lly = contentY
+        context.layout.box.llx = startX + padding.width
+        context.layout.box.lly = contentY
 
         // Render content (foreground)
         Second._render(content, context: &context)
 
         // Advance by rectangle dimensions
-        if context.isHorizontalLayout {
-            context.layoutBox.llx = startX + rectWidth
-            context.layoutBox.lly = startY + rectHeight
+        if context.spacing.isHorizontal {
+            context.layout.box.llx = startX + rectWidth
+            context.layout.box.lly = startY + rectHeight
         } else {
-            context.layoutBox.llx = startX
-            context.layoutBox.lly = startY + rectHeight
+            context.layout.box.llx = startX
+            context.layout.box.lly = startY + rectHeight
         }
     }
 }
@@ -129,8 +129,8 @@ extension Pair where First == PDF.Rectangle, Second: PDF.View {
         verticalAlignment: Vertical.Alignment = .center,
         context: inout PDF.Context
     ) {
-        let startX = context.layoutBox.llx
-        let startY = context.layoutBox.lly
+        let startX = context.layout.box.llx
+        let startY = context.layout.box.lly
 
         let rectWidth = first.rect.width
         let rectHeight = first.rect.height
@@ -156,19 +156,19 @@ extension Pair where First == PDF.Rectangle, Second: PDF.View {
             contentY = startY + rectHeight - padding.height - ascender
         }
 
-        context.layoutBox.llx = startX + padding.width
-        context.layoutBox.lly = contentY
+        context.layout.box.llx = startX + padding.width
+        context.layout.box.lly = contentY
 
         // Render content (foreground)
         Second._render(second, context: &context)
 
         // Advance by rectangle dimensions
-        if context.isHorizontalLayout {
-            context.layoutBox.llx = startX + rectWidth
-            context.layoutBox.lly = startY + rectHeight
+        if context.spacing.isHorizontal {
+            context.layout.box.llx = startX + rectWidth
+            context.layout.box.lly = startY + rectHeight
         } else {
-            context.layoutBox.llx = startX
-            context.layoutBox.lly = startY + rectHeight
+            context.layout.box.llx = startX
+            context.layout.box.lly = startY + rectHeight
         }
     }
 }

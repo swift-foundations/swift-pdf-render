@@ -36,125 +36,59 @@ extension PDF {
     /// ```
     @CoW
     public struct Context: Sendable {
-        // MARK: - Categorical Primitives
+        // MARK: - Sub-Structs
 
-        /// The layout box (position + available size).
-        public var layoutBox: PDF.UserSpace.Rectangle
+        /// Layout box, initial box, and pagination bounds.
+        public var layout: Layout
 
         /// Resolved text style.
         public var style: Style.Resolved
 
-        /// Graphics state stack for save/restore operations.
-        public var graphicsStack: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
+        /// Box model margin.
+        public var margin: Margin = .init()
 
-        /// Font registry mapping font reference names to Font objects.
-        public var fontRegistry: [String: PDF.Font] = [:]
+        /// Box model padding.
+        public var padding: Padding = .init()
 
-        // MARK: - Inline Text Flow
+        /// Explicit dimension constraints.
+        public var constraint: Constraint = .init()
+
+        /// Vertical and horizontal stack spacing.
+        public var spacing: Spacing = .init()
 
         /// Accumulated inline text runs.
-        public var inlineRuns: [PDF.Context.Text.Run] = []
+        public var inline: Inline = .init()
 
-        // MARK: - List State
+        /// List nesting state.
+        public var list: List.State = .init()
 
-        /// Stack of active lists (for nested list support).
-        public var listStack: [(type: List.Kind, currentIndex: Int)] = []
+        /// Link annotation state.
+        public var link: Link = .init()
 
-        /// Pending list marker to be rendered with the first line of text.
-        public var pendingListMarker: (marker: List.Marker, x: PDF.UserSpace.X)?
+        /// Rendering mode flags.
+        public var mode: Mode = .init()
 
-        // MARK: - Modes
+        /// Text block batching state.
+        internal var text: Text.State = .init()
 
-        /// Preformatted mode - preserves whitespace in `<pre>` blocks.
-        public var preserveWhitespace: Bool = false
+        /// Horizontal row tracking state.
+        internal var row: Row = .init()
 
-        /// Stack spacing - applied between elements in a VStack.
-        public var stackSpacing: PDF.UserSpace.Height?
+        // MARK: - Flat (Renamed)
+
+        /// Graphics state stack for save/restore operations.
+        public var graphics: ISO_32000.Graphics.State.Stack<ISO_32000.GraphicsState>
+
+        /// Font registry mapping font reference names to Font objects.
+        public var fonts: [String: PDF.Font] = [:]
 
         /// Track Y position before last element rendered (for spacing logic).
-        internal var lastElementY: PDF.UserSpace.Y?
-
-        /// Measurement mode - when true, operations are not added.
-        public var measurementMode: Bool = false
-
-        // MARK: - Horizontal Layout
-
-        /// Horizontal stack spacing - applied between elements in an HStack.
-        public var horizontalSpacing: PDF.UserSpace.Width?
-
-        // MARK: - Box Model
-
-        /// Top margin (external spacing above element)
-        public var marginTop: PDF.UserSpace.Height?
-
-        /// Right margin (external spacing to the right of element)
-        public var marginRight: PDF.UserSpace.Width?
-
-        /// Bottom margin (external spacing below element)
-        public var marginBottom: PDF.UserSpace.Height?
-
-        /// Left margin (external spacing to the left of element)
-        public var marginLeft: PDF.UserSpace.Width?
-
-        /// Top padding (internal spacing at top of element)
-        public var paddingTop: PDF.UserSpace.Height?
-
-        /// Right padding (internal spacing at right of element)
-        public var paddingRight: PDF.UserSpace.Width?
-
-        /// Bottom padding (internal spacing at bottom of element)
-        public var paddingBottom: PDF.UserSpace.Height?
-
-        /// Left padding (internal spacing at left of element)
-        public var paddingLeft: PDF.UserSpace.Width?
-
-        /// Explicit width constraint
-        public var explicitWidth: PDF.UserSpace.Width?
-
-        /// Explicit height constraint
-        public var explicitHeight: PDF.UserSpace.Height?
-
-        /// Track X position before last element rendered (for horizontal spacing).
-        internal var lastElementX: PDF.UserSpace.X?
-
-        /// Starting Y position for current horizontal row (to track max height).
-        internal var horizontalRowStartY: PDF.UserSpace.Y?
-
-        /// Maximum Y reached in current horizontal row.
-        internal var horizontalRowMaxY: PDF.UserSpace.Y?
-
-        // MARK: - Cross-Format Rendering State
+        internal var lastY: PDF.UserSpace.Y?
 
         /// Scope stack for Rendering.Context push/pop operations.
-        internal var scopeStack: [Scope] = []
+        internal var scopes: [Scope] = []
 
-        /// Current link URL for text runs created during pushLink/popLink scope.
-        internal var currentLinkURL: String?
-
-        // MARK: - Text State (for batching BT/ET blocks)
-
-        /// Whether we're inside a BT (begin text) block.
-        internal var textBlockOpen: Bool = false
-
-        /// Current font set in the open text block.
-        internal var currentTextFont: PDF.Font?
-
-        /// Current font size set in the open text block.
-        internal var currentTextFontSize: PDF.UserSpace.Size<1>?
-
-        /// Current fill color set in the open text block.
-        internal var currentTextColor: PDF.Color?
-
-        /// Current text position (PDF coordinates, for relative positioning).
-        internal var currentTextPosition: PDF.UserSpace.Coordinate?
-
-        // MARK: - Pagination
-
-        /// Initial layout box (for page reset).
-        internal var initialLayoutBox: PDF.UserSpace.Rectangle
-
-        /// Maximum Y position (bottom boundary).
-        internal var maxY: PDF.UserSpace.Y
+        // MARK: - Page-Related (Kept As-Is)
 
         /// The page's media box (defines page geometry).
         public var mediaBox: ISO_32000.UserSpace.Rectangle
@@ -168,30 +102,11 @@ extension PDF {
         /// Annotations for current page.
         public var currentPageAnnotations: [PDF.Annotation] = []
 
-        /// Pending internal links to be resolved after rendering.
-        public var pendingInternalLinks: [PendingInternalLink] = []
-
         // MARK: - Computed Properties
 
         /// Page top Y coordinate for coordinate conversion (top-left to bottom-left).
         public var pageTop: PDF.UserSpace.Y {
             mediaBox.ury
-        }
-
-        /// A pending internal link that needs to be resolved
-        public struct PendingInternalLink: Sendable {
-            /// The target anchor id (without #)
-            public let targetId: String
-            /// Page number where the link is (1-indexed)
-            public let pageNumber: Int
-            /// Bounds of the link annotation
-            public let bounds: PDF.UserSpace.Rectangle
-
-            public init(targetId: String, pageNumber: Int, bounds: PDF.UserSpace.Rectangle) {
-                self.targetId = targetId
-                self.pageNumber = pageNumber
-                self.bounds = bounds
-            }
         }
     }
 }
@@ -214,11 +129,9 @@ extension PDF.Context {
         )
     ) {
         self.init(
-            layoutBox: layoutBox,
+            layout: Layout(box: layoutBox, initial: layoutBox, maxY: layoutBox.maxY),
             style: style,
-            graphicsStack: graphicsStack,
-            initialLayoutBox: layoutBox,
-            maxY: layoutBox.maxY,
+            graphics: graphicsStack,
             mediaBox: mediaBox
         )
     }
@@ -276,7 +189,7 @@ extension PDF.Context {
     ){
         let contentWidth = configuration.mediaBox.width - configuration.margins.horizontal
         let contentHeight = configuration.mediaBox.height - configuration.margins.vertical
-        
+
         self = PDF.Context(
             x: .zero + configuration.margins.leading,
             y: .zero + configuration.margins.top,
@@ -294,17 +207,12 @@ extension PDF.Context {
 // MARK: - Position Operations
 
 extension PDF.Context {
-    /// Check if we're currently in horizontal layout mode.
-    public var isHorizontalLayout: Bool {
-        horizontalSpacing != nil
-    }
-
     /// Update the maximum Y reached in the current horizontal row.
-    public mutating func updateHorizontalRowMaxY() {
-        if let startY = horizontalRowStartY {
-            let currentMaxY = horizontalRowMaxY ?? startY
-            if layoutBox.lly > currentMaxY {
-                horizontalRowMaxY = layoutBox.lly
+    public mutating func updateRowMaxY() {
+        if let startY = row.startY {
+            let currentMaxY = row.maxY ?? startY
+            if layout.box.lly > currentMaxY {
+                row.maxY = layout.box.lly
             }
         }
     }
@@ -315,12 +223,7 @@ extension PDF.Context {
 extension PDF.Context {
     /// Append a text run to the inline buffer.
     public mutating func append(inline run: PDF.Context.Text.Run) {
-        inlineRuns.append(run)
-    }
-
-    /// Check if there are pending inline runs.
-    public var hasInlineRuns: Bool {
-        !inlineRuns.isEmpty
+        self.inline.runs.append(run)
     }
 }
 
@@ -336,7 +239,7 @@ extension PDF.Context {
         case .ordered(let start):
             startIndex = start
         }
-        listStack.append((type: type, currentIndex: startIndex))
+        list.stack.append((type: type, currentIndex: startIndex))
     }
 
     /// Get the next list marker and advance the counter.
@@ -351,15 +254,15 @@ extension PDF.Context {
     /// For ordered lists:
     /// - Numbers with period (1., 2., etc.) in text font
     public mutating func nextListMarker() -> List.Marker {
-        guard !listStack.isEmpty else {
+        guard !list.stack.isEmpty else {
             return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
         }
-        let index = listStack.count - 1
-        switch listStack[index].type {
+        let index = list.stack.count - 1
+        switch list.stack[index].type {
         case .unordered:
             // WebKit uses TOTAL list depth for marker style, not just unordered depth.
             // This means a <ul> nested inside an <ol> at depth 2 gets circle markers.
-            let totalDepth = listStack.count
+            let totalDepth = list.stack.count
             switch totalDepth {
             case 1:
                 // Level 1: • (disc) - use the bullet glyph from the font
@@ -387,16 +290,11 @@ extension PDF.Context {
                 return .filledSquare(rect)
             }
         case .ordered:
-            let num = listStack[index].currentIndex
-            listStack[index].currentIndex += 1
+            let num = list.stack[index].currentIndex
+            list.stack[index].currentIndex += 1
             // WinAnsi encoding for ordered list numbers
             return .text(bytes: [UInt8](winAnsi: "\(num).", withFallback: true), font: style.font)
         }
-    }
-
-    /// Returns the current list nesting depth (0 = not in a list).
-    public var listDepth: Int {
-        listStack.count
     }
 }
 
@@ -434,8 +332,8 @@ extension PDF.Context {
         // Use completedPages.count + 1 for correct 1-indexed page number
         // pages.count includes current page if non-empty, which would overcount
         let pageNumber = completedPages.count + 1
-        pendingInternalLinks.append(
-            PendingInternalLink(
+        link.pending.append(
+            Link.Pending(
                 targetId: targetId,
                 pageNumber: pageNumber,
                 bounds: rect
@@ -445,7 +343,7 @@ extension PDF.Context {
 
     /// Remaining space on current page.
     public var remainingHeight: PDF.UserSpace.Height {
-        .max(.zero, height(maxY - layoutBox.lly))
+        .max(.zero, height(layout.maxY - layout.box.lly))
     }
 
     /// All pages (completed + current).
@@ -453,10 +351,10 @@ extension PDF.Context {
     /// This is the final output of rendering: `[PDF.Page]`
     public var pages: [PDF.Page] {
         var allPages = completedPages
-        if !currentPageBuilder.data.isEmpty || textBlockOpen {
+        if !currentPageBuilder.data.isEmpty || text.blockOpen {
             // Build data, appending ET if text block is open
             var data = currentPageBuilder.data
-            if textBlockOpen {
+            if text.blockOpen {
                 if !data.isEmpty {
                     data.append(.ascii.lf)
                 }
@@ -492,13 +390,13 @@ extension PDF.Context {
     /// - Returns: Pages with resolved internal link annotations
     public static func resolveInternalLinks(
         pages: [PDF.Page],
-        pendingLinks: [PendingInternalLink],
+        pendingLinks: [Link.Pending],
         namedDestinations: [String: (pageNumber: Int, yPosition: PDF.UserSpace.Y)]
     ) -> [PDF.Page] {
         guard !pendingLinks.isEmpty else { return pages }
 
         // Group pending links by page number for efficient processing
-        var linksByPage: [Int: [PendingInternalLink]] = [:]
+        var linksByPage: [Int: [Link.Pending]] = [:]
         for link in pendingLinks {
             linksByPage[link.pageNumber, default: []].append(link)
         }
@@ -545,12 +443,12 @@ extension PDF.Context {
     public mutating func measure(
         _ work: (inout PDF.Context) -> Void
     ) -> PDF.UserSpace.Height {
-        let startY = layoutBox.lly
-        measurementMode = true
+        let startY = layout.box.lly
+        mode.measurement = true
         work(&self)
-        measurementMode = false
-        let measuredHeight: PDF.UserSpace.Height = height(layoutBox.lly - startY)
-        layoutBox.lly = startY
+        mode.measurement = false
+        let measuredHeight: PDF.UserSpace.Height = height(layout.box.lly - startY)
+        layout.box.lly = startY
         return measuredHeight
     }
 }

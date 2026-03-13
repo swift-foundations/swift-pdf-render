@@ -24,7 +24,7 @@ extension PDF.Context: Rendering.Context {
             color: style.color,
             textDecoration: style.textMarkup,
             verticalOffset: style.verticalOffset,
-            linkURL: currentLinkURL
+            linkURL: link.url
         )
         append(inline: run)
     }
@@ -33,7 +33,7 @@ extension PDF.Context: Rendering.Context {
 
     public static func _pushBlock(_ context: inout Self, role: Rendering.Semantic.Block?, style: Rendering.Style) {
         context.flush.inline()
-        context.scopeStack.append(context.savedScope())
+        context.scopes.append(context.savedScope())
         context.apply(style)
 
         guard let role else { return }
@@ -49,22 +49,22 @@ extension PDF.Context: Rendering.Context {
             }
             context.style.fontSize = PDF.UserSpace.Size<1>(headingSize)
             context.style.font = context.style.font.bold ?? context.style.font
-            if context.lastElementY != nil {
+            if context.lastY != nil {
                 context.advance(PDF.UserSpace.Height(headingSize * 0.5))
             }
 
         case .paragraph:
-            if context.lastElementY != nil {
+            if context.lastY != nil {
                 context.advance(context.style.line.height * 0.5)
             }
 
         case .blockquote:
-            context.layoutBox.llx = context.layoutBox.llx + PDF.UserSpace.Width(20)
+            context.layout.box.llx = context.layout.box.llx + PDF.UserSpace.Width(20)
             context.style.color = .gray(0.4)
 
         case .pre:
             context.style.font = .courier
-            context.preserveWhitespace = true
+            context.mode.preserveWhitespace = true
 
         case .section, .table, .row, .cell:
             break
@@ -73,7 +73,7 @@ extension PDF.Context: Rendering.Context {
 
     public static func _popBlock(_ context: inout Self) {
         context.flush.inline()
-        if let saved = context.scopeStack.popLast() {
+        if let saved = context.scopes.popLast() {
             context.restore(saved)
         }
     }
@@ -81,7 +81,7 @@ extension PDF.Context: Rendering.Context {
     // MARK: - Inline Structure
 
     public static func _pushInline(_ context: inout Self, role: Rendering.Semantic.Inline?, style: Rendering.Style) {
-        context.scopeStack.append(context.savedScope())
+        context.scopes.append(context.savedScope())
         context.apply(style)
 
         guard let role else { return }
@@ -96,7 +96,7 @@ extension PDF.Context: Rendering.Context {
     }
 
     public static func _popInline(_ context: inout Self) {
-        if let saved = context.scopeStack.popLast() {
+        if let saved = context.scopes.popLast() {
             context.restore(saved)
         }
     }
@@ -105,20 +105,20 @@ extension PDF.Context: Rendering.Context {
 
     public static func _pushList(_ context: inout Self, kind: Rendering.Semantic.List, start: Int?) {
         context.flush.inline()
-        context.scopeStack.append(context.savedScope())
+        context.scopes.append(context.savedScope())
 
         let pdfKind: PDF.Context.List.Kind = switch kind {
         case .ordered: .ordered(startNumber: start ?? 1)
         case .unordered: .unordered
         }
         context.push(list: pdfKind)
-        context.layoutBox.llx = context.layoutBox.llx + PDF.UserSpace.Width(20)
+        context.layout.box.llx = context.layout.box.llx + PDF.UserSpace.Width(20)
     }
 
     public static func _popList(_ context: inout Self) {
         context.flush.inline()
-        _ = context.listStack.popLast()
-        if let saved = context.scopeStack.popLast() {
+        _ = context.list.stack.popLast()
+        if let saved = context.scopes.popLast() {
             context.restore(saved)
         }
     }
@@ -126,8 +126,8 @@ extension PDF.Context: Rendering.Context {
     public static func _pushItem(_ context: inout Self) {
         context.flush.inline()
         let marker = context.nextListMarker()
-        let markerX = context.layoutBox.llx - PDF.UserSpace.Width(15)
-        context.pendingListMarker = (marker: marker, x: markerX)
+        let markerX = context.layout.box.llx - PDF.UserSpace.Width(15)
+        context.list.marker = (marker: marker, x: markerX)
     }
 
     public static func _popItem(_ context: inout Self) {
@@ -144,8 +144,8 @@ extension PDF.Context: Rendering.Context {
     public mutating func thematicBreak() {
         flush.inline()
         advance(PDF.UserSpace.Height(6))
-        let from = PDF.UserSpace.Coordinate(x: layoutBox.llx, y: layoutBox.lly)
-        let to = PDF.UserSpace.Coordinate(x: layoutBox.llx + layoutBox.width, y: layoutBox.lly)
+        let from = PDF.UserSpace.Coordinate(x: layout.box.llx, y: layout.box.lly)
+        let to = PDF.UserSpace.Coordinate(x: layout.box.llx + layout.box.width, y: layout.box.lly)
         emit.line(from: from, to: to, color: .gray(0.7), width: PDF.UserSpace.Width(0.5))
         advance(PDF.UserSpace.Height(6))
     }
@@ -168,14 +168,14 @@ extension PDF.Context: Rendering.Context {
 
     public static func _pushLink(_ context: inout Self, destination: borrowing String) {
         let copy = copy destination
-        context.scopeStack.append(context.savedScope())
+        context.scopes.append(context.savedScope())
         context.style.textMarkup = .underline
         context.style.color = .rgb(r: 0, g: 0, b: 0.8)
-        context.currentLinkURL = copy
+        context.link.url = copy
     }
 
     public static func _popLink(_ context: inout Self) {
-        if let saved = context.scopeStack.popLast() {
+        if let saved = context.scopes.popLast() {
             context.restore(saved)
         }
     }
@@ -196,18 +196,18 @@ extension PDF.Context {
     private func savedScope() -> Scope {
         Scope(
             style: style,
-            llx: layoutBox.llx,
-            preserveWhitespace: preserveWhitespace,
-            currentLinkURL: currentLinkURL
+            llx: layout.box.llx,
+            preserveWhitespace: mode.preserveWhitespace,
+            linkURL: link.url
         )
     }
 
     /// Restore all scoped state from a snapshot.
     private mutating func restore(_ scope: Scope) {
         style = scope.style
-        layoutBox.llx = scope.llx
-        preserveWhitespace = scope.preserveWhitespace
-        currentLinkURL = scope.currentLinkURL
+        layout.box.llx = scope.llx
+        mode.preserveWhitespace = scope.preserveWhitespace
+        link.url = scope.linkURL
     }
 }
 

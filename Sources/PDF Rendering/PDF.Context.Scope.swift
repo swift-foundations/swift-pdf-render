@@ -15,6 +15,6 @@ extension PDF.Context {
         public let style: Style.Resolved
         public let llx: PDF.UserSpace.X
         public let preserveWhitespace: Bool
-        public let currentLinkURL: String?
+        public let linkURL: String?
     }
 }
