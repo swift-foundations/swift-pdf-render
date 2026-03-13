@@ -64,4 +64,16 @@ extension Property where Tag == PDF.Context.Page, Base == PDF.Context {
     public func exceeds(adding height: PDF.UserSpace.Height) -> Bool {
         base.layoutBox.lly + height > base.maxY
     }
+
+    /// Whether the current page has no rendered content.
+    ///
+    /// True when no content stream operations, no open text block, and no
+    /// pending inline runs exist on the current page. Used to suppress
+    /// redundant page breaks (e.g., `page-break-before: always` on the
+    /// first element produces no blank page — matching browser behavior).
+    public var isEmpty: Bool {
+        base.currentPageBuilder.data.isEmpty
+            && !base.textBlockOpen
+            && base.inlineRuns.isEmpty
+    }
 }
