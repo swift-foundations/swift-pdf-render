@@ -8,12 +8,12 @@ import Testing
 
 /// Test different text emission strategies to find which produces
 /// correct copy-paste behavior in macOS Preview.
-@Suite("Preview Copy-Paste Tests")
-struct PreviewCopyPasteTests {
+@Suite
+struct `Preview Copy-Paste Tests` {
 
     /// Test: Check if spaces are literal 0x20 bytes in the content stream
-    @Test("Verify space bytes in content stream")
-    func verifySpaceBytesInContentStream() throws {
+    @Test
+    func `Verify space bytes in content stream`() throws {
         let pdfDocument = PDF.Document(
             configuration: .init(
                 version: .v2_0,
@@ -52,8 +52,8 @@ struct PreviewCopyPasteTests {
     }
 
     /// Test paragraph wrapping behavior
-    @Test("Verify paragraph wrapping")
-    func verifyParagraphWrapping() throws {
+    @Test
+    func `Verify paragraph wrapping`() throws {
         let testParagraph = "The quick brown fox jumps over the lazy dog. This sentence wraps."
 
         let pdfDocument = PDF.Document(
@@ -89,8 +89,8 @@ struct PreviewCopyPasteTests {
     }
 
     /// Test: Multiple words on one line vs separate Tj operators
-    @Test("Multiple words emission patterns")
-    func multipleWordsEmissionPatterns() throws {
+    @Test
+    func `Multiple words emission patterns`() throws {
         // Test short phrase that should fit on one line
         let shortPhrase = "certain confidential and proprietary"
 
@@ -138,8 +138,8 @@ struct PreviewCopyPasteTests {
     }
 
     /// Test: Force text to wrap across multiple lines
-    @Test("Forced line wrapping")
-    func forcedLineWrapping() throws {
+    @Test
+    func `Forced line wrapping`() throws {
         // Use very wide margins to force text wrapping (leaves only ~160pt of content width)
         let testText = "The quick brown fox jumps over the lazy dog."
 
