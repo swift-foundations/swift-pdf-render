@@ -11,7 +11,7 @@ public import Rendering_Primitives
 
 // MARK: - Rendering.Context Conformance
 
-extension PDF.Context: Rendering.Context {
+extension PDF.Context {
 
     // MARK: - Text
 
