@@ -19,7 +19,7 @@ struct `PDF.Table Tests` {
     /// - TD data cells
     /// - ColSpan for merged headers
     /// - Alternating row backgrounds
-    /// - PDF.ForEach for iteration
+    /// - Array iteration via data.map(content)
     @Test
     func `Writes table PDF to tmp`() throws {
         let cellWidth: PDF.UserSpace.Width = 80

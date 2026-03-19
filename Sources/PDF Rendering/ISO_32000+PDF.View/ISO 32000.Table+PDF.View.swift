@@ -4,7 +4,6 @@
 import ISO_32000
 public import Layout_Primitives
 public import PDF_Standard
-import Rendering_Primitives
 
 // MARK: - Table (14.8.4.8.3)
 
@@ -60,10 +59,10 @@ extension ISO_32000.Table.Row {
     public func callAsFunction<Data: RandomAccessCollection, Content: PDF.View>(
         _ data: Data,
         @PDF.Builder content: (Data.Element) -> Content
-    ) -> PDF.Element<Self, PDF.Stack<Rendering.ForEach<Content>>> {
+    ) -> PDF.Element<Self, PDF.Stack<[Content]>> {
         PDF.Element(tag: self) {
             PDF.Stack(.horizontal) {
-                Rendering.ForEach(data, content: content)
+                data.map(content)
             }
         }
     }
@@ -215,7 +214,7 @@ extension ISO_32000.Table.Body {
     ) -> some PDF.View {
         PDF.Element(tag: self) {
             PDF.Stack(spacing: 0) {
-                Rendering.ForEach(data, content: content)
+                data.map(content)
             }
         }
     }
