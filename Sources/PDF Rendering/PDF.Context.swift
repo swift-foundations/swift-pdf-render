@@ -169,7 +169,7 @@ extension PDF.Context {
     /// Create context for a page's content area.
     public init(
         mediaBox: ISO_32000.UserSpace.Rectangle,
-        margins: PDF.UserSpace.EdgeInsets
+        margins: PDF.UserSpace.Insets
     ) {
         let contentWidth = mediaBox.width - margins.horizontal
         let contentHeight = mediaBox.height - margins.vertical
