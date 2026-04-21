@@ -21,6 +21,9 @@ extension Target.Dependency {
     static var copyOnWrite: Self {
         .product(name: "Copy on Write", package: "swift-copy-on-write")
     }
+    static var ascii: Self {
+        .product(name: "ASCII", package: "swift-ascii")
+    }
     static var layoutPrimitives: Self {
         .product(name: "Layout Primitives", package: "swift-layout-primitives")
     }
@@ -46,6 +49,7 @@ let package = Package(
         .package(path: "../../swift-standards/swift-pdf-standard"),
         .package(path: "../../swift-primitives/swift-render-primitives"),
         .package(path: "../swift-copy-on-write"),
+        .package(path: "../swift-ascii"),
         .package(path: "../../swift-primitives/swift-layout-primitives"),
         .package(path: "../../swift-primitives/swift-property-primitives"),
         .package(path: "../../swift-primitives/swift-dimension-primitives"),
@@ -57,6 +61,7 @@ let package = Package(
                 .pdfStandard,
                 .renderingPrimitives,
                 .copyOnWrite,
+                .ascii,
                 .layoutPrimitives,
                 .propertyPrimitives,
             ]

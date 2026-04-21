@@ -1,7 +1,7 @@
 // PDF.Context.Text.Run+Render.swift
 // Optimized text renderer with minimal allocations
 
-import INCITS_4_1986
+import ASCII
 import Layout_Primitives
 public import PDF_Standard
 
