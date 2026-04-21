@@ -17,8 +17,8 @@ let package = Package(
         .testTarget(
             name: "PDF Rendering Performance Tests",
             dependencies: [
-                .product(name: "PDF Rendering", package: "swift-pdf-rendering"),
-                .product(name: "PDF Rendering Test Support", package: "swift-pdf-rendering"),
+                .product(name: "PDF Rendering", package: "swift-pdf-render"),
+                .product(name: "PDF Rendering Test Support", package: "swift-pdf-render"),
                 .product(name: "Testing", package: "swift-testing"),
             ],
             path: "PDF Rendering Performance Tests"
@@ -26,8 +26,8 @@ let package = Package(
         .testTarget(
             name: "PDF Rendering Snapshot Tests",
             dependencies: [
-                .product(name: "PDF Rendering", package: "swift-pdf-rendering"),
-                .product(name: "PDF Rendering Test Support", package: "swift-pdf-rendering"),
+                .product(name: "PDF Rendering", package: "swift-pdf-render"),
+                .product(name: "PDF Rendering Test Support", package: "swift-pdf-render"),
                 .product(name: "Testing", package: "swift-testing"),
                 .product(name: "Tests Inline Snapshot", package: "swift-tests"),
                 .product(name: "Test Snapshot Primitives", package: "swift-test-primitives"),

@@ -30,7 +30,7 @@ extension Target.Dependency {
 }
 
 let package = Package(
-    name: "swift-pdf-rendering",
+    name: "swift-pdf-render",
     platforms: [
         .macOS(.v26),
         .iOS(.v26),
