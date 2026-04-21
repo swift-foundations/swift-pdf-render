@@ -55,7 +55,7 @@ struct `PDF.Spacer Tests` {
         let spacer = PDF.Spacer(50)
         PDF.Spacer._render(spacer, context: &context)
 
-        #expect(context.layoutBox.lly == 122)
+        #expect(context.layout.box.lly == 122)
     }
 
     @Test
@@ -71,7 +71,7 @@ struct `PDF.Spacer Tests` {
         let spacer = PDF.Spacer(0)
         PDF.Spacer._render(spacer, context: &context)
 
-        #expect(context.layoutBox.lly == 72)
+        #expect(context.layout.box.lly == 72)
     }
 
     @Test
@@ -87,7 +87,7 @@ struct `PDF.Spacer Tests` {
         let spacer = PDF.Spacer(50)
         PDF.Spacer._render(spacer, context: &context)
 
-        #expect(context.layoutBox.llx == 100)
+        #expect(context.layout.box.llx == 100)
     }
 
     @Test
@@ -102,15 +102,15 @@ struct `PDF.Spacer Tests` {
             lineHeight: 1.0
         )
 
-        let stack = PDF.VStack {
+        let stack = PDF.Stack {
             PDF.Text("Before")
             PDF.Spacer(50)
             PDF.Text("After")
         }
 
-        PDF.VStack._render(stack, context: &context)
+        PDF.Stack._render(stack, context: &context)
 
         // 72 + "Before" (12) + Spacer (50) + "After" (12) = 146
-        #expect(context.layoutBox.lly == 146)
+        #expect(context.layout.box.lly == 146)
     }
 }

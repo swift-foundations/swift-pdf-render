@@ -9,7 +9,7 @@ extension Array: PDF.View where Element: PDF.View {
     public var body: Never { fatalError("Array uses direct rendering") }
 
     public static func _render(_ view: Self, context: inout PDF.Context) {
-        if context.isHorizontalLayout {
+        if context.spacing.isHorizontal {
             _renderHorizontal(view, context: &context)
         } else {
             _renderVertical(view, context: &context)
@@ -18,42 +18,42 @@ extension Array: PDF.View where Element: PDF.View {
 
     private static func _renderVertical(_ view: Self, context: inout PDF.Context) {
         for element in view {
-            if let spacing = context.stackSpacing,
-            let lastY = context.lastElementY,
-            context.layoutBox.lly > lastY {
+            if let spacing = context.spacing.vertical,
+            let lastY = context.lastY,
+            context.layout.box.lly > lastY {
                 context.advance(spacing)
             }
 
-            let yBefore = context.layoutBox.lly
+            let yBefore = context.layout.box.lly
 
             Element._render(element, context: &context)
 
-            if context.layoutBox.lly > yBefore {
-                context.lastElementY = yBefore
+            if context.layout.box.lly > yBefore {
+                context.lastY = yBefore
             }
         }
     }
 
     private static func _renderHorizontal(_ view: Self, context: inout PDF.Context) {
-        let rowStartY = context.horizontalRowStartY ?? context.layoutBox.lly
+        let rowStartY = context.row.startY ?? context.layout.box.lly
 
         for element in view {
-            if let spacing = context.horizontalSpacing,
-                let lastX = context.lastElementX,
-                context.layoutBox.llx > lastX {
+            if let spacing = context.spacing.horizontal,
+                let lastX = context.row.lastX,
+                context.layout.box.llx > lastX {
                 context.advance.x(spacing)
             }
 
-            let xBefore = context.layoutBox.llx
+            let xBefore = context.layout.box.llx
 
-            context.layoutBox.lly = rowStartY
+            context.layout.box.lly = rowStartY
 
             Element._render(element, context: &context)
 
-            context.updateHorizontalRowMaxY()
+            context.updateRowMaxY()
 
-            if context.layoutBox.llx > xBefore {
-                context.lastElementX = xBefore
+            if context.layout.box.llx > xBefore {
+                context.row.lastX = xBefore
             }
         }
     }

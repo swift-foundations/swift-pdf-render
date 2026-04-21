@@ -15,7 +15,7 @@ struct `PDF.Output Tests` {
         // Create a document with various elements
         struct SampleDocument: PDF.View {
             var body: some PDF.View {
-                PDF.VStack(spacing: 12) {
+                PDF.Stack(.vertical, spacing: 12) {
                     // Title
                     PDF.Text("PDF Rendering Test Document", state: .init(fontSize: 24))
 
@@ -46,9 +46,9 @@ struct `PDF.Output Tests` {
 
                     // Section 3: Nested Stacks
                     PDF.Text("3. Nested Layout", state: .init(fontSize: 16))
-                    PDF.VStack(spacing: 4) {
+                    PDF.Stack(.vertical, spacing: 4) {
                         PDF.Text("Outer VStack - Item 1")
-                        PDF.VStack(spacing: 2) {
+                        PDF.Stack(.vertical, spacing: 2) {
                             PDF.Text("  Inner VStack - Item A", state: .init(fontSize: 10))
                             PDF.Text("  Inner VStack - Item B", state: .init(fontSize: 10))
                             PDF.Text("  Inner VStack - Item C", state: .init(fontSize: 10))
@@ -90,7 +90,7 @@ struct `PDF.Output Tests` {
         // Create a document that spans multiple pages
         struct MultiPageDocument: PDF.View {
             var body: some PDF.View {
-                PDF.VStack(spacing: 8) {
+                PDF.Stack(.vertical, spacing: 8) {
                     PDF.Text("Multi-Page Test Document", state: .init(fontSize: 24))
                     PDF.Divider()
 
@@ -141,12 +141,12 @@ struct `PDF.Output Tests` {
                 )
             )
         ) {
-            PDF.VStack(spacing: 10) {
+            PDF.Stack(.vertical, spacing: 10) {
                 PDF.Text("Graphics Test", state: .init(fontSize: 24))
                 PDF.Divider()
 
                 PDF.Text("RGB Colors:", state: .init(fontSize: 12))
-                PDF.VStack(spacing: 5) {
+                PDF.Stack(.vertical, spacing: 5) {
                     PDF.Text("Red")
                     PDF.Rectangle(width: 100, height: 30, fill: .red)
 
@@ -160,7 +160,7 @@ struct `PDF.Output Tests` {
                 PDF.Spacer(20)
 
                 PDF.Text("Grayscale:", state: .init(fontSize: 12))
-                PDF.VStack(spacing: 5) {
+                PDF.Stack(.vertical, spacing: 5) {
                     PDF.Text("Black")
                     PDF.Rectangle(width: 100, height: 30, fill: .black)
 
@@ -174,7 +174,7 @@ struct `PDF.Output Tests` {
                 PDF.Spacer(20)
 
                 PDF.Text("CMYK Colors:", state: .init(fontSize: 12))
-                PDF.VStack(spacing: 5) {
+                PDF.Stack(.vertical, spacing: 5) {
                     PDF.Text("Cyan")
                     PDF.Rectangle(width: 100, height: 30, fill: .cmyk(c: 1, m: 0, y: 0, k: 0))
 

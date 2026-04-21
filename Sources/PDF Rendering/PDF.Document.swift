@@ -25,7 +25,7 @@ extension PDF.Document {
     /// config.defaultFont = .helvetica
     ///
     /// let doc = PDF.Document(configuration: config) {
-    ///     PDF.VStack {
+    ///     PDF.Stack {
     ///         PDF.Text("Hello, World!")
     ///     }
     /// }

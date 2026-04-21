@@ -16,17 +16,11 @@ extension PDF {
     public typealias Layout = LayoutRaw<Double, ISO_32000_Shared.UserSpace>
 }
 
-// MARK: - Stack Typealiases
+// MARK: - Stack Typealias
 
 extension PDF {
-    /// Stack layout for arranging PDF views.
+    /// Stack layout for arranging PDF views along a horizontal or vertical axis.
     public typealias Stack<C> = PDF.Layout.Stack<C>
-
-    /// Vertical stack layout (items flow top to bottom).
-    public typealias VStack<C> = PDF.Layout.Stack<C>
-
-    /// Horizontal stack layout (items flow leading to trailing).
-    public typealias HStack<C> = PDF.Layout.Stack<C>
 }
 
 // MARK: - PDF.View Conformance
@@ -46,81 +40,68 @@ extension LayoutRaw<Double, ISO_32000_Shared.UserSpace>.Stack: PDF.View where Co
 
     private static func _renderHorizontal(_ view: Self, context: inout PDF.Context) {
         // Save previous state
-        let previousHorizontalSpacing = context.horizontalSpacing
-        let previousLastElementX = context.lastElementX
-        let previousHorizontalRowStartY = context.horizontalRowStartY
-        let previousHorizontalRowMaxY = context.horizontalRowMaxY
-        let startX = context.layoutBox.llx
-        let startY = context.layoutBox.lly
+        let previousSpacing = context.spacing
+        let previousRow = context.row
+        let startX = context.layout.box.llx
+        let startY = context.layout.box.lly
 
         // Set up horizontal layout mode
         // Project spacing magnitude to width for horizontal axis
-        context.horizontalSpacing = view.spacing.width
-        context.lastElementX = nil
-        context.horizontalRowStartY = startY
-        context.horizontalRowMaxY = startY
+        context.spacing.horizontal = view.spacing.width
+        context.row.lastX = nil
+        context.row.startY = startY
+        context.row.maxY = startY
 
         // Render content - _Tuple will handle horizontal positioning
         Content._render(view.content, context: &context)
 
         // After rendering, advance Y to the maximum reached by any child
-        let maxY = context.horizontalRowMaxY ?? startY
-        context.layoutBox.lly = maxY
+        let maxY = context.row.maxY ?? startY
+        context.layout.box.lly = maxY
 
         // Reset X to start (children may have advanced it)
-        context.layoutBox.llx = startX
+        context.layout.box.llx = startX
 
         // Restore previous state
-        context.horizontalSpacing = previousHorizontalSpacing
-        context.lastElementX = previousLastElementX
-        context.horizontalRowStartY = previousHorizontalRowStartY
-        context.horizontalRowMaxY = previousHorizontalRowMaxY
+        context.spacing = previousSpacing
+        context.row = previousRow
     }
 
     private static func _renderVertical(_ view: Self, context: inout PDF.Context) {
         // Save previous spacing state
-        let previousSpacing = context.stackSpacing
-        let previousLastY = context.lastElementY
+        let previousSpacing = context.spacing.vertical
+        let previousLastY = context.lastY
 
         // Set spacing for this stack (always set, even if 0)
         // Project spacing magnitude to height for vertical axis
         let height = view.spacing.height
-        context.stackSpacing = height > .init(0) ? height : nil
-        context.lastElementY = nil
+        context.spacing.vertical = height > .init(0) ? height : nil
+        context.lastY = nil
 
         // Render content - spacing is applied by _Tuple between elements
         Content._render(view.content, context: &context)
 
         // Restore previous spacing state
-        context.stackSpacing = previousSpacing
-        context.lastElementY = previousLastY
+        context.spacing.vertical = previousSpacing
+        context.lastY = previousLastY
     }
 }
 
-// MARK: - Convenience Initializers
+// MARK: - Convenience Initializer
 
 extension LayoutRaw<Double, ISO_32000_Shared.UserSpace>.Stack where Content: PDF.View {
-    /// Creates a vertical stack with the specified spacing.
+    /// Creates a stack along the given axis.
+    ///
+    /// ```swift
+    /// PDF.Stack { }                    // vertical (default)
+    /// PDF.Stack(.vertical) { }        // explicit vertical
+    /// PDF.Stack(.horizontal) { }      // horizontal
+    /// ```
     public init(
+        _ axis: Axis<2> = .vertical,
         spacing: PDF.Layout.Spacing = 0,
         @PDF.Builder _ build: () -> Content
     ) {
-        self = .vertical(spacing: spacing, content: build())
-    }
-
-    /// Creates a vertical stack with the specified spacing.
-    public static func vertical(
-        spacing: PDF.Layout.Spacing = 0,
-        @PDF.Builder _ build: () -> Content
-    ) -> Self {
-        .vertical(spacing: spacing, content: build())
-    }
-
-    /// Creates a horizontal stack with the specified spacing.
-    public static func horizontal(
-        spacing: PDF.Layout.Spacing = 0,
-        @PDF.Builder _ build: () -> Content
-    ) -> Self {
-        .horizontal(spacing: spacing, content: build())
+        self.init(axis: axis, spacing: spacing, alignment: .center, content: build())
     }
 }

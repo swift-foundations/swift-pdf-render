@@ -2,12 +2,12 @@
 // PDF.View conformance for Empty
 
 public import PDF_Standard
-public import Rendering_Primitives
+public import Render_Primitives
 
-extension Rendering.Empty: PDF.View {
+extension Render.Empty: PDF.View {
     public typealias Content = Never
 
-    public static func _render(_ markup: Rendering.Empty, context: inout PDF.Context) {
+    public static func _render(_ markup: Render.Empty, context: inout PDF.Context) {
         // Produces no output
     }
 

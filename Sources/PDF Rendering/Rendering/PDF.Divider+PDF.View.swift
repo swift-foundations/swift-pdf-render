@@ -37,8 +37,8 @@ extension PDF {
 
             context.advance(view.padding)
 
-            let lineY = context.layoutBox.lly
-            let startX = context.layoutBox.llx
+            let lineY = context.layout.box.lly
+            let startX = context.layout.box.llx
 
             context.advance(view.thickness.height + view.padding)
 
@@ -46,7 +46,7 @@ extension PDF {
             context.emit.line(
                 from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
                 to: PDF.UserSpace.Coordinate(
-                    x: context.layoutBox.llx + context.layoutBox.width,
+                    x: context.layout.box.llx + context.layout.box.width,
                     y: lineY
                 ),
                 color: view.color,

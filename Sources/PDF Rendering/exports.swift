@@ -1,4 +1,4 @@
 // exports.swift
 
 @_exported public import PDF_Standard
-@_exported public import Rendering_Primitives
+@_exported public import Render_Primitives

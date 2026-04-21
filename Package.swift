@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.3
 
 import PackageDescription
 
@@ -16,10 +16,13 @@ extension Target.Dependency {
         .product(name: "PDF Standard", package: "swift-pdf-standard")
     }
     static var renderingPrimitives: Self {
-        .product(name: "Rendering Primitives", package: "swift-rendering-primitives")
+        .product(name: "Render Primitives", package: "swift-render-primitives")
     }
     static var copyOnWrite: Self {
         .product(name: "Copy on Write", package: "swift-copy-on-write")
+    }
+    static var ascii: Self {
+        .product(name: "ASCII", package: "swift-ascii")
     }
     static var layoutPrimitives: Self {
         .product(name: "Layout Primitives", package: "swift-layout-primitives")
@@ -30,7 +33,7 @@ extension Target.Dependency {
 }
 
 let package = Package(
-    name: "swift-pdf-rendering",
+    name: "swift-pdf-render",
     platforms: [
         .macOS(.v26),
         .iOS(.v26),
@@ -44,8 +47,9 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../swift-standards/swift-pdf-standard"),
-        .package(path: "../../swift-primitives/swift-rendering-primitives"),
+        .package(path: "../../swift-primitives/swift-render-primitives"),
         .package(path: "../swift-copy-on-write"),
+        .package(path: "../swift-ascii"),
         .package(path: "../../swift-primitives/swift-layout-primitives"),
         .package(path: "../../swift-primitives/swift-property-primitives"),
         .package(path: "../../swift-primitives/swift-dimension-primitives"),
@@ -57,6 +61,7 @@ let package = Package(
                 .pdfStandard,
                 .renderingPrimitives,
                 .copyOnWrite,
+                .ascii,
                 .layoutPrimitives,
                 .propertyPrimitives,
             ]
@@ -74,18 +79,25 @@ let package = Package(
             dependencies: [
                 .pdfRendering,
                 "PDF Rendering Test Support",
-            ]
+            ],
+            path: "Tests/PDF Rendering Tests"
         ),
     ],
     swiftLanguageModes: [.v6]
 )
 
-for target in package.targets where ![.system, .binary, .plugin, .macro, .test].contains(target.type) {
+for target in package.targets where ![.system, .binary, .plugin, .macro].contains(target.type) {
     let ecosystem: [SwiftSetting] = [
+        .strictMemorySafety(),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+        .enableExperimentalFeature("LifetimeDependence"),
+        .enableExperimentalFeature("Lifetimes"),
+        .enableExperimentalFeature("SuppressedAssociatedTypes"),
+        .enableUpcomingFeature("InferIsolatedConformances"),
+        .enableUpcomingFeature("LifetimeDependence"),
     ]
 
     let package: [SwiftSetting] = []

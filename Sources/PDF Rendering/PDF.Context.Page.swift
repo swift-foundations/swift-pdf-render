@@ -45,7 +45,7 @@ extension Property where Tag == PDF.Context.Page, Base == PDF.Context {
 
         // Reset Y position to top of page, but preserve horizontal margins (llx/urx)
         // This maintains list indentation and other horizontal context across page breaks
-        base.layoutBox.lly = base.initialLayoutBox.lly
+        base.layout.box.lly = base.layout.initial.lly
     }
 
     /// Ensure space for the given height, starting a new page if needed.
@@ -62,6 +62,18 @@ extension Property where Tag == PDF.Context.Page, Base == PDF.Context {
 
     /// Check if adding the given height would exceed the page boundary.
     public func exceeds(adding height: PDF.UserSpace.Height) -> Bool {
-        base.layoutBox.lly + height > base.maxY
+        base.layout.box.lly + height > base.layout.maxY
+    }
+
+    /// Whether the current page has no rendered content.
+    ///
+    /// True when no content stream operations, no open text block, and no
+    /// pending inline runs exist on the current page. Used to suppress
+    /// redundant page breaks (e.g., `page-break-before: always` on the
+    /// first element produces no blank page — matching browser behavior).
+    public var isEmpty: Bool {
+        base.currentPageBuilder.data.isEmpty
+            && !base.text.blockOpen
+            && base.inline.runs.isEmpty
     }
 }
