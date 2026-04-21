@@ -85,7 +85,7 @@ extension PDF {
         /// Track Y position before last element rendered (for spacing logic).
         internal var lastY: PDF.UserSpace.Y?
 
-        /// Scope stack for Rendering.Context push/pop operations.
+        /// Scope stack for Render.Context push/pop operations.
         internal var scopes: [Scope] = []
 
         // MARK: - Page-Related (Kept As-Is)

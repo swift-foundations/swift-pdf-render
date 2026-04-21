@@ -2,10 +2,10 @@
 // Uses typed composition primitives from swift-renderable
 
 public import PDF_Standard
-public import Rendering_Primitives
+public import Render_Primitives
 
 // Re-export Builder from Renderable
-public typealias BuilderRaw = Rendering.Builder
+public typealias BuilderRaw = Render.Builder
 
 extension PDF {
     /// Result builder for composing PDF views using typed primitives.
@@ -19,7 +19,7 @@ extension PDF {
 
 extension BuilderRaw {
     /// Creates an empty PDF component when no content is provided.
-    public static func buildBlock() -> Rendering.Empty {
-        Rendering.Empty()
+    public static func buildBlock() -> Render.Empty {
+        Render.Empty()
     }
 }

@@ -2,9 +2,9 @@
 // PDF.View conformance for Conditional
 
 public import PDF_Standard
-public import Rendering_Primitives
+public import Render_Primitives
 
-extension Rendering.Conditional: PDF.View where First: PDF.View, Second: PDF.View {
+extension Render.Conditional: PDF.View where First: PDF.View, Second: PDF.View {
     public typealias Content = Never
 
     public var body: Never { fatalError("Conditional uses direct rendering") }

@@ -2,9 +2,9 @@
 // PDF.View conformance for _Tuple
 
 public import PDF_Standard
-public import Rendering_Primitives
+public import Render_Primitives
 
-extension Rendering._Tuple: PDF.View where repeat each Content: PDF.View {
+extension Render._Tuple: PDF.View where repeat each Content: PDF.View {
     public typealias Content = Never
 
     public var body: Never { fatalError("_Tuple uses direct rendering") }

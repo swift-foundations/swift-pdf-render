@@ -16,7 +16,7 @@ extension Target.Dependency {
         .product(name: "PDF Standard", package: "swift-pdf-standard")
     }
     static var renderingPrimitives: Self {
-        .product(name: "Rendering Primitives", package: "swift-rendering-primitives")
+        .product(name: "Render Primitives", package: "swift-render-primitives")
     }
     static var copyOnWrite: Self {
         .product(name: "Copy on Write", package: "swift-copy-on-write")
@@ -44,7 +44,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../swift-standards/swift-pdf-standard"),
-        .package(path: "../../swift-primitives/swift-rendering-primitives"),
+        .package(path: "../../swift-primitives/swift-render-primitives"),
         .package(path: "../swift-copy-on-write"),
         .package(path: "../../swift-primitives/swift-layout-primitives"),
         .package(path: "../../swift-primitives/swift-property-primitives"),

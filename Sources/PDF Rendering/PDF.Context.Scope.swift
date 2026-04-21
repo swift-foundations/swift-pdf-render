@@ -7,7 +7,7 @@ public import PDF_Standard
 extension PDF.Context {
     /// Snapshot of scoped state for push/pop restoration.
     ///
-    /// Each `push*` method in the `Rendering.Context` conformance saves a `Scope`,
+    /// Each `push*` method in the `Render.Context` conformance saves a `Scope`,
     /// and the corresponding `pop*` restores from it. This ensures all scoped state —
     /// typography, layout position, whitespace mode, and link URL — is perfectly
     /// symmetric across push/pop pairs.

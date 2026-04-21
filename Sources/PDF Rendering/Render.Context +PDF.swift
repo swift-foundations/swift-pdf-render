@@ -1,7 +1,7 @@
-import Rendering_Primitives
+import Render_Primitives
 public import PDF_Standard
 
-extension Rendering.Context {
+extension Render.Context {
     /// Creates a rendering context that forwards semantic operations to a PDF context.
     ///
     /// - Parameter state: A mutable reference to the PDF rendering state.

@@ -1,15 +1,15 @@
-// PDF.Context+Rendering.swift
-// Rendering.Context conformance for cross-format rendering.
+// PDF.Context+Render.swift
+// Render.Context conformance for cross-format rendering.
 //
 // Maps the 15 semantic methods to existing PDF.Context infrastructure,
-// enabling the same Rendering.View tree to render through both
+// enabling the same Render.View tree to render through both
 // HTML.Context and PDF.Context.
 
 import Layout_Primitives
 public import PDF_Standard
-public import Rendering_Primitives
+public import Render_Primitives
 
-// MARK: - Rendering.Context Conformance
+// MARK: - Render.Context Conformance
 
 extension PDF.Context {
 
@@ -31,7 +31,7 @@ extension PDF.Context {
 
     // MARK: - Block Structure
 
-    public static func _pushBlock(_ context: inout Self, role: Rendering.Semantic.Block?, style: Rendering.Style) {
+    public static func _pushBlock(_ context: inout Self, role: Render.Semantic.Block?, style: Render.Style) {
         context.flush.inline()
         context.scopes.append(context.savedScope())
         context.apply(style)
@@ -80,7 +80,7 @@ extension PDF.Context {
 
     // MARK: - Inline Structure
 
-    public static func _pushInline(_ context: inout Self, role: Rendering.Semantic.Inline?, style: Rendering.Style) {
+    public static func _pushInline(_ context: inout Self, role: Render.Semantic.Inline?, style: Render.Style) {
         context.scopes.append(context.savedScope())
         context.apply(style)
 
@@ -103,7 +103,7 @@ extension PDF.Context {
 
     // MARK: - Lists
 
-    public static func _pushList(_ context: inout Self, kind: Rendering.Semantic.List, start: Int?) {
+    public static func _pushList(_ context: inout Self, kind: Render.Semantic.List, start: Int?) {
         context.flush.inline()
         context.scopes.append(context.savedScope())
 
@@ -211,11 +211,11 @@ extension PDF.Context {
     }
 }
 
-// MARK: - Rendering.Style Mapping
+// MARK: - Render.Style Mapping
 
 extension PDF.Context {
-    /// Apply Rendering.Style hints to the current PDF style.
-    private mutating func apply(_ style: Rendering.Style) {
+    /// Apply Render.Style hints to the current PDF style.
+    private mutating func apply(_ style: Render.Style) {
         if let size = style.font.size {
             self.style.fontSize = PDF.UserSpace.Size<1>(Double(size))
         }
@@ -233,11 +233,11 @@ extension PDF.Context {
     }
 }
 
-// MARK: - PDF.Color ← Rendering.Style.Color
+// MARK: - PDF.Color ← Render.Style.Color
 
 extension PDF.Color {
     /// Creates a PDF color from a rendering style color hint.
-    init(_ color: Rendering.Style.Color) {
+    init(_ color: Render.Style.Color) {
         self = switch color {
         case .black: .gray(0)
         case .red: .rgb(r: 0.8, g: 0, b: 0)
