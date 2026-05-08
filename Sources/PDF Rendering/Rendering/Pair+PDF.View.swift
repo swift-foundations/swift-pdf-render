@@ -1,7 +1,7 @@
 // Pair+PDF.View.swift
 // PDF.View conformance for Pair - renders first as background, second as foreground.
 
-public import Algebra_Primitives
+public import Pair_Primitives
 public import Layout_Primitives
 public import PDF_Standard
 
