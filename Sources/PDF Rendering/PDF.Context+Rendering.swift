@@ -198,6 +198,7 @@ extension PDF.Context {
             style: style,
             llx: layout.box.llx,
             preserveWhitespace: mode.preserveWhitespace,
+            noWrap: mode.noWrap,
             linkURL: link.url
         )
     }
@@ -207,6 +208,7 @@ extension PDF.Context {
         style = scope.style
         layout.box.llx = scope.llx
         mode.preserveWhitespace = scope.preserveWhitespace
+        mode.noWrap = scope.noWrap
         link.url = scope.linkURL
     }
 }

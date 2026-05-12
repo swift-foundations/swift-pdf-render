@@ -34,6 +34,12 @@ extension PDF.Context.Text.Run {
 
         let maxWidth = context.layout.box.width
         let preserveWhitespace = context.mode.preserveWhitespace
+        // CSS `white-space: nowrap` / `pre`: suppress line-wrap on overflow.
+        // Content extends past `maxWidth`; lines emit only on explicit `\n`
+        // or end-of-input. Equivalent to treating `maxWidth` as infinite for
+        // the wrap-on-overflow decision while keeping the rest of the layout
+        // logic intact (gaps, words, alignment).
+        let wrapAllowed = !context.mode.noWrap
 
         // Shared state - reused across lines
         var state = RenderState()
@@ -86,7 +92,7 @@ extension PDF.Context.Text.Run {
                         if state.words.isEmpty {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth = width
-                        } else if currentLineWidth + width <= maxWidth {
+                        } else if !wrapAllowed || currentLineWidth + width <= maxWidth {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth = currentLineWidth + width
                         } else {
@@ -110,7 +116,7 @@ extension PDF.Context.Text.Run {
                     // Flush current word
                     if !state.currentWord.isEmpty {
                         let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
-                        if state.words.isEmpty || currentLineWidth + width <= maxWidth {
+                        if state.words.isEmpty || !wrapAllowed || currentLineWidth + width <= maxWidth {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth = currentLineWidth + width
                         } else {
@@ -123,7 +129,7 @@ extension PDF.Context.Text.Run {
                     }
                     // Add tab
                     let tabWidth = cachedSpaceWidth * 4
-                    if currentLineWidth + tabWidth <= maxWidth {
+                    if !wrapAllowed || currentLineWidth + tabWidth <= maxWidth {
                         state.addGap(tabWidth)
                         currentLineWidth = currentLineWidth + tabWidth
                     }
@@ -140,7 +146,7 @@ extension PDF.Context.Text.Run {
                 if state.words.isEmpty {
                     state.appendWord(width: width, runIndex: currentRunIndex)
                     currentLineWidth = width
-                } else if currentLineWidth + width <= maxWidth {
+                } else if !wrapAllowed || currentLineWidth + width <= maxWidth {
                     state.appendWord(width: width, runIndex: currentRunIndex)
                     currentLineWidth = currentLineWidth + width
                 } else {
