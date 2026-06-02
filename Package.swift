@@ -49,14 +49,14 @@ let package = Package(
         .library(name: "PDF Rendering Test Support", targets: ["PDF Rendering Test Support"]),
     ],
     dependencies: [
-        .package(path: "../../swift-standards/swift-pdf-standard"),
-        .package(path: "../../swift-primitives/swift-render-primitives"),
-        .package(path: "../swift-copy-on-write"),
-        .package(path: "../swift-ascii"),
-        .package(path: "../../swift-primitives/swift-layout-primitives"),
-        .package(path: "../../swift-primitives/swift-property-primitives"),
-        .package(path: "../../swift-primitives/swift-dimension-primitives"),
-        .package(path: "../../swift-primitives/swift-pair-primitives"),
+        .package(url: "https://github.com/swift-standards/swift-pdf-standard.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-render-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-copy-on-write.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-ascii.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-layout-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-dimension-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-pair-primitives.git", branch: "main"),
     ],
     targets: [
         .target(
