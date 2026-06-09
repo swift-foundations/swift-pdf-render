@@ -6,6 +6,7 @@ import Geometry_Primitives
 import ISO_32000_Shared
 public import Layout_Primitives
 public import PDF_Standard
+public import Axis_Primitives
 
 // MARK: - PDF Layout Namespace
 

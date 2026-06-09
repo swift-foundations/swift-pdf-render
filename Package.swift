@@ -55,6 +55,7 @@ let package = Package(
         .package(url: "https://github.com/swift-foundations/swift-ascii.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-layout-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-axis-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-dimension-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-pair-primitives.git", branch: "main"),
     ],
@@ -67,6 +68,7 @@ let package = Package(
                 .copyOnWrite,
                 .ascii,
                 .layoutPrimitives,
+                .product(name: "Axis Primitives", package: "swift-axis-primitives"),
                 .propertyPrimitives,
                 .pairPrimitives,
             ]
