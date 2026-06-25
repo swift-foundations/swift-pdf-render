@@ -2,6 +2,7 @@
 // Optimized text renderer with minimal allocations
 
 import ASCII
+import Byte_Primitives
 import Layout_Primitives
 public import PDF_Standard
 
@@ -67,11 +68,13 @@ extension PDF.Context.Text.Run {
             }
 
             for byte in run.bytes {
-                switch byte {
+                // Switch on the arithmetic carrier so ASCII control-byte
+                // constants (UInt8.ascii.*) match; the byte itself stays Byte.
+                switch byte.underlying {
                 case .ascii.newline:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
                         state.appendWord(width: width, runIndex: currentRunIndex)
                         currentLineWidth = currentLineWidth + width
                     }
@@ -87,7 +90,7 @@ extension PDF.Context.Text.Run {
                 case .ascii.space:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
 
                         if state.words.isEmpty {
                             state.appendWord(width: width, runIndex: currentRunIndex)
@@ -115,7 +118,7 @@ extension PDF.Context.Text.Run {
                 case .ascii.htab:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
                         if state.words.isEmpty || !wrapAllowed || currentLineWidth + width <= maxWidth {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth = currentLineWidth + width
@@ -142,7 +145,7 @@ extension PDF.Context.Text.Run {
 
             // Flush remaining word from this run
             if !state.currentWord.isEmpty {
-                let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
+                let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
                 if state.words.isEmpty {
                     state.appendWord(width: width, runIndex: currentRunIndex)
                     currentLineWidth = width
@@ -173,13 +176,13 @@ extension PDF.Context.Text.Run {
     /// Compact state for rendering - avoids per-word allocations
     private struct RenderState {
         /// Shared buffer for all word bytes on current line
-        var lineBytes: [UInt8] = []
+        var lineBytes: [Byte] = []
 
         /// Word descriptors (indices into lineBytes, no byte copies)
         var words: [WordDescriptor] = []
 
         /// Current word being accumulated
-        var currentWord: [UInt8] = []
+        var currentWord: [Byte] = []
 
         /// Append current word to line
         mutating func appendWord(width: PDF.UserSpace.Width, runIndex: Int) {
@@ -263,7 +266,7 @@ extension PDF.Context.Text.Run {
         var currentX = context.layout.box.llx + alignmentOffset
 
         // Emit words with batching for same-style segments
-        var segmentBytes: [UInt8] = []
+        var segmentBytes: [Byte] = []
         segmentBytes.reserveCapacity(256)
         var segmentStartX = currentX
         var segmentWidth: PDF.UserSpace.Width = .init(0)
@@ -365,7 +368,7 @@ extension PDF.Context.Text.Run {
     }
 
     private static func emitSegment(
-        bytes: [UInt8],
+        bytes: [Byte],
         at x: PDF.UserSpace.X,
         width: PDF.UserSpace.Width,
         baselineY: PDF.UserSpace.Y,
@@ -528,7 +531,7 @@ extension PDF.Context.Text.Run {
 
             // Process bytes with ASCII fast-path
             for byte in run.bytes {
-                if byte.ascii.isWhitespace {
+                if byte.underlying.ascii.isWhitespace {
                     // Collapse whitespace to single space
                     if !lastWasSpace {
                         utf8Buffer.append(.ascii.space)
@@ -536,7 +539,7 @@ extension PDF.Context.Text.Run {
                     }
                 } else if byte < 0x80 {
                     // ASCII fast-path: direct passthrough (~95% of English text)
-                    utf8Buffer.append(byte)
+                    utf8Buffer.append(byte.underlying)
                     lastWasSpace = false
                 } else if let scalar = ISO_32000.WinAnsiEncoding.decode(byte) {
                     // Extended chars (0x80-0xFF): encode to UTF-8

@@ -3,6 +3,7 @@
 //  swift-pdf-rendering
 //
 
+public import Byte_Primitives
 public import Geometry_Primitives
 public import PDF_Standard
 
@@ -15,7 +16,7 @@ extension PDF.Context.List {
     /// Graphic markers (circle for Level 2) are drawn using PDF path operators.
     public enum Marker: Sendable {
         /// Text-based marker (bullet, number, square)
-        case text(bytes: [UInt8], font: PDF.Font)
+        case text(bytes: [Byte], font: PDF.Font)
 
         /// Stroked circle marker (hollow circle for Level 2)
         case strokedCircle(

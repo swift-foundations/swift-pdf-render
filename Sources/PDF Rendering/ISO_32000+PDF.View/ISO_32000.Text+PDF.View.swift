@@ -5,6 +5,7 @@
 //  Created by Coen ten Thije Boonkkamp on 05/12/2025.
 //
 
+import Byte_Primitives
 import Layout_Primitives
 import PDF_Standard
 
@@ -75,8 +76,8 @@ extension ISO_32000.Text: PDF.View {
         // Check for page break
         context.page.ensure(height: context.style.line.height)
 
-        // Calculate text width
-        let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
+        // Calculate text width (width table indexes by byte value — arithmetic domain)
+        let textWidth = font.winAnsi.width(of: text.content.underlying, atSize: fontSize)
 
         // In top-left coordinates, context.layout.box.lly is the top of the line box.
         let baselineY = context.layout.box.lly + font.metrics.ascender(atSize: fontSize)
@@ -99,20 +100,23 @@ extension ISO_32000.Text: PDF.View {
     ///
     /// Uses O(n) algorithm by tracking running line width instead of recalculating.
     private static func wrapBytes(
-        _ bytes: [UInt8],
+        _ bytes: [Byte],
         font: PDF.Font,
         size: PDF.UserSpace.Size<1>,
         maxWidth: PDF.UserSpace.Width
-    ) -> [[UInt8]] {
+    ) -> [[Byte]] {
         guard !bytes.isEmpty else { return [[]] }
 
-        // Pre-calculate space width once
+        // WinAnsi space byte for word boundaries (byte-domain).
+        let spaceByte = Byte(.ascii.space)
+
+        // Pre-calculate space width once (width table indexes by byte value — arithmetic).
         let spaceWidth = font.winAnsi.width(of: [.ascii.space], atSize: size)
 
-        var lines: [[UInt8]] = []
-        var currentLine: [UInt8] = []
+        var lines: [[Byte]] = []
+        var currentLine: [Byte] = []
         var currentLineWidth: PDF.UserSpace.Width = .zero
-        var currentWord: [UInt8] = []
+        var currentWord: [Byte] = []
 
         // Reserve capacity to reduce reallocations
         currentLine.reserveCapacity(256)
@@ -122,7 +126,7 @@ extension ISO_32000.Text: PDF.View {
         func processWord() {
             guard !currentWord.isEmpty else { return }
 
-            let wordWidth = font.winAnsi.width(of: currentWord, atSize: size)
+            let wordWidth = font.winAnsi.width(of: currentWord.underlying, atSize: size)
 
             if currentLine.isEmpty {
                 // First word on line
@@ -137,14 +141,14 @@ extension ISO_32000.Text: PDF.View {
                 // Check if word fits on current line (O(1) - no line recalculation!)
                 let potentialWidth = currentLineWidth + spaceWidth + wordWidth
                 if potentialWidth <= maxWidth {
-                    currentLine.append(.ascii.space)
+                    currentLine.append(spaceByte)
                     currentLine.append(contentsOf: currentWord)
                     currentLineWidth = potentialWidth
                 } else {
                     // Start new line - add trailing space to preserve word boundary.
                     // This ensures copy-paste from PDF viewers extracts proper spacing
                     // between the last word of this line and first word of next line.
-                    currentLine.append(.ascii.space)
+                    currentLine.append(spaceByte)
                     lines.append(currentLine)
                     currentLine = currentWord
                     currentLineWidth = wordWidth
@@ -154,7 +158,7 @@ extension ISO_32000.Text: PDF.View {
         }
 
         for byte in bytes {
-            if byte == .ascii.space {
+            if byte == spaceByte {
                 processWord()
             } else {
                 currentWord.append(byte)

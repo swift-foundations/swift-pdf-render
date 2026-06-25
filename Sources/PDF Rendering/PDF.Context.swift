@@ -1,6 +1,7 @@
 // PDF.Context.swift
 // Rendering context decomposed into categorical primitives.
 
+import Byte_Primitives
 import Geometry_Primitives
 import Layout_Primitives
 public import PDF_Standard
@@ -293,7 +294,7 @@ extension PDF.Context {
             let num = list.stack[index].currentIndex
             list.stack[index].currentIndex += 1
             // WinAnsi encoding for ordered list numbers
-            return .text(bytes: [UInt8](winAnsi: "\(num).", withFallback: true), font: style.font)
+            return .text(bytes: [Byte](winAnsi: "\(num).", withFallback: true), font: style.font)
         }
     }
 }

@@ -1,6 +1,7 @@
 // PDF.Context.Emit.swift
 // Verb-as-property accessor for content stream emission
 
+import Byte_Primitives
 import Geometry_Primitives
 import PDF_Standard
 import Property_Primitives
@@ -26,7 +27,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
     /// Handles coordinate conversion and font/color setup.
     /// Batches multiple text emissions within a single BT/ET block for efficiency.
     public mutating func text(
-        _ bytes: [UInt8],
+        _ bytes: [Byte],
         at position: PDF.UserSpace.Coordinate,
         font: PDF.Font,
         size: PDF.UserSpace.Size<1>,
@@ -83,7 +84,7 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         color: PDF.Color
     ) {
         self.text(
-            [UInt8](winAnsi: text, withFallback: true),
+            [Byte](winAnsi: text, withFallback: true),
             at: position,
             font: font,
             size: size,

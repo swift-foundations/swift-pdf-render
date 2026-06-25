@@ -1,6 +1,7 @@
 // PDF.Context.Text.Run.swift
 
 import ASCII
+public import Byte_Primitives
 public import PDF_Standard
 
 extension PDF.Context.Text {
@@ -11,7 +12,7 @@ extension PDF.Context.Text {
     /// with mixed styling (e.g., "It supports **bold** and *italic* text.").
     public struct Run: Sendable {
         /// The text content as WinAnsi-encoded bytes
-        public let bytes: [UInt8]
+        public let bytes: [Byte]
 
         /// Font for this text segment
         public let font: PDF.Font
@@ -49,7 +50,7 @@ extension PDF.Context.Text {
             // Encode to WinAnsi, preserving control characters for tokenizer.
             // Control chars (newline, tab, etc.) are handled specially by the tokenizer
             // and must remain as their raw byte values, not be converted to '?'.
-            self.bytes = [UInt8](winAnsi: text, withFallback: true, preservingControlChars: true)
+            self.bytes = [Byte](winAnsi: text, withFallback: true, preservingControlChars: true)
             self.font = font
             self.fontSize = fontSize
             self.color = color
@@ -61,7 +62,7 @@ extension PDF.Context.Text {
 
         /// Create a text run from pre-encoded bytes
         public init(
-            bytes: [UInt8],
+            bytes: [Byte],
             font: PDF.Font,
             fontSize: PDF.UserSpace.Size<1>,
             color: PDF.Color,
@@ -108,8 +109,8 @@ extension PDF.Context.Text {
             internalLinkId: String? = nil
         ) -> [Run] {
             var runs: [Run] = []
-            var currentWinAnsiBytes: [UInt8] = []
-            var currentDingbatsBytes: [UInt8] = []
+            var currentWinAnsiBytes: [Byte] = []
+            var currentDingbatsBytes: [Byte] = []
 
             func flushWinAnsi() {
                 guard !currentWinAnsiBytes.isEmpty else { return }
@@ -152,7 +153,7 @@ extension PDF.Context.Text {
                 // This includes newlines (0x0A), tabs (0x09), etc.
                 if value < 0x20 {
                     flushDingbats()
-                    currentWinAnsiBytes.append(UInt8(value))
+                    currentWinAnsiBytes.append(Byte(UInt8(value)))
                 }
                 // Try WinAnsi first (primary encoding)
                 else if let byte = ISO_32000.WinAnsiEncoding.encode(scalar) {
