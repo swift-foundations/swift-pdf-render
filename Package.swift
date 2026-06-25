@@ -33,6 +33,9 @@ extension Target.Dependency {
     static var pairPrimitives: Self {
         .product(name: "Pair Primitives", package: "swift-pair-primitives")
     }
+    static var ownershipMutablePrimitives: Self {
+        .product(name: "Ownership Mutable Primitives", package: "swift-ownership-primitives")
+    }
 }
 
 let package = Package(
@@ -58,6 +61,7 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-axis-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-dimension-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-pair-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-ownership-primitives.git", branch: "main"),
     ],
     targets: [
         .target(
@@ -71,6 +75,7 @@ let package = Package(
                 .product(name: "Axis Primitives", package: "swift-axis-primitives"),
                 .propertyPrimitives,
                 .pairPrimitives,
+                .ownershipMutablePrimitives,
             ]
         ),
         .target(

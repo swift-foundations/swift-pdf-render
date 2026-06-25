@@ -1,4 +1,5 @@
 import Render_Primitives
+public import Ownership_Mutable_Primitives
 public import PDF_Standard
 
 extension Render.Context {
