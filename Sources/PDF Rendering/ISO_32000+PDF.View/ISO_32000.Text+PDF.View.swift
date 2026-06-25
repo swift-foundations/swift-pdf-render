@@ -76,8 +76,8 @@ extension ISO_32000.Text: PDF.View {
         // Check for page break
         context.page.ensure(height: context.style.line.height)
 
-        // Calculate text width (width table indexes by byte value — arithmetic domain)
-        let textWidth = font.winAnsi.width(of: text.content.underlying, atSize: fontSize)
+        // Calculate text width (winAnsi width API takes byte-domain bytes)
+        let textWidth = font.winAnsi.width(of: text.content, atSize: fontSize)
 
         // In top-left coordinates, context.layout.box.lly is the top of the line box.
         let baselineY = context.layout.box.lly + font.metrics.ascender(atSize: fontSize)
@@ -110,8 +110,8 @@ extension ISO_32000.Text: PDF.View {
         // WinAnsi space byte for word boundaries (byte-domain).
         let spaceByte = Byte(UInt8.ascii.space)
 
-        // Pre-calculate space width once (width table indexes by byte value — arithmetic).
-        let spaceWidth = font.winAnsi.width(of: [.ascii.space], atSize: size)
+        // Pre-calculate space width once.
+        let spaceWidth = font.winAnsi.width(of: [spaceByte], atSize: size)
 
         var lines: [[Byte]] = []
         var currentLine: [Byte] = []
@@ -126,7 +126,7 @@ extension ISO_32000.Text: PDF.View {
         func processWord() {
             guard !currentWord.isEmpty else { return }
 
-            let wordWidth = font.winAnsi.width(of: currentWord.underlying, atSize: size)
+            let wordWidth = font.winAnsi.width(of: currentWord, atSize: size)
 
             if currentLine.isEmpty {
                 // First word on line

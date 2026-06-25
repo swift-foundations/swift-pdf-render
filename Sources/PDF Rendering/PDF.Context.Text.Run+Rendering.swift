@@ -62,7 +62,7 @@ extension PDF.Context.Text.Run {
         for run in runs {
             // Cache space width for this run
             if cachedSpaceFont != run.font || cachedSpaceFontSize != run.fontSize {
-                cachedSpaceWidth = run.font.winAnsi.width(of: [.ascii.space], atSize: run.fontSize)
+                cachedSpaceWidth = run.font.winAnsi.width(of: [Byte(UInt8.ascii.space)], atSize: run.fontSize)
                 cachedSpaceFont = run.font
                 cachedSpaceFontSize = run.fontSize
             }
@@ -74,7 +74,7 @@ extension PDF.Context.Text.Run {
                 case .ascii.newline:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
                         state.appendWord(width: width, runIndex: currentRunIndex)
                         currentLineWidth = currentLineWidth + width
                     }
@@ -90,7 +90,7 @@ extension PDF.Context.Text.Run {
                 case .ascii.space:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
 
                         if state.words.isEmpty {
                             state.appendWord(width: width, runIndex: currentRunIndex)
@@ -118,7 +118,7 @@ extension PDF.Context.Text.Run {
                 case .ascii.htab:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
                         if state.words.isEmpty || !wrapAllowed || currentLineWidth + width <= maxWidth {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth = currentLineWidth + width
@@ -145,7 +145,7 @@ extension PDF.Context.Text.Run {
 
             // Flush remaining word from this run
             if !state.currentWord.isEmpty {
-                let width = run.font.winAnsi.width(of: state.currentWord.underlying, atSize: run.fontSize)
+                let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
                 if state.words.isEmpty {
                     state.appendWord(width: width, runIndex: currentRunIndex)
                     currentLineWidth = width
