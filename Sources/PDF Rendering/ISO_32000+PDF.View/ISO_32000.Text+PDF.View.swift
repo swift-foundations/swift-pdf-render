@@ -108,7 +108,7 @@ extension ISO_32000.Text: PDF.View {
         guard !bytes.isEmpty else { return [[]] }
 
         // WinAnsi space byte for word boundaries (byte-domain).
-        let spaceByte = Byte(.ascii.space)
+        let spaceByte = Byte(UInt8.ascii.space)
 
         // Pre-calculate space width once (width table indexes by byte value — arithmetic).
         let spaceWidth = font.winAnsi.width(of: [.ascii.space], atSize: size)
