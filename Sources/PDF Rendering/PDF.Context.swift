@@ -256,7 +256,7 @@ extension PDF.Context {
     /// - Numbers with period (1., 2., etc.) in text font
     public mutating func nextListMarker() -> List.Marker {
         guard !list.stack.isEmpty else {
-            return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
+            return .text(bytes: [Byte.WinAnsi.bullet], font: style.font)
         }
         let index = list.stack.count - 1
         switch list.stack[index].type {
@@ -268,7 +268,7 @@ extension PDF.Context {
             case 1:
                 // Level 1: • (disc) - use the bullet glyph from the font
                 // This produces a properly designed bullet character
-                return .text(bytes: [UInt8.WinAnsi.bullet], font: style.font)
+                return .text(bytes: [Byte.WinAnsi.bullet], font: style.font)
             case 2:
                 // Level 2: ○ (circle) - hollow circle drawn with PDF graphics
                 // Diameter ~0.28em (~80% of level 1) for visual hierarchy
