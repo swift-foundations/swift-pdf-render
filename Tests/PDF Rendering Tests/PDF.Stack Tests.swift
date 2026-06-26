@@ -1,5 +1,6 @@
 // PDF.Stack Tests.swift
 
+import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing

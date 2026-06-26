@@ -1,6 +1,8 @@
 // PreviewCopyPasteTests.swift
 // Tests to understand macOS Preview's copy-paste text extraction behavior
 
+import Binary_Serializable_Primitives
+import Foundation
 import PDF_Standard
 import Testing
 
@@ -145,7 +147,7 @@ struct `Preview Copy-Paste Tests` {
 
         let pdfDocument = PDF.Document(
             configuration: .init(
-                margins: PDF.UserSpace.EdgeInsets(top: 72, leading: 220, bottom: 72, trailing: 220),
+                margins: PDF.EdgeInsets(top: 72, leading: 220, bottom: 72, trailing: 220),
                 version: .v2_0,
                 info: .init(
                     title: "Forced Wrapping Test",

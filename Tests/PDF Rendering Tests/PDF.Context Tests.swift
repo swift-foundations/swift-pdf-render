@@ -1,5 +1,6 @@
 // PDF.Context Tests.swift
 
+import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
@@ -55,7 +56,7 @@ struct `PDF.Context Tests` {
     func `Creates context from mediaBox and margins`() {
         let context = PDF.Context(
             mediaBox: .letter,
-            margins: PDF.UserSpace.EdgeInsets(all: 72)
+            margins: PDF.EdgeInsets(all: 72)
         )
 
         #expect(context.layout.box.llx == 72)
@@ -68,7 +69,7 @@ struct `PDF.Context Tests` {
     func `Creates context from A4 mediaBox`() {
         let context = PDF.Context(
             mediaBox: .a4,
-            margins: PDF.UserSpace.EdgeInsets(all: 72)
+            margins: PDF.EdgeInsets(all: 72)
         )
 
         #expect(context.layout.box.llx == 72)

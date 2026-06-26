@@ -1,7 +1,9 @@
 // PDF.Output Tests.swift
 // Visual inspection tests - writes PDFs to /tmp
 
+import Binary_Serializable_Primitives
 import Foundation
+import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing

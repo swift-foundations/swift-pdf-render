@@ -1,7 +1,9 @@
 // PDF.Table Tests.swift
 // Table rendering test - writes PDF to /tmp for visual inspection
 
+import Binary_Serializable_Primitives
 import Foundation
+import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
