@@ -1,6 +1,7 @@
 // PDF Rendering Performance Tests.swift
 
 import Testing
+import Binary_Serializable_Primitives
 import PDF_Rendering_Test_Support
 @testable import PDF_Rendering
 import PDF_Standard

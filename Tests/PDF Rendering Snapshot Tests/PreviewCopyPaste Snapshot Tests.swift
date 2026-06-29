@@ -7,6 +7,7 @@ import Testing
 import Tests_Inline_Snapshot
 import Test_Snapshot_Primitives
 import PDF_Rendering_Test_Support
+import Layout_Primitives
 
 @Suite
 struct PreviewCopyPasteSnapshotTests {
@@ -71,7 +72,7 @@ extension PreviewCopyPasteSnapshotTests.Snapshot {
     func `forced line wrapping`() {
         let document = PDF.Document(
             configuration: .init(
-                margins: PDF.UserSpace.EdgeInsets(top: 72, leading: 220, bottom: 72, trailing: 220),
+                margins: PDF.EdgeInsets(top: 72, leading: 220, bottom: 72, trailing: 220),
                 version: .v2_0,
                 info: .init(
                     title: "Forced Wrapping Test",
