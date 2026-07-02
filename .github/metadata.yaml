@@ -1,6 +1,6 @@
 # .github/metadata.yaml
 # Triaged by AI-assisted bulk pass (2026-04-29).
-description: "PDF render for Swift."
+description: "Declarative, result-builder PDF.View hierarchies rendered to ISO 32000 PDF documents for Swift."
 topics:
   - foundations
   - pdf
