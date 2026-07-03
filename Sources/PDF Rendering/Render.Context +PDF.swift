@@ -1,6 +1,6 @@
-import Render_Primitives
 public import Ownership_Mutable_Primitives
 public import PDF_Standard
+import Render_Primitives
 
 extension Render.Context {
     /// Creates a rendering context that forwards semantic operations to a PDF context.

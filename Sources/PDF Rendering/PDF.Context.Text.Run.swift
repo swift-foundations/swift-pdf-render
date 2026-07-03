@@ -107,15 +107,15 @@ extension PDF.Context.Text {
             verticalOffset: PDF.UserSpace.Height = .init(0),
             linkURL: String? = nil,
             internalLinkId: String? = nil
-        ) -> [Run] {
-            var runs: [Run] = []
+        ) -> [Self] {
+            var runs: [Self] = []
             var currentWinAnsiBytes: [Byte] = []
             var currentDingbatsBytes: [Byte] = []
 
             func flushWinAnsi() {
                 guard !currentWinAnsiBytes.isEmpty else { return }
                 runs.append(
-                    Run(
+                    Self(
                         bytes: currentWinAnsiBytes,
                         font: font,
                         fontSize: fontSize,
@@ -132,7 +132,7 @@ extension PDF.Context.Text {
             func flushDingbats() {
                 guard !currentDingbatsBytes.isEmpty else { return }
                 runs.append(
-                    Run(
+                    Self(
                         bytes: currentDingbatsBytes,
                         font: .zapfDingbats,
                         fontSize: fontSize,

@@ -2,10 +2,10 @@
 // Rendering context decomposed into categorical primitives.
 
 import Byte_Primitives
+public import Copy_on_Write
 import Geometry_Primitives
 import Layout_Primitives
 public import PDF_Standard
-public import Copy_on_Write
 
 extension PDF {
     /// Rendering context for PDF layout.
@@ -187,7 +187,7 @@ extension PDF.Context {
 extension PDF.Context {
     public init(
         _ configuration: PDF.Configuration
-    ){
+    ) {
         let contentWidth = configuration.mediaBox.width - configuration.margins.horizontal
         let contentHeight = configuration.mediaBox.height - configuration.margins.vertical
 
@@ -237,6 +237,7 @@ extension PDF.Context {
         switch type {
         case .unordered:
             startIndex = 0
+
         case .ordered(let start):
             startIndex = start
         }
@@ -269,6 +270,7 @@ extension PDF.Context {
                 // Level 1: • (disc) - use the bullet glyph from the font
                 // This produces a properly designed bullet character
                 return .text(bytes: [Byte.WinAnsi.bullet], font: style.font)
+
             case 2:
                 // Level 2: ○ (circle) - hollow circle drawn with PDF graphics
                 // Diameter ~0.28em (~80% of level 1) for visual hierarchy
@@ -277,6 +279,7 @@ extension PDF.Context {
                 // Stroke width proportional to font size (thin stroke for hollow appearance)
                 let strokeWidth = (style.fontSize * 0.05).width
                 return .strokedCircle(circle, strokeWidth: strokeWidth)
+
             default:
                 // Level 3+: ■ (square) - filled square using PDF graphics
                 // Side ~0.22em (~63% of level 1 diameter) for visual hierarchy
@@ -290,6 +293,7 @@ extension PDF.Context {
                 )
                 return .filledSquare(rect)
             }
+
         case .ordered:
             let num = list.stack[index].currentIndex
             list.stack[index].currentIndex += 1
@@ -403,7 +407,7 @@ extension PDF.Context {
         }
 
         // Process each page
-        return pages.enumerated().map { (index, page) in
+        return pages.enumerated().map { index, page in
             let pageNumber = index + 1  // 1-indexed
             guard let pageLinks = linksByPage[pageNumber], !pageLinks.isEmpty else {
                 return page
@@ -462,8 +466,10 @@ extension PDF.Context {
         switch color {
         case .gray(let g):
             currentPageBuilder.setFillColorGray(g)
+
         case .rgb(let r, let g, let b):
             currentPageBuilder.setFillColorRGB(r: r, g: g, b: b)
+
         case .cmyk(let c, let m, let y, let k):
             currentPageBuilder.setFillColorCMYK(c: c, m: m, y: y, k: k)
         }
@@ -474,8 +480,10 @@ extension PDF.Context {
         switch color {
         case .gray(let g):
             currentPageBuilder.setStrokeColorGray(g)
+
         case .rgb(let r, let g, let b):
             currentPageBuilder.setStrokeColorRGB(r: r, g: g, b: b)
+
         case .cmyk(let c, let m, let y, let k):
             currentPageBuilder.setStrokeColorCMYK(c: c, m: m, y: y, k: k)
         }

@@ -17,7 +17,7 @@ extension PDF.Context {
 
     public mutating func text(_ content: borrowing String) {
         let copy = copy content
-        let run = PDF.Context.Text.Run(
+        let run = Self.Text.Run(
             text: copy,
             font: style.font,
             fontSize: style.fontSize,
@@ -31,7 +31,11 @@ extension PDF.Context {
 
     // MARK: - Block Structure
 
-    public static func _pushBlock(_ context: inout Self, role: Render.Semantic.Block?, style: Render.Style) {
+    public static func _pushBlock(
+        _ context: inout Self,
+        role: Render.Semantic.Block?,
+        style: Render.Style
+    ) {
         context.flush.inline()
         context.scopes.append(context.savedScope())
         context.apply(style)
@@ -39,14 +43,15 @@ extension PDF.Context {
         guard let role else { return }
         switch role {
         case .heading(let level):
-            let headingSize: Double = switch level {
-            case 1: 24
-            case 2: 20
-            case 3: 16
-            case 4: 14
-            case 5: 12
-            default: 11
-            }
+            let headingSize: Double =
+                switch level {
+                case 1: 24
+                case 2: 20
+                case 3: 16
+                case 4: 14
+                case 5: 12
+                default: 11
+                }
             context.style.fontSize = PDF.UserSpace.Size<1>(headingSize)
             context.style.font = context.style.font.bold ?? context.style.font
             if context.lastY != nil {
@@ -59,7 +64,7 @@ extension PDF.Context {
             }
 
         case .blockquote:
-            context.layout.box.llx = context.layout.box.llx + PDF.UserSpace.Width(20)
+            context.layout.box.llx += PDF.UserSpace.Width(20)
             context.style.color = .gray(0.4)
 
         case .pre:
@@ -80,7 +85,11 @@ extension PDF.Context {
 
     // MARK: - Inline Structure
 
-    public static func _pushInline(_ context: inout Self, role: Render.Semantic.Inline?, style: Render.Style) {
+    public static func _pushInline(
+        _ context: inout Self,
+        role: Render.Semantic.Inline?,
+        style: Render.Style
+    ) {
         context.scopes.append(context.savedScope())
         context.apply(style)
 
@@ -88,8 +97,10 @@ extension PDF.Context {
         switch role {
         case .emphasis:
             context.style.font = context.style.font.italic ?? context.style.font
+
         case .strong:
             context.style.font = context.style.font.bold ?? context.style.font
+
         case .code:
             context.style.font = .courier
         }
@@ -107,12 +118,13 @@ extension PDF.Context {
         context.flush.inline()
         context.scopes.append(context.savedScope())
 
-        let pdfKind: PDF.Context.List.Kind = switch kind {
-        case .ordered: .ordered(startNumber: start ?? 1)
-        case .unordered: .unordered
-        }
+        let pdfKind: PDF.Context.List.Kind =
+            switch kind {
+            case .ordered: .ordered(startNumber: start ?? 1)
+            case .unordered: .unordered
+            }
         context.push(list: pdfKind)
-        context.layout.box.llx = context.layout.box.llx + PDF.UserSpace.Width(20)
+        context.layout.box.llx += PDF.UserSpace.Width(20)
     }
 
     public static func _popList(_ context: inout Self) {
@@ -154,7 +166,7 @@ extension PDF.Context {
 
     public mutating func image(source: String, alt: String) {
         flush.inline()
-        let run = PDF.Context.Text.Run(
+        let run = Self.Text.Run(
             text: alt.isEmpty ? "[image]" : "[\(alt)]",
             font: style.font.italic ?? style.font,
             fontSize: style.fontSize,
@@ -225,6 +237,7 @@ extension PDF.Context {
             switch weight {
             case .bold:
                 self.style.font = self.style.font.bold ?? self.style.font
+
             case .normal:
                 self.style.font = self.style.font.regular ?? self.style.font
             }
@@ -240,11 +253,12 @@ extension PDF.Context {
 extension PDF.Color {
     /// Creates a PDF color from a rendering style color hint.
     init(_ color: Render.Style.Color) {
-        self = switch color {
-        case .black: .gray(0)
-        case .red: .rgb(r: 0.8, g: 0, b: 0)
-        case .blue: .rgb(r: 0, g: 0, b: 0.8)
-        case .gray: .gray(0.5)
-        }
+        self =
+            switch color {
+            case .black: .gray(0)
+            case .red: .rgb(r: 0.8, g: 0, b: 0)
+            case .blue: .rgb(r: 0, g: 0, b: 0.8)
+            case .gray: .gray(0.5)
+            }
     }
 }

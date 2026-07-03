@@ -45,7 +45,8 @@ struct `Preview Copy-Paste Tests` {
 
         // Dump content stream for inspection
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = pdfString[streamStart.upperBound..<streamEnd.lowerBound]
             print("\n--- Content Stream ---")
             print(stream.prefix(500))
@@ -77,7 +78,8 @@ struct `Preview Copy-Paste Tests` {
         // Check content stream
         let pdfString = String(decoding: pdfBytes, as: UTF8.self)
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = String(pdfString[streamStart.upperBound..<streamEnd.lowerBound])
 
             // Count Tj operators to see how many text show operations
@@ -123,7 +125,8 @@ struct `Preview Copy-Paste Tests` {
 
         // Extract and display the content stream
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = String(pdfString[streamStart.upperBound..<streamEnd.lowerBound])
             print("\n--- Content Stream ---")
             print(stream)
@@ -166,7 +169,8 @@ struct `Preview Copy-Paste Tests` {
 
         // Extract and display the content stream
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = String(pdfString[streamStart.upperBound..<streamEnd.lowerBound])
             print("\n--- Content Stream (forced wrap) ---")
             print(stream)

@@ -19,8 +19,9 @@ extension Array: PDF.View where Element: PDF.View {
     private static func _renderVertical(_ view: Self, context: inout PDF.Context) {
         for element in view {
             if let spacing = context.spacing.vertical,
-            let lastY = context.lastY,
-            context.layout.box.lly > lastY {
+                let lastY = context.lastY,
+                context.layout.box.lly > lastY
+            {
                 context.advance(spacing)
             }
 
@@ -40,7 +41,8 @@ extension Array: PDF.View where Element: PDF.View {
         for element in view {
             if let spacing = context.spacing.horizontal,
                 let lastX = context.row.lastX,
-                context.layout.box.llx > lastX {
+                context.layout.box.llx > lastX
+            {
                 context.advance.x(spacing)
             }
 

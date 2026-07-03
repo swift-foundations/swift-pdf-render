@@ -1,9 +1,9 @@
 // Pair+PDF.View.swift
 // PDF.View conformance for Pair - renders first as background, second as foreground.
 
-public import Pair_Primitives
 public import Layout_Primitives
 public import PDF_Standard
+public import Pair_Primitives
 
 // MARK: - Generic Pair Rendering
 
@@ -149,9 +149,11 @@ extension Pair where First == PDF.Rectangle, Second: PDF.View {
         switch verticalAlignment {
         case .top:
             contentY = startY + padding.height + capHeight - ascender
+
         case .center:
             let baselineFromTop = (rectHeight + capHeight) / 2
             contentY = startY + baselineFromTop - ascender
+
         case .bottom, .baseline:
             contentY = startY + rectHeight - padding.height - ascender
         }

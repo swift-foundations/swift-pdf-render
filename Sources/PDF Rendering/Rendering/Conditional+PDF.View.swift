@@ -13,6 +13,7 @@ extension Render.Conditional: PDF.View where First: PDF.View, Second: PDF.View {
         switch view {
         case .first(let first):
             First._render(first, context: &context)
+
         case .second(let second):
             Second._render(second, context: &context)
         }

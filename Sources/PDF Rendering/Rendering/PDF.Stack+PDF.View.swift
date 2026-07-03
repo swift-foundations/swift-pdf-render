@@ -1,12 +1,12 @@
 // PDF.Stack+PDF.View.swift
 // Stack layout with PDF.View conformance.
 
+public import Axis_Primitives
 import Dimension_Primitives
 import Geometry_Primitives
 import ISO_32000_Shared
 public import Layout_Primitives
 public import PDF_Standard
-public import Axis_Primitives
 
 // MARK: - PDF Layout Namespace
 

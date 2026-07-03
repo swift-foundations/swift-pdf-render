@@ -23,7 +23,8 @@ extension Render._Tuple: PDF.View where repeat each Content: PDF.View {
             // Apply spacing before this element if there was a previous element
             if let spacing = context.spacing.vertical,
                 let lastY = context.lastY,
-                context.layout.box.lly > lastY {
+                context.layout.box.lly > lastY
+            {
                 // Only add spacing if Y actually advanced (element rendered something)
                 context.advance(spacing)
             }
@@ -50,7 +51,8 @@ extension Render._Tuple: PDF.View where repeat each Content: PDF.View {
             // Apply horizontal spacing before this element if there was a previous element
             if let spacing = context.spacing.horizontal,
                 let lastX = context.row.lastX,
-                context.layout.box.llx > lastX {
+                context.layout.box.llx > lastX
+            {
                 context.advance.x(spacing)
             }
 

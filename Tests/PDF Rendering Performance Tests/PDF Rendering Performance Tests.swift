@@ -1,10 +1,11 @@
 // PDF Rendering Performance Tests.swift
 
-import Testing
 import Binary_Serializable_Primitives
 import PDF_Rendering_Test_Support
-@testable import PDF_Rendering
 import PDF_Standard
+import Testing
+
+@testable import PDF_Rendering
 
 extension PDF {
     #Tests
@@ -32,7 +33,10 @@ extension PDF.Test.Performance {
     @Test(.timed(iterations: 50, warmup: 5))
     func `render long text`() {
         var context = createContext()
-        let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", count: 18)
+        let content = String(
+            repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ",
+            count: 18
+        )
         let text = PDF.Text(content)
         PDF.Text._render(text, context: &context)
     }
@@ -40,7 +44,11 @@ extension PDF.Test.Performance {
     @Test(.timed(iterations: 10, warmup: 2))
     func `render very long text`() {
         var context = createContext()
-        let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore. ", count: 100)
+        let content = String(
+            repeating:
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore. ",
+            count: 100
+        )
         let text = PDF.Text(content)
         PDF.Text._render(text, context: &context)
     }
@@ -70,7 +78,10 @@ extension PDF.Test.Performance {
 
     @Test(.timed(iterations: 100, warmup: 10))
     func `Text.Run encoding long`() {
-        let content = String(repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", count: 18)
+        let content = String(
+            repeating: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ",
+            count: 18
+        )
         let _ = PDF.Context.Text.Run(
             text: content,
             font: .helvetica,
@@ -141,7 +152,8 @@ extension PDF.Test.Performance {
 
     @Test(.timed(iterations: 5, warmup: 2))
     func `large document HexaPDF comparison`() {
-        let paragraph = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. "
+        let paragraph =
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. "
         let fullText = String(repeating: paragraph, count: 3700)
         let doc = PDF.Document {
             PDF.Text(fullText)

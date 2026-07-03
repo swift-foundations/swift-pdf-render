@@ -3,11 +3,11 @@
 //  swift-pdf-rendering
 //
 
-import Testing
-import Tests_Inline_Snapshot
-import Test_Snapshot_Primitives
 import Layout_Primitives
 import PDF_Rendering_Test_Support
+import Test_Snapshot_Primitives
+import Testing
+import Tests_Inline_Snapshot
 
 @Suite
 struct PDFTableSnapshotTests {

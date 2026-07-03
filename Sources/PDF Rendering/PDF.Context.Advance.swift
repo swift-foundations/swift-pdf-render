@@ -24,22 +24,16 @@ extension PDF.Context {
 extension Property where Tag == PDF.Context.Advance, Base == PDF.Context {
     /// Advance Y position by specified amount.
     public mutating func callAsFunction(_ amount: PDF.UserSpace.Height) {
-        // WORKAROUND: Cannot use += with typed geometric values
-        // WHY: PDF.UserSpace types don't provide compound assignment operators
-        // WHEN TO REMOVE: When typed += operators are added to geometric types
-        // swiftlint:disable:next shorthand_operator
-        base.layout.box.lly = base.layout.box.lly + amount
+        base.layout.box.lly += amount
     }
 
     /// Advance Y position by one line.
     public mutating func line() {
-        // swiftlint:disable:next shorthand_operator
-        base.layout.box.lly = base.layout.box.lly + base.style.line.height
+        base.layout.box.lly += base.style.line.height
     }
 
     /// Advance X position by specified amount (for horizontal layout).
     public mutating func x(_ amount: PDF.UserSpace.Width) {
-        // swiftlint:disable:next shorthand_operator
-        base.layout.box.llx = base.layout.box.llx + amount
+        base.layout.box.llx += amount
     }
 }

@@ -62,7 +62,10 @@ extension PDF.Context.Text.Run {
         for run in runs {
             // Cache space width for this run
             if cachedSpaceFont != run.font || cachedSpaceFontSize != run.fontSize {
-                cachedSpaceWidth = run.font.winAnsi.width(of: [Byte(UInt8.ascii.space)], atSize: run.fontSize)
+                cachedSpaceWidth = run.font.winAnsi.width(
+                    of: [Byte(UInt8.ascii.space)],
+                    atSize: run.fontSize
+                )
                 cachedSpaceFont = run.font
                 cachedSpaceFontSize = run.fontSize
             }
@@ -74,9 +77,12 @@ extension PDF.Context.Text.Run {
                 case .ascii.newline:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(
+                            of: state.currentWord,
+                            atSize: run.fontSize
+                        )
                         state.appendWord(width: width, runIndex: currentRunIndex)
-                        currentLineWidth = currentLineWidth + width
+                        currentLineWidth += width
                     }
                     // Render line
                     if !state.words.isEmpty || preserveWhitespace {
@@ -90,17 +96,25 @@ extension PDF.Context.Text.Run {
                 case .ascii.space:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
+                        let width = run.font.winAnsi.width(
+                            of: state.currentWord,
+                            atSize: run.fontSize
+                        )
 
                         if state.words.isEmpty {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth = width
                         } else if !wrapAllowed || currentLineWidth + width <= maxWidth {
                             state.appendWord(width: width, runIndex: currentRunIndex)
-                            currentLineWidth = currentLineWidth + width
+                            currentLineWidth += width
                         } else {
                             // Line full
-                            emitLine(&state, runs: runs, context: &context, isFirstLine: isFirstLine)
+                            emitLine(
+                                &state,
+                                runs: runs,
+                                context: &context,
+                                isFirstLine: isFirstLine
+                            )
                             isFirstLine = false
                             state.clearLine()
                             state.appendWord(width: width, runIndex: currentRunIndex)
@@ -111,19 +125,29 @@ extension PDF.Context.Text.Run {
                     // Add space
                     if preserveWhitespace || (!lastWasWhitespace && !state.words.isEmpty) {
                         state.addGap(cachedSpaceWidth)
-                        currentLineWidth = currentLineWidth + cachedSpaceWidth
+                        currentLineWidth += cachedSpaceWidth
                     }
                     lastWasWhitespace = true
 
                 case .ascii.htab:
                     // Flush current word
                     if !state.currentWord.isEmpty {
-                        let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
-                        if state.words.isEmpty || !wrapAllowed || currentLineWidth + width <= maxWidth {
+                        let width = run.font.winAnsi.width(
+                            of: state.currentWord,
+                            atSize: run.fontSize
+                        )
+                        if state.words.isEmpty || !wrapAllowed
+                            || currentLineWidth + width <= maxWidth
+                        {
                             state.appendWord(width: width, runIndex: currentRunIndex)
-                            currentLineWidth = currentLineWidth + width
+                            currentLineWidth += width
                         } else {
-                            emitLine(&state, runs: runs, context: &context, isFirstLine: isFirstLine)
+                            emitLine(
+                                &state,
+                                runs: runs,
+                                context: &context,
+                                isFirstLine: isFirstLine
+                            )
                             isFirstLine = false
                             state.clearLine()
                             state.appendWord(width: width, runIndex: currentRunIndex)
@@ -134,7 +158,7 @@ extension PDF.Context.Text.Run {
                     let tabWidth = cachedSpaceWidth * 4
                     if !wrapAllowed || currentLineWidth + tabWidth <= maxWidth {
                         state.addGap(tabWidth)
-                        currentLineWidth = currentLineWidth + tabWidth
+                        currentLineWidth += tabWidth
                     }
                     lastWasWhitespace = true
 
@@ -151,7 +175,7 @@ extension PDF.Context.Text.Run {
                     currentLineWidth = width
                 } else if !wrapAllowed || currentLineWidth + width <= maxWidth {
                     state.appendWord(width: width, runIndex: currentRunIndex)
-                    currentLineWidth = currentLineWidth + width
+                    currentLineWidth += width
                 } else {
                     emitLine(&state, runs: runs, context: &context, isFirstLine: isFirstLine)
                     isFirstLine = false
@@ -188,20 +212,22 @@ extension PDF.Context.Text.Run {
         mutating func appendWord(width: PDF.UserSpace.Width, runIndex: Int) {
             let start = lineBytes.count
             lineBytes.append(contentsOf: currentWord)
-            words.append(WordDescriptor(
-                byteStart: start,
-                byteLength: currentWord.count,
-                width: width,
-                gapAfter: .init(0),
-                runIndex: runIndex
-            ))
+            words.append(
+                WordDescriptor(
+                    byteStart: start,
+                    byteLength: currentWord.count,
+                    width: width,
+                    gapAfter: .init(0),
+                    runIndex: runIndex
+                )
+            )
             currentWord.removeAll(keepingCapacity: true)
         }
 
         /// Add gap (space/tab) after last word
         mutating func addGap(_ width: PDF.UserSpace.Width) {
             if !words.isEmpty {
-                words[words.count - 1].gapAfter = words[words.count - 1].gapAfter + width
+                words[words.count - 1].gapAfter += width
             }
         }
 
@@ -245,9 +271,9 @@ extension PDF.Context.Text.Run {
         // Calculate total width (words + gaps, excluding trailing gap)
         var totalWidth: PDF.UserSpace.Width = .init(0)
         for i in 0..<state.words.count {
-            totalWidth = totalWidth + state.words[i].width
+            totalWidth += state.words[i].width
             if i < state.words.count - 1 {
-                totalWidth = totalWidth + state.words[i].gapAfter
+                totalWidth += state.words[i].gapAfter
             }
         }
 
@@ -257,8 +283,10 @@ extension PDF.Context.Text.Run {
         switch context.style.textAlign {
         case .leading:
             alignmentOffset = .init(0)
+
         case .center:
             alignmentOffset = .max(.zero, (availableWidth - totalWidth) / 2)
+
         case .trailing:
             alignmentOffset = .max(.zero, availableWidth - totalWidth)
         }
@@ -303,10 +331,10 @@ extension PDF.Context.Text.Run {
             // Add word bytes to segment
             let wordBytes = state.lineBytes[word.byteStart..<(word.byteStart + word.byteLength)]
             segmentBytes.append(contentsOf: wordBytes)
-            segmentWidth = segmentWidth + word.width
+            segmentWidth += word.width
             currentStyle = wordStyle
 
-            currentX = currentX + word.width
+            currentX += word.width
 
             // Handle gap after word
             if word.gapAfter > .init(0) {
@@ -322,7 +350,7 @@ extension PDF.Context.Text.Run {
                     )
                     segmentBytes.removeAll(keepingCapacity: true)
                 }
-                currentX = currentX + word.gapAfter
+                currentX += word.gapAfter
                 segmentStartX = currentX
                 segmentWidth = .init(0)
             }
@@ -341,7 +369,7 @@ extension PDF.Context.Text.Run {
         }
 
         // Advance Y
-        context.layout.box.lly = context.layout.box.lly + lineHeight
+        context.layout.box.lly += lineHeight
     }
 
     /// Style key for batching - avoids repeated property comparisons
@@ -416,6 +444,7 @@ extension PDF.Context.Text.Run {
                     color: run.color,
                     width: lineWidth
                 )
+
             case .strikeOut:
                 let xHeight = run.font.metrics.xHeight(atSize: run.fontSize)
                 let strikeY = textY - xHeight / 2
@@ -426,6 +455,7 @@ extension PDF.Context.Text.Run {
                     color: run.color,
                     width: lineWidth
                 )
+
             case .highlight, .squiggly:
                 break
             }

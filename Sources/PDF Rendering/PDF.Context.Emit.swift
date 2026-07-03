@@ -130,16 +130,21 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         // In PDF bottom-left coords: pdfLly = pageTop - (bottom position as displacement)
         let pdfLly = base.pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
 
-        if let fill = fill {
+        if let fill {
             base.setFillColor(fill)
         }
 
-        if let stroke = stroke {
+        if let stroke {
             base.setStrokeColor(stroke.color)
             base.currentPageBuilder.setLineWidth(stroke.width)
         }
 
-        base.currentPageBuilder.rectangle(x: rect.llx, y: pdfLly, width: rect.width, height: rect.height)
+        base.currentPageBuilder.rectangle(
+            x: rect.llx,
+            y: pdfLly,
+            width: rect.width,
+            height: rect.height
+        )
 
         if fill != nil && stroke != nil {
             base.currentPageBuilder.fillAndStroke()
@@ -197,11 +202,11 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
             radius: radius
         )
 
-        if let fill = fill {
+        if let fill {
             base.setFillColor(fill)
         }
 
-        if let stroke = stroke {
+        if let stroke {
             base.setStrokeColor(stroke)
             base.currentPageBuilder.setLineWidth(strokeWidth)
         }

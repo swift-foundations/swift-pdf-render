@@ -35,7 +35,7 @@ extension PDF.Document {
         @PDF.Builder _ build: () -> View
     ) {
         var context = PDF.Context(configuration)
-        
+
         let view = build()
         View._render(view, context: &context)
 
