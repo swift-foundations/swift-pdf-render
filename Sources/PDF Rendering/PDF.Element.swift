@@ -148,6 +148,7 @@ extension PDF.Element: PDF.View {
 
         // Fallback: use type name as tag (for custom/future structure types)
         let typeName = String(describing: Tag.self)
+        // swiftlint:disable:next workaround_marker_present
         // WORKAROUND: Force-unwrap COS.Name init for Swift type names
         // WHY: Type names used here are simple ASCII identifiers from Swift's type system
         // WHEN TO REMOVE: When COS.Name provides a non-throwing init for known-valid strings
