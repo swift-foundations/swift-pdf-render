@@ -5,8 +5,6 @@ public import PDF_Standard
 extension PDF {
     /// Horizontal divider line
     public struct Divider: PDF.View, Sendable {
-        public typealias Content = Never
-
         /// Line color
         public var color: PDF.Color
 
@@ -26,32 +24,36 @@ extension PDF {
             self.thickness = thickness
             self.padding = padding
         }
+    }
+}
 
-        public var body: Never {
-            fatalError("PDF.Divider is a leaf view")
-        }
+extension PDF.Divider {
+    public typealias Content = Never
 
-        public static func _render(_ view: Self, context: inout PDF.Context) {
-            // Check for page break before rendering
-            context.page.ensure(height: view.padding + view.thickness.height + view.padding)
+    public var body: Never {
+        fatalError("PDF.Divider is a leaf view")
+    }
 
-            context.advance(view.padding)
+    public static func _render(_ view: Self, context: inout PDF.Context) {
+        // Check for page break before rendering
+        context.page.ensure(height: view.padding + view.thickness.height + view.padding)
 
-            let lineY = context.layout.box.lly
-            let startX = context.layout.box.llx
+        context.advance(view.padding)
 
-            context.advance(view.thickness.height + view.padding)
+        let lineY = context.layout.box.lly
+        let startX = context.layout.box.llx
 
-            // Emit line directly to content stream
-            context.emit.line(
-                from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
-                to: PDF.UserSpace.Coordinate(
-                    x: context.layout.box.llx + context.layout.box.width,
-                    y: lineY
-                ),
-                color: view.color,
-                width: view.thickness.width
-            )
-        }
+        context.advance(view.thickness.height + view.padding)
+
+        // Emit line directly to content stream
+        context.emit.line(
+            from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
+            to: PDF.UserSpace.Coordinate(
+                x: context.layout.box.llx + context.layout.box.width,
+                y: lineY
+            ),
+            color: view.color,
+            width: view.thickness.width
+        )
     }
 }

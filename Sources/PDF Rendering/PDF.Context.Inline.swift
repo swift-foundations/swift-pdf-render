@@ -6,8 +6,11 @@ extension PDF.Context {
     public struct Inline: Sendable {
         /// Accumulated inline text runs.
         public var runs: [PDF.Context.Text.Run] = []
-        /// Whether there are pending inline runs.
-        public var hasRuns: Bool { !runs.isEmpty }
         public init() {}
     }
+}
+
+extension PDF.Context.Inline {
+    /// Whether there are pending inline runs.
+    public var hasRuns: Bool { !runs.isEmpty }
 }

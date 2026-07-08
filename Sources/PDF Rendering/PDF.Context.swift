@@ -102,13 +102,15 @@ extension PDF {
 
         /// Annotations for current page.
         public var currentPageAnnotations: [PDF.Annotation] = []
+    }
+}
 
-        // MARK: - Computed Properties
+// MARK: - Computed Properties
 
-        /// Page top Y coordinate for coordinate conversion (top-left to bottom-left).
-        public var pageTop: PDF.UserSpace.Y {
-            mediaBox.ury
-        }
+extension PDF.Context {
+    /// Page top Y coordinate for coordinate conversion (top-left to bottom-left).
+    public var pageTop: PDF.UserSpace.Y {
+        mediaBox.ury
     }
 }
 

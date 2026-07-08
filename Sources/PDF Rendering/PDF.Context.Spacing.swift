@@ -10,8 +10,11 @@ extension PDF.Context {
         public var vertical: PDF.UserSpace.Height?
         /// Spacing between elements in an HStack.
         public var horizontal: PDF.UserSpace.Width?
-        /// Whether horizontal layout mode is active.
-        public var isHorizontal: Bool { horizontal != nil }
         public init() {}
     }
+}
+
+extension PDF.Context.Spacing {
+    /// Whether horizontal layout mode is active.
+    public var isHorizontal: Bool { horizontal != nil }
 }

@@ -10,8 +10,11 @@ extension PDF.Context.List {
         public var stack: [(type: Kind, currentIndex: Int)] = []
         /// Pending list marker to be rendered with the first line of text.
         public var marker: (marker: Marker, x: PDF.UserSpace.X)?
-        /// Current list nesting depth (0 = not in a list).
-        public var depth: Int { stack.count }
         public init() {}
     }
+}
+
+extension PDF.Context.List.State {
+    /// Current list nesting depth (0 = not in a list).
+    public var depth: Int { stack.count }
 }
