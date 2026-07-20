@@ -44,8 +44,24 @@ extension Render._Tuple: PDF.View where repeat each Content: PDF.View {
     }
 
     private static func _renderHorizontal(_ view: Self, context: inout PDF.Context) {
-        // Save the row start Y position
-        let rowStartY = context.row.startY ?? context.layout.box.lly
+        // Paginate the row as one unit: pre-measure its height and break to a
+        // new page once, before rendering, if it does not fit. (Skipped while
+        // already measuring — measurement itself handles breaks virtually.)
+        if !context.mode.measurement {
+            let rowHeight = context.measure { context in
+                _renderHorizontal(view, context: &context)
+            }
+            if context.page.ensure(height: rowHeight) {
+                // The row moved to a new page: re-anchor any enclosing row
+                // state (e.g. set by PDF.Stack before this tuple rendered).
+                context.row.startY = context.layout.box.lly
+                context.row.maxY = context.layout.box.lly
+            }
+        }
+
+        // Anchor the row start Y position
+        var rowStartY = context.row.startY ?? context.layout.box.lly
+        context.row.startY = rowStartY
 
         func render<T: PDF.View>(_ element: T) {
             // Apply horizontal spacing before this element if there was a previous element
@@ -59,11 +75,26 @@ extension Render._Tuple: PDF.View where repeat each Content: PDF.View {
             // Track X before rendering
             let xBefore = context.layout.box.llx
 
+            // Track page breaks (real and virtual) to re-anchor the row
+            let pagesBefore = context.completedPages.count
+            let virtualBreaksBefore = context.mode.pageBreaks
+
             // Reset Y to row start before rendering each child
             context.layout.box.lly = rowStartY
 
             // Render the element
             T._render(element, context: &context)
+
+            // A page break mid-row (row taller than the remaining page):
+            // re-anchor the row at the top of the new page so subsequent
+            // cells do not each trigger their own page break.
+            if context.completedPages.count > pagesBefore
+                || context.mode.pageBreaks > virtualBreaksBefore
+            {
+                rowStartY = context.layout.initial.lly
+                context.row.startY = rowStartY
+                context.row.maxY = context.layout.box.lly
+            }
 
             // Track maximum Y reached by any child
             context.updateRowMaxY()
