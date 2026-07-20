@@ -447,15 +447,37 @@ extension PDF.Context {
 
 extension PDF.Context {
     /// Execute a closure in measurement mode, returning the height consumed.
+    ///
+    /// Measurement is side-effect free: no operators are emitted, no pages are
+    /// completed, and the full layout and page-related state is restored
+    /// afterwards. Page breaks encountered while measuring are virtual —
+    /// counted in `mode.pageBreaks` rather than performed — and folded into
+    /// the returned height. Nested measurement is supported: the prior
+    /// measurement flag is saved and restored, not clobbered.
     public mutating func measure(
         _ work: (inout PDF.Context) -> Void
     ) -> PDF.UserSpace.Height {
-        let startY = layout.box.lly
+        let saved = self
         mode.measurement = true
+        mode.pageBreaks = 0
+        let startY = layout.box.lly
         work(&self)
-        mode.measurement = false
-        let measuredHeight: PDF.UserSpace.Height = height(layout.box.lly - startY)
-        layout.box.lly = startY
+        let endY = layout.box.lly
+        let breaks = mode.pageBreaks
+        let measuredHeight: PDF.UserSpace.Height
+        if breaks == 0 {
+            measuredHeight = height(endY - startY)
+        } else {
+            // First segment fills the current page from startY to the page
+            // limit; each intermediate break spans a full content box; the
+            // final segment runs from the top of the content box to endY.
+            var total = height(layout.maxY - startY) + height(endY - layout.initial.lly)
+            for _ in 1..<breaks {
+                total = total + height(layout.maxY - layout.initial.lly)
+            }
+            measuredHeight = total
+        }
+        self = saved
         return measuredHeight
     }
 }

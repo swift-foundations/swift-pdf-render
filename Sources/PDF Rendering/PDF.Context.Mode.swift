@@ -11,6 +11,12 @@ extension PDF.Context {
         public var noWrap: Bool = false
         /// Measurement mode - when true, operations are not added.
         public var measurement: Bool = false
+        /// Virtual page breaks accumulated while in measurement mode.
+        ///
+        /// In measurement mode a page break must not complete a real page;
+        /// instead the break is counted here and folded into the measured
+        /// height by ``PDF/Context/measure(_:)``.
+        public var pageBreaks: Int = 0
         public init() {}
     }
 }

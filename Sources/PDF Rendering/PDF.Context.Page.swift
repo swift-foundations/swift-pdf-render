@@ -22,7 +22,17 @@ extension PDF.Context {
 
 extension Property where Tag == PDF.Context.Page, Base == PDF.Context {
     /// Start a new page, building the current page and resetting state.
+    ///
+    /// In measurement mode the break is virtual: no page is completed and no
+    /// state is flushed; the break is counted in `mode.pageBreaks` and the Y
+    /// position resets to the top of the content box.
     public mutating func new() {
+        if base.mode.measurement {
+            base.mode.pageBreaks += 1
+            base.layout.box.lly = base.layout.initial.lly
+            return
+        }
+
         // Close any open text block before finalizing page
         base.flush.text()
 
