@@ -2,7 +2,7 @@
 // Text styling as a product type with monoid structure.
 
 import Geometry
-public import Layout
+public import Layout_Primitives
 public import PDF_Standard
 
 extension PDF.Context {

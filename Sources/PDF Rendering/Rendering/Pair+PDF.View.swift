@@ -2,7 +2,7 @@
 // PDF.View conformance for Pair - renders first as background, second as foreground.
 
 public import Algebra
-public import Layout
+public import Layout_Primitives
 public import PDF_Standard
 
 // MARK: - Generic Pair Rendering

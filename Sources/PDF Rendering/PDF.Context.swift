@@ -81,6 +81,38 @@ extension PDF {
         /// Horizontal stack spacing - applied between elements in an HStack.
         public var horizontalSpacing: PDF.UserSpace.Width?
 
+        // MARK: - Box Model
+
+        /// Top margin (external spacing above element)
+        public var marginTop: PDF.UserSpace.Height?
+
+        /// Right margin (external spacing to the right of element)
+        public var marginRight: PDF.UserSpace.Width?
+
+        /// Bottom margin (external spacing below element)
+        public var marginBottom: PDF.UserSpace.Height?
+
+        /// Left margin (external spacing to the left of element)
+        public var marginLeft: PDF.UserSpace.Width?
+
+        /// Top padding (internal spacing at top of element)
+        public var paddingTop: PDF.UserSpace.Height?
+
+        /// Right padding (internal spacing at right of element)
+        public var paddingRight: PDF.UserSpace.Width?
+
+        /// Bottom padding (internal spacing at bottom of element)
+        public var paddingBottom: PDF.UserSpace.Height?
+
+        /// Left padding (internal spacing at left of element)
+        public var paddingLeft: PDF.UserSpace.Width?
+
+        /// Explicit width constraint
+        public var explicitWidth: PDF.UserSpace.Width?
+
+        /// Explicit height constraint
+        public var explicitHeight: PDF.UserSpace.Height?
+
         /// Track X position before last element rendered (for horizontal spacing).
         internal var lastElementX: PDF.UserSpace.X?
 

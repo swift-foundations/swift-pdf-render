@@ -2,7 +2,7 @@
 // Fully resolved style with concrete values.
 
 import Geometry
-public import Layout
+public import Layout_Primitives
 public import PDF_Standard
 
 extension PDF.Context.Style {

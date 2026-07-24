@@ -4,7 +4,7 @@
 import Dimension
 import Geometry
 import ISO_32000_Shared
-public import Layout
+public import Layout_Primitives
 public import PDF_Standard
 
 // MARK: - PDF Layout Namespace
