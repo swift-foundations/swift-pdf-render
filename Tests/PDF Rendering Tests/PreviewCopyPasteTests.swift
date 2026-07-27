@@ -1,6 +1,8 @@
 // PreviewCopyPasteTests.swift
 // Tests to understand macOS Preview's copy-paste text extraction behavior
 
+import Binary_Serializable_Primitives
+import Foundation
 import PDF_Standard
 import Testing
 
@@ -8,12 +10,12 @@ import Testing
 
 /// Test different text emission strategies to find which produces
 /// correct copy-paste behavior in macOS Preview.
-@Suite("Preview Copy-Paste Tests")
-struct PreviewCopyPasteTests {
+@Suite
+struct `Preview Copy-Paste Tests` {
 
     /// Test: Check if spaces are literal 0x20 bytes in the content stream
-    @Test("Verify space bytes in content stream")
-    func verifySpaceBytesInContentStream() throws {
+    @Test
+    func `Verify space bytes in content stream`() throws {
         let pdfDocument = PDF.Document(
             configuration: .init(
                 version: .v2_0,
@@ -43,7 +45,8 @@ struct PreviewCopyPasteTests {
 
         // Dump content stream for inspection
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = pdfString[streamStart.upperBound..<streamEnd.lowerBound]
             print("\n--- Content Stream ---")
             print(stream.prefix(500))
@@ -52,8 +55,8 @@ struct PreviewCopyPasteTests {
     }
 
     /// Test paragraph wrapping behavior
-    @Test("Verify paragraph wrapping")
-    func verifyParagraphWrapping() throws {
+    @Test
+    func `Verify paragraph wrapping`() throws {
         let testParagraph = "The quick brown fox jumps over the lazy dog. This sentence wraps."
 
         let pdfDocument = PDF.Document(
@@ -75,7 +78,8 @@ struct PreviewCopyPasteTests {
         // Check content stream
         let pdfString = String(decoding: pdfBytes, as: UTF8.self)
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = String(pdfString[streamStart.upperBound..<streamEnd.lowerBound])
 
             // Count Tj operators to see how many text show operations
@@ -89,8 +93,8 @@ struct PreviewCopyPasteTests {
     }
 
     /// Test: Multiple words on one line vs separate Tj operators
-    @Test("Multiple words emission patterns")
-    func multipleWordsEmissionPatterns() throws {
+    @Test
+    func `Multiple words emission patterns`() throws {
         // Test short phrase that should fit on one line
         let shortPhrase = "certain confidential and proprietary"
 
@@ -121,7 +125,8 @@ struct PreviewCopyPasteTests {
 
         // Extract and display the content stream
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = String(pdfString[streamStart.upperBound..<streamEnd.lowerBound])
             print("\n--- Content Stream ---")
             print(stream)
@@ -138,14 +143,14 @@ struct PreviewCopyPasteTests {
     }
 
     /// Test: Force text to wrap across multiple lines
-    @Test("Forced line wrapping")
-    func forcedLineWrapping() throws {
+    @Test
+    func `Forced line wrapping`() throws {
         // Use very wide margins to force text wrapping (leaves only ~160pt of content width)
         let testText = "The quick brown fox jumps over the lazy dog."
 
         let pdfDocument = PDF.Document(
             configuration: .init(
-                margins: PDF.UserSpace.EdgeInsets(top: 72, leading: 220, bottom: 72, trailing: 220),
+                margins: PDF.EdgeInsets(top: 72, leading: 220, bottom: 72, trailing: 220),
                 version: .v2_0,
                 info: .init(
                     title: "Forced Wrapping Test",
@@ -164,7 +169,8 @@ struct PreviewCopyPasteTests {
 
         // Extract and display the content stream
         if let streamStart = pdfString.range(of: "stream\n"),
-           let streamEnd = pdfString.range(of: "\nendstream") {
+            let streamEnd = pdfString.range(of: "\nendstream")
+        {
             let stream = String(pdfString[streamStart.upperBound..<streamEnd.lowerBound])
             print("\n--- Content Stream (forced wrap) ---")
             print(stream)

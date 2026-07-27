@@ -1,7 +1,7 @@
 // PDF.Context.Style.swift
 // Text styling as a product type with monoid structure.
 
-import Geometry
+import Geometry_Primitives
 public import Layout_Primitives
 public import PDF_Standard
 
@@ -93,7 +93,7 @@ extension PDF.Context.Style {
         color: .black,
         lineHeight: 1.2,
         textMarkup: nil,
-        verticalOffset: 0,
+        verticalOffset: .init(0),
         textAlign: .leading
     )
 }
@@ -211,7 +211,7 @@ extension PDF.Context.Style {
             color: .black,
             lineHeight: 1.2,
             textMarkup: nil,
-            verticalOffset: 0,
+            verticalOffset: .init(0),
             textAlign: .leading
         )
     ) -> Resolved {

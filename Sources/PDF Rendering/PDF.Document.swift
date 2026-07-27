@@ -25,7 +25,7 @@ extension PDF.Document {
     /// config.defaultFont = .helvetica
     ///
     /// let doc = PDF.Document(configuration: config) {
-    ///     PDF.VStack {
+    ///     PDF.Stack {
     ///         PDF.Text("Hello, World!")
     ///     }
     /// }
@@ -35,7 +35,7 @@ extension PDF.Document {
         @PDF.Builder _ build: () -> View
     ) {
         var context = PDF.Context(configuration)
-        
+
         let view = build()
         View._render(view, context: &context)
 

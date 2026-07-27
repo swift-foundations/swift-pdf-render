@@ -21,7 +21,7 @@ extension PDF {
     /// ```swift
     /// struct MyDocument: PDF.View {
     ///     var body: some PDF.View {
-    ///         PDF.VStack(spacing: 12) {
+    ///         PDF.Stack(.vertical, spacing: 12) {
     ///             PDF.Text("Hello, World!")
     ///             PDF.Divider()
     ///             PDF.Text("This is a paragraph of text.")
@@ -44,6 +44,13 @@ extension PDF {
 
 // MARK: - Default Implementation
 
+// reason: `Content: Self` is not valid Swift in this where-clause conformance
+// position ("type 'Self.Content' constrained to non-protocol, non-class type
+// 'Self'") — confirmed by CI breakage when swiftlint --fix applied the same
+// autocorrect to the analogous SVG.View constraint (swift-svg-render commit
+// 60e00fd, "Revert invalid autocorrect: 'where Content: Self' back to
+// 'where Content: SVG.View'").
+// swiftlint:disable:next prefer_self_in_static_references
 extension PDF.View where Content: PDF.View {
     /// Default implementation delegates to the body's render method.
     @inlinable

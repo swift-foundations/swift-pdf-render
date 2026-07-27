@@ -5,8 +5,6 @@ public import PDF_Standard
 extension PDF {
     /// Fixed-size spacing element
     public struct Spacer: PDF.View, Sendable {
-        public typealias Content = Never
-
         /// Vertical space (displacement)
         public var height: PDF.UserSpace.Height
 
@@ -14,14 +12,18 @@ extension PDF {
         public init(_ height: PDF.UserSpace.Height) {
             self.height = height
         }
+    }
+}
 
-        public var body: Never {
-            fatalError("PDF.Spacer is a leaf view")
-        }
+extension PDF.Spacer {
+    public typealias Content = Never
 
-        public static func _render(_ view: Self, context: inout PDF.Context) {
-            context.advance(view.height)
-            // Spacer produces no operations, just advances position
-        }
+    public var body: Never {
+        fatalError("PDF.Spacer is a leaf view")
+    }
+
+    public static func _render(_ view: Self, context: inout PDF.Context) {
+        context.advance(view.height)
+        // Spacer produces no operations, just advances position
     }
 }

@@ -58,7 +58,7 @@ extension PDF.Element: PDF.View {
         let (tagName, properties) = markedContentInfo(for: view.tag)
 
         // Emit BMC or BDC
-        if let properties = properties, !properties.isEmpty {
+        if let properties, !properties.isEmpty {
             context.currentPageBuilder.beginMarkedContent(tag: tagName, properties: properties)
         } else {
             context.currentPageBuilder.beginMarkedContent(tag: tagName)
@@ -148,7 +148,11 @@ extension PDF.Element: PDF.View {
 
         // Fallback: use type name as tag (for custom/future structure types)
         let typeName = String(describing: Tag.self)
-        // Type names from Swift are valid PDF names (alphanumeric)
+        // WORKAROUND: Force-unwrap COS.Name init for Swift type names
+        // WHY: Type names used here are simple ASCII identifiers from Swift's type system
+        // WHEN TO REMOVE: When COS.Name provides a non-throwing init for known-valid strings
+        // TRACKING: swift-standards/swift-iso-32000 — ISO_32000.COS.Name has no
+        // non-throwing init for pre-validated ASCII identifiers.
         // swiftlint:disable:next force_try
         return (try! ISO_32000.COS.Name(typeName), nil)
     }

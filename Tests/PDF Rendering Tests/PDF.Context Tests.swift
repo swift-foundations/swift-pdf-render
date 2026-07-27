@@ -1,5 +1,7 @@
 // PDF.Context Tests.swift
 
+import Layout_Primitives
+import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
 
@@ -24,10 +26,10 @@ struct `PDF.Context Tests` {
             lineHeight: 1.5
         )
 
-        #expect(context.layoutBox.llx == 100)
-        #expect(context.layoutBox.lly == 200)
-        #expect(context.layoutBox.width == 400)
-        #expect(context.layoutBox.height == 600)
+        #expect(context.layout.box.llx == 100)
+        #expect(context.layout.box.lly == 200)
+        #expect(context.layout.box.width == 400)
+        #expect(context.layout.box.height == 600)
         #expect(context.style.font == .times)
         #expect(context.style.fontSize == 14)
         #expect(context.style.color == .blue)
@@ -42,8 +44,8 @@ struct `PDF.Context Tests` {
             mediaBox: .letter
         )
 
-        #expect(context.layoutBox.llx == 0)
-        #expect(context.layoutBox.lly == 0)
+        #expect(context.layout.box.llx == 0)
+        #expect(context.layout.box.lly == 0)
         #expect(context.style.font == .helvetica)
         #expect(context.style.fontSize == 12)
         #expect(context.style.color == .black)
@@ -54,24 +56,24 @@ struct `PDF.Context Tests` {
     func `Creates context from mediaBox and margins`() {
         let context = PDF.Context(
             mediaBox: .letter,
-            margins: PDF.UserSpace.EdgeInsets(all: 72)
+            margins: PDF.EdgeInsets(all: 72)
         )
 
-        #expect(context.layoutBox.llx == 72)
-        #expect(context.layoutBox.lly == 72)
-        #expect(context.layoutBox.width == 468)
-        #expect(context.layoutBox.height == 648)
+        #expect(context.layout.box.llx == 72)
+        #expect(context.layout.box.lly == 72)
+        #expect(context.layout.box.width == 468)
+        #expect(context.layout.box.height == 648)
     }
 
     @Test
     func `Creates context from A4 mediaBox`() {
         let context = PDF.Context(
             mediaBox: .a4,
-            margins: PDF.UserSpace.EdgeInsets(all: 72)
+            margins: PDF.EdgeInsets(all: 72)
         )
 
-        #expect(context.layoutBox.llx == 72)
-        #expect(context.layoutBox.lly == 72)
+        #expect(context.layout.box.llx == 72)
+        #expect(context.layout.box.lly == 72)
     }
 
     // MARK: - Line Height
@@ -124,11 +126,11 @@ struct `PDF.Context Tests` {
             lineHeight: 1.2
         )
 
-        let startY = context.layoutBox.lly
-        context.advanceLine()
+        let startY = context.layout.box.lly
+        context.advance.line()
 
         // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
-        let advancedHeight: PDF.UserSpace.Dy = context.layoutBox.lly - startY
+        let advancedHeight: PDF.UserSpace.Dy = context.layout.box.lly - startY
         #expect(advancedHeight > 14.39 && advancedHeight < 14.41)
     }
 
@@ -142,7 +144,7 @@ struct `PDF.Context Tests` {
 
         context.advance(PDF.UserSpace.Height(50))
 
-        #expect(context.layoutBox.lly == 50)
+        #expect(context.layout.box.lly == 50)
     }
 
     @Test
@@ -158,7 +160,7 @@ struct `PDF.Context Tests` {
         context.advance(PDF.UserSpace.Height(20))
         context.advance(PDF.UserSpace.Height(30))
 
-        #expect(context.layoutBox.lly == 160)
+        #expect(context.layout.box.lly == 160)
     }
 
     // MARK: - Mutability
@@ -171,14 +173,14 @@ struct `PDF.Context Tests` {
             mediaBox: .letter
         )
 
-        context.layoutBox.llx = 100
-        context.layoutBox.lly = 200
+        context.layout.box.llx = 100
+        context.layout.box.lly = 200
         context.style.font = .courier.bold
         context.style.fontSize = 16
         context.style.color = .red
 
-        #expect(context.layoutBox.llx == 100)
-        #expect(context.layoutBox.lly == 200)
+        #expect(context.layout.box.llx == 100)
+        #expect(context.layout.box.lly == 200)
         #expect(context.style.font == .courier.bold)
         #expect(context.style.fontSize == 16)
         #expect(context.style.color == .red)
