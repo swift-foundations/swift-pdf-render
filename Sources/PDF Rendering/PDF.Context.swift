@@ -473,7 +473,7 @@ extension PDF.Context {
             // final segment runs from the top of the content box to endY.
             var total = height(layout.maxY - startY) + height(endY - layout.initial.lly)
             for _ in 1..<breaks {
-                total = total + height(layout.maxY - layout.initial.lly)
+                total += height(layout.maxY - layout.initial.lly)
             }
             measuredHeight = total
         }
