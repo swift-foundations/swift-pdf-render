@@ -270,7 +270,7 @@ extension PDF.Context.Text.Run {
 
         // Calculate total width (words + gaps, excluding trailing gap)
         var totalWidth: PDF.UserSpace.Width = .init(0)
-        rendered(0..<state.words.count).forEach { i in
+        (0..<state.words.count).forEach { i in
             totalWidth += state.words[i].width
             if i < state.words.count - 1 {
                 totalWidth += state.words[i].gapAfter
