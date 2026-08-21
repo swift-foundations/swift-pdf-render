@@ -80,7 +80,7 @@ extension PDF.Element: PDF.View {
     ) -> (ISO_32000.COS.Name, ISO_32000.COS.Dictionary?) {
         // Table (14.8.4.8.3)
         if Tag.self == ISO_32000.Table.self {
-            let table = unsafeBitCast(tag, to: ISO_32000.Table.self)
+            let table = unsafe unsafeBitCast(tag, to: ISO_32000.Table.self)
             var props: ISO_32000.COS.Dictionary? = nil
             if let summary = table.summary {
                 props = [.summary: .string(ISO_32000.COS.StringValue(summary))]
@@ -95,7 +95,7 @@ extension PDF.Element: PDF.View {
 
         // TH (14.8.4.8.3)
         if Tag.self == ISO_32000.TH.self {
-            let th = unsafeBitCast(tag, to: ISO_32000.TH.self)
+            let th = unsafe unsafeBitCast(tag, to: ISO_32000.TH.self)
             var props: ISO_32000.COS.Dictionary = [:]
             if th.row.span != 1 {
                 props[.rowSpan] = .integer(Int64(th.row.span))
@@ -117,7 +117,7 @@ extension PDF.Element: PDF.View {
 
         // TD (14.8.4.8.3)
         if Tag.self == ISO_32000.TD.self {
-            let td = unsafeBitCast(tag, to: ISO_32000.TD.self)
+            let td = unsafe unsafeBitCast(tag, to: ISO_32000.TD.self)
             var props: ISO_32000.COS.Dictionary = [:]
             if td.row.span != 1 {
                 props[.rowSpan] = .integer(Int64(td.row.span))

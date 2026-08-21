@@ -17,7 +17,7 @@ extension Pair: PDF.View where First: PDF.View, Second: PDF.View {
     public static func _render(_ view: Self, context: inout PDF.Context) {
         // Dispatch to specialized path for Rectangle
         if First.self == PDF.Rectangle.self {
-            _renderRectangleContent(
+            unsafe _renderRectangleContent(
                 unsafeBitCast(view.first, to: PDF.Rectangle.self),
                 content: view.second,
                 context: &context
