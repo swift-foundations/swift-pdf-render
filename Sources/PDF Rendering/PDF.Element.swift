@@ -1,36 +1,11 @@
-// PDF.Element.swift
-// Structure-tagged element for PDF rendering.
-
 public import PDF_Standard
 
 extension PDF {
-    /// A structure-tagged element for PDF rendering.
-    ///
-    /// `PDF.Element` wraps content with structure tag information per ISO 32000-2:2020.
-    /// The tag identifies the element type (Table, TR, TH, TD, etc.) and the content
-    /// is rendered with appropriate structure tree entries for accessibility.
-    ///
-    /// ## Usage
-    ///
-    /// Typically used via `callAsFunction` on ISO structure types:
-    ///
-    /// ```swift
-    /// let th = ISO_32000.TH(scope: .column)
-    /// th {
-    ///     Pair(PDF.Rectangle(fill: .gray(0.9)), PDF.Text("Header"))
-    /// }
-    /// ```
-    ///
-    /// ## Structure Tags
-    ///
-    /// Per ISO 32000-2:2020 Section 14.8, structure tags create the logical
-    /// structure tree that enables accessibility features like screen readers.
-    /// The `_render` method emits BMC/BDC...EMC marked content sequences.
+
     public struct Element<Tag, Content: PDF.View> {
-        /// The structure tag (e.g., TH, TD, TR, Table)
+
         public let tag: Tag
 
-        /// The visual content to render
         public let content: Content
 
         public init(tag: Tag, @PDF.Builder content: () -> Content) {
@@ -47,38 +22,25 @@ extension PDF.Element: PDF.View {
         content
     }
 
-    /// Renders the content wrapped in marked content operators.
-    ///
-    /// Per ISO 32000-2:2020 Section 14.6, emits:
-    /// - `/Tag BMC` for simple tags (no attributes)
-    /// - `/Tag <<properties>> BDC` for tags with attributes (RowSpan, ColSpan, etc.)
-    /// - `EMC` after content
     public static func _render(_ view: Self, context: inout PDF.Context) {
-        // Get tag name and properties based on Tag type
+
         let (tagName, properties) = markedContentInfo(for: view.tag)
 
-        // Emit BMC or BDC
         if let properties, !properties.isEmpty {
             context.currentPageBuilder.beginMarkedContent(tag: tagName, properties: properties)
         } else {
             context.currentPageBuilder.beginMarkedContent(tag: tagName)
         }
 
-        // Render content
         Content._render(view.content, context: &context)
 
-        // Emit EMC
         context.currentPageBuilder.endMarkedContent()
     }
 
-    /// Returns the tag name and optional properties dictionary for marked content.
-    ///
-    /// Uses static type dispatch to determine the structure type and extract
-    /// any non-default attributes (RowSpan, ColSpan, Scope, Headers, etc.).
     private static func markedContentInfo(
         for tag: Tag
     ) -> (ISO_32000.COS.Name, ISO_32000.COS.Dictionary?) {
-        // Table (14.8.4.8.3)
+
         if Tag.self == ISO_32000.Table.self {
             let table = unsafe unsafeBitCast(tag, to: ISO_32000.Table.self)
             var props: ISO_32000.COS.Dictionary? = nil
@@ -88,12 +50,10 @@ extension PDF.Element: PDF.View {
             return (.table, props)
         }
 
-        // TR (14.8.4.8.3)
         if Tag.self == ISO_32000.TR.self {
             return (.tr, nil)
         }
 
-        // TH (14.8.4.8.3)
         if Tag.self == ISO_32000.TH.self {
             let th = unsafe unsafeBitCast(tag, to: ISO_32000.TH.self)
             var props: ISO_32000.COS.Dictionary = [:]
@@ -115,7 +75,6 @@ extension PDF.Element: PDF.View {
             return (.th, props.isEmpty ? nil : props)
         }
 
-        // TD (14.8.4.8.3)
         if Tag.self == ISO_32000.TD.self {
             let td = unsafe unsafeBitCast(tag, to: ISO_32000.TD.self)
             var props: ISO_32000.COS.Dictionary = [:]
@@ -131,29 +90,20 @@ extension PDF.Element: PDF.View {
             return (.td, props.isEmpty ? nil : props)
         }
 
-        // THead (14.8.4.8.3)
         if Tag.self == ISO_32000.THead.self {
             return (.thead, nil)
         }
 
-        // TBody (14.8.4.8.3)
         if Tag.self == ISO_32000.TBody.self {
             return (.tbody, nil)
         }
 
-        // TFoot (14.8.4.8.3)
         if Tag.self == ISO_32000.TFoot.self {
             return (.tfoot, nil)
         }
 
-        // Fallback: use type name as tag (for custom/future structure types)
         let typeName = String(describing: Tag.self)
-        // WORKAROUND: Force-unwrap COS.Name init for Swift type names
-        // WHY: Type names used here are simple ASCII identifiers from Swift's type system
-        // WHEN TO REMOVE: When COS.Name provides a non-throwing init for known-valid strings
-        // TRACKING: swift-standards/swift-iso-32000 — ISO_32000.COS.Name has no
-        // non-throwing init for pre-validated ASCII identifiers.
-        // swiftlint:disable:next force_try
+
         return (try! ISO_32000.COS.Name(typeName), nil)
     }
 }

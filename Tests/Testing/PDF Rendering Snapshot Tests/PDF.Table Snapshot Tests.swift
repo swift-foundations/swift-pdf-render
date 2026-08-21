@@ -1,8 +1,3 @@
-//
-//  PDF.Table Snapshot Tests.swift
-//  swift-pdf-rendering
-//
-
 import Layout_Primitives
 import PDF_Rendering_Test_Support
 import Test_Snapshot_Primitives
@@ -13,8 +8,6 @@ import Tests_Inline_Snapshot
 struct PDFTableSnapshotTests {
     @Suite struct Snapshot {}
 }
-
-// MARK: - Snapshot
 
 extension PDFTableSnapshotTests.Snapshot {
     @Test

@@ -1,5 +1,3 @@
-// PDF.Context Tests.swift
-
 import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
@@ -9,8 +7,6 @@ import Testing
 
 @Suite
 struct `PDF.Context Tests` {
-
-    // MARK: - Construction
 
     @Test
     func `Creates context with all parameters`() {
@@ -76,8 +72,6 @@ struct `PDF.Context Tests` {
         #expect(context.layout.box.lly == 72)
     }
 
-    // MARK: - Line Height
-
     @Test
     func `Calculates line height points`() {
         let context = PDF.Context(
@@ -88,7 +82,6 @@ struct `PDF.Context Tests` {
             lineHeight: 1.2
         )
 
-        // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
         let lineHeight = context.style.line.height
         #expect(lineHeight > 14.39 && lineHeight < 14.41)
     }
@@ -114,8 +107,6 @@ struct `PDF.Context Tests` {
         #expect(large.style.line.height == small.style.line.height * 2.0)
     }
 
-    // MARK: - Advance Methods
-
     @Test
     func `Advance line moves Y by line height`() {
         var context = PDF.Context(
@@ -129,7 +120,6 @@ struct `PDF.Context Tests` {
         let startY = context.layout.box.lly
         context.advance.line()
 
-        // Tolerance comparison: 1.2 cannot be exactly represented in IEEE 754
         let advancedHeight: PDF.UserSpace.Dy = context.layout.box.lly - startY
         #expect(advancedHeight > 14.39 && advancedHeight < 14.41)
     }
@@ -162,8 +152,6 @@ struct `PDF.Context Tests` {
 
         #expect(context.layout.box.lly == 160)
     }
-
-    // MARK: - Mutability
 
     @Test
     func `Context is mutable`() {

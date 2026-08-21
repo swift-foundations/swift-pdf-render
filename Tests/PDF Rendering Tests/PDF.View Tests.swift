@@ -1,5 +1,3 @@
-// PDF.View Tests.swift
-
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
@@ -8,8 +6,6 @@ import Testing
 
 @Suite
 struct `PDF.View Tests` {
-
-    // MARK: - Custom View
 
     @Test
     func `Custom view delegates to body`() {
@@ -33,7 +29,6 @@ struct `PDF.View Tests` {
         let view = TwoLines()
         TwoLines._render(view, context: &context)
 
-        // Content should have been written to the content stream
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
@@ -47,16 +42,12 @@ struct `PDF.View Tests` {
             mediaBox: .letter
         )
 
-        // Render a simple text view
         let view = PDF.Text("Hello, World!")
         PDF.Text._render(view, context: &context)
 
-        // Content stream should have data
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 }
-
-// MARK: - Builder Tests
 
 @Suite
 struct `PDF.Builder Tests` {
@@ -77,7 +68,6 @@ struct `PDF.Builder Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // Content stream should have data
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
@@ -99,7 +89,6 @@ struct `PDF.Builder Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // Y should have advanced for 3 lines
         #expect(context.layout.box.lly > 72)
         #expect(!context.currentPageBuilder.data.isEmpty)
     }

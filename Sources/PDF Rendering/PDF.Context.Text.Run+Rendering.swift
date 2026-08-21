@@ -1,28 +1,16 @@
-// PDF.Context.Text.Run+Render.swift
-// Optimized text renderer with minimal allocations
-
 import ASCII
 import Byte_Primitives
 import Layout_Primitives
 public import PDF_Standard
 
-// MARK: - Text Run Rendering
-
 extension PDF.Context.Text.Run {
-    /// Render multiple text runs with proper line wrapping.
-    ///
-    /// This implementation minimizes allocations by:
-    /// - Using a shared byte buffer for all words on a line
-    /// - Storing compact word descriptors instead of copying bytes
-    /// - Reusing buffers across lines
+
     public static func renderRuns(
         _ runs: [PDF.Context.Text.Run],
         context: inout PDF.Context
     ) {
         guard !runs.isEmpty else { return }
 
-        // Build ActualText for proper copy-paste behavior
-        // This provides the semantic text for extraction, separate from visual line wrapping
         let actualText = buildActualText(from: runs)
         if !actualText.isEmpty {
             context.currentPageBuilder.beginActualTextSpan(actualText)
@@ -35,14 +23,9 @@ extension PDF.Context.Text.Run {
 
         let maxWidth = context.layout.box.width
         let preserveWhitespace = context.mode.preserveWhitespace
-        // CSS `white-space: nowrap` / `pre`: suppress line-wrap on overflow.
-        // Content extends past `maxWidth`; lines emit only on explicit `\n`
-        // or end-of-input. Equivalent to treating `maxWidth` as infinite for
-        // the wrap-on-overflow decision while keeping the rest of the layout
-        // logic intact (gaps, words, alignment).
+
         let wrapAllowed = !context.mode.noWrap
 
-        // Shared state - reused across lines
         var state = RenderState()
         state.lineBytes.reserveCapacity(512)
         state.words.reserveCapacity(32)
@@ -53,14 +36,12 @@ extension PDF.Context.Text.Run {
         var isFirstLine = true
         var currentRunIndex = 0
 
-        // Cache space width
         var cachedSpaceWidth: PDF.UserSpace.Width = .init(0)
         var cachedSpaceFont: PDF.Font?
         var cachedSpaceFontSize: PDF.UserSpace.Size<1>?
 
-        // Process all runs
         for run in runs {
-            // Cache space width for this run
+
             if cachedSpaceFont != run.font || cachedSpaceFontSize != run.fontSize {
                 cachedSpaceWidth = run.font.winAnsi.width(
                     of: [Byte(UInt8.ascii.space)],
@@ -71,11 +52,10 @@ extension PDF.Context.Text.Run {
             }
 
             for byte in run.bytes {
-                // Switch on the arithmetic carrier so ASCII control-byte
-                // constants (UInt8.ascii.*) match; the byte itself stays Byte.
+
                 switch byte.underlying {
                 case .ascii.newline:
-                    // Flush current word
+
                     if !state.currentWord.isEmpty {
                         let width = run.font.winAnsi.width(
                             of: state.currentWord,
@@ -84,7 +64,7 @@ extension PDF.Context.Text.Run {
                         state.appendWord(width: width, runIndex: currentRunIndex)
                         currentLineWidth += width
                     }
-                    // Render line
+
                     if !state.words.isEmpty || preserveWhitespace {
                         emitLine(&state, runs: runs, context: &context, isFirstLine: isFirstLine)
                         isFirstLine = false
@@ -94,7 +74,7 @@ extension PDF.Context.Text.Run {
                     lastWasWhitespace = !preserveWhitespace
 
                 case .ascii.space:
-                    // Flush current word
+
                     if !state.currentWord.isEmpty {
                         let width = run.font.winAnsi.width(
                             of: state.currentWord,
@@ -108,7 +88,7 @@ extension PDF.Context.Text.Run {
                             state.appendWord(width: width, runIndex: currentRunIndex)
                             currentLineWidth += width
                         } else {
-                            // Line full
+
                             emitLine(
                                 &state,
                                 runs: runs,
@@ -122,7 +102,7 @@ extension PDF.Context.Text.Run {
                         }
                         lastWasWhitespace = false
                     }
-                    // Add space
+
                     if preserveWhitespace || (!lastWasWhitespace && !state.words.isEmpty) {
                         state.addGap(cachedSpaceWidth)
                         currentLineWidth += cachedSpaceWidth
@@ -130,7 +110,7 @@ extension PDF.Context.Text.Run {
                     lastWasWhitespace = true
 
                 case .ascii.htab:
-                    // Flush current word
+
                     if !state.currentWord.isEmpty {
                         let width = run.font.winAnsi.width(
                             of: state.currentWord,
@@ -154,7 +134,7 @@ extension PDF.Context.Text.Run {
                             currentLineWidth = width
                         }
                     }
-                    // Add tab
+
                     let tabWidth = cachedSpaceWidth * 4
                     if !wrapAllowed || currentLineWidth + tabWidth <= maxWidth {
                         state.addGap(tabWidth)
@@ -167,7 +147,6 @@ extension PDF.Context.Text.Run {
                 }
             }
 
-            // Flush remaining word from this run
             if !state.currentWord.isEmpty {
                 let width = run.font.winAnsi.width(of: state.currentWord, atSize: run.fontSize)
                 if state.words.isEmpty {
@@ -189,26 +168,19 @@ extension PDF.Context.Text.Run {
             currentRunIndex += 1
         }
 
-        // Render final line
         if !state.words.isEmpty {
             emitLine(&state, runs: runs, context: &context, isFirstLine: isFirstLine)
         }
     }
 
-    // MARK: - Render State
-
-    /// Compact state for rendering - avoids per-word allocations
     private struct RenderState {
-        /// Shared buffer for all word bytes on current line
+
         var lineBytes: [Byte] = []
 
-        /// Word descriptors (indices into lineBytes, no byte copies)
         var words: [WordDescriptor] = []
 
-        /// Current word being accumulated
         var currentWord: [Byte] = []
 
-        /// Append current word to line
         mutating func appendWord(width: PDF.UserSpace.Width, runIndex: Int) {
             let start = lineBytes.count
             lineBytes.append(contentsOf: currentWord)
@@ -224,21 +196,18 @@ extension PDF.Context.Text.Run {
             currentWord.removeAll(keepingCapacity: true)
         }
 
-        /// Add gap (space/tab) after last word
         mutating func addGap(_ width: PDF.UserSpace.Width) {
             if !words.isEmpty {
                 words[words.count - 1].gapAfter += width
             }
         }
 
-        /// Clear line state (reuse buffers)
         mutating func clearLine() {
             lineBytes.removeAll(keepingCapacity: true)
             words.removeAll(keepingCapacity: true)
         }
     }
 
-    /// Compact word descriptor - no byte allocation
     private struct WordDescriptor {
         let byteStart: Int
         let byteLength: Int
@@ -246,8 +215,6 @@ extension PDF.Context.Text.Run {
         var gapAfter: PDF.UserSpace.Width
         let runIndex: Int
     }
-
-    // MARK: - Line Emission
 
     private static func emitLine(
         _ state: inout RenderState,
@@ -260,7 +227,6 @@ extension PDF.Context.Text.Run {
         let lineHeight = context.style.line.height
         context.page.ensure(height: lineHeight)
 
-        // Handle list marker
         if isFirstLine, let pending = context.list.marker {
             emitListMarker(pending.marker, at: pending.x, context: &context)
             context.list.marker = nil
@@ -268,7 +234,6 @@ extension PDF.Context.Text.Run {
 
         let baselineY = context.layout.box.lly + context.style.line.ascent
 
-        // Calculate total width (words + gaps, excluding trailing gap)
         var totalWidth: PDF.UserSpace.Width = .init(0)
         (0..<state.words.count).forEach { i in
             totalWidth += state.words[i].width
@@ -277,7 +242,6 @@ extension PDF.Context.Text.Run {
             }
         }
 
-        // Calculate alignment
         let availableWidth = context.layout.box.width
         let alignmentOffset: PDF.UserSpace.Width
         switch context.style.textAlign {
@@ -293,7 +257,6 @@ extension PDF.Context.Text.Run {
 
         var currentX = context.layout.box.llx + alignmentOffset
 
-        // Emit words with batching for same-style segments
         var segmentBytes: [Byte] = []
         segmentBytes.reserveCapacity(256)
         var segmentStartX = currentX
@@ -302,17 +265,11 @@ extension PDF.Context.Text.Run {
 
         for word in state.words {
             let run = runs[word.runIndex]
-            // IMPORTANT: Must pass word.runIndex here, not rely on default (0).
-            // StyleKey.runIndex is used later in runs[style.runIndex] to fetch the
-            // correct run when emitting segments (lines ~278, ~304, ~322).
-            // If runIndex defaults to 0, ALL segments emit with runs[0]'s font/style,
-            // causing: (1) bold/italic leaking into normal text, (2) wrong spacing
-            // due to incorrect font metrics. This was a critical bug fixed in v0.4.2.
+
             let wordStyle = StyleKey(run: run, index: word.runIndex)
 
-            // Check if style changed
             if let current = currentStyle, current != wordStyle {
-                // Flush segment
+
                 if !segmentBytes.isEmpty {
                     emitSegment(
                         bytes: segmentBytes,
@@ -328,7 +285,6 @@ extension PDF.Context.Text.Run {
                 segmentWidth = .init(0)
             }
 
-            // Add word bytes to segment
             let wordBytes = state.lineBytes[word.byteStart..<(word.byteStart + word.byteLength)]
             segmentBytes.append(contentsOf: wordBytes)
             segmentWidth += word.width
@@ -336,9 +292,8 @@ extension PDF.Context.Text.Run {
 
             currentX += word.width
 
-            // Handle gap after word
             if word.gapAfter > .init(0) {
-                // Flush segment before gap
+
                 if !segmentBytes.isEmpty, let style = currentStyle {
                     emitSegment(
                         bytes: segmentBytes,
@@ -356,7 +311,6 @@ extension PDF.Context.Text.Run {
             }
         }
 
-        // Flush final segment
         if !segmentBytes.isEmpty, let style = currentStyle {
             emitSegment(
                 bytes: segmentBytes,
@@ -368,11 +322,9 @@ extension PDF.Context.Text.Run {
             )
         }
 
-        // Advance Y
         context.layout.box.lly += lineHeight
     }
 
-    /// Style key for batching - avoids repeated property comparisons
     private struct StyleKey: Equatable {
         let runIndex: Int
         let font: PDF.Font
@@ -405,7 +357,6 @@ extension PDF.Context.Text.Run {
     ) {
         let textY = baselineY - run.verticalOffset
 
-        // Highlight background
         if case .highlight(let annotationColor) = run.textDecoration {
             let fillColor: PDF.Color =
                 switch annotationColor {
@@ -423,7 +374,6 @@ extension PDF.Context.Text.Run {
             context.emit.rectangle(bgRect, fill: fillColor, stroke: nil)
         }
 
-        // Text
         context.emit.text(
             bytes,
             at: PDF.UserSpace.Coordinate(x: x, y: textY),
@@ -432,7 +382,6 @@ extension PDF.Context.Text.Run {
             color: run.color
         )
 
-        // Decoration
         if let decoration = run.textDecoration {
             switch decoration {
             case .underline:
@@ -461,7 +410,6 @@ extension PDF.Context.Text.Run {
             }
         }
 
-        // Links
         let linkRect = PDF.UserSpace.Rectangle(
             x: x,
             y: textY - run.fontSize.height * 0.85,
@@ -532,60 +480,42 @@ extension PDF.Context.Text.Run {
         }
     }
 
-    // MARK: - ActualText for Copy-Paste
-
-    /// Build the ActualText string from runs for proper copy-paste behavior.
-    ///
-    /// This combines all runs into a single continuous string, properly handling
-    /// spacing between runs with different styles. The ActualText is used by
-    /// PDF readers when extracting text for copy-paste operations.
-    ///
-    /// Performance optimizations (Swift 6.2):
-    /// - O(1) boolean tracking instead of O(n) `hasSuffix` checks
-    /// - ASCII fast-path (bytes < 0x80) avoids decode table lookup
-    /// - Direct UTF-8 buffer building, single String conversion at end
-    ///
-    /// - Parameter runs: The text runs to combine
-    /// - Returns: The combined text with proper spacing
     private static func buildActualText(from runs: [PDF.Context.Text.Run]) -> String {
-        // Pre-calculate capacity: total bytes
-        // UTF-8 may expand extended chars (0x80-0xFF) to 2-3 bytes
+
         let totalBytes = runs.reduce(0) { $0 + $1.bytes.count }
         var utf8Buffer: [UInt8] = []
         utf8Buffer.reserveCapacity(totalBytes)
 
-        var lastWasSpace = true  // O(1) tracking for whitespace collapsing
+        var lastWasSpace = true
 
         for run in runs {
             guard !run.bytes.isEmpty else { continue }
 
-            // Process bytes with ASCII fast-path
             for byte in run.bytes {
                 if byte.underlying.ascii.isWhitespace {
-                    // Collapse whitespace to single space
+
                     if !lastWasSpace {
                         utf8Buffer.append(.ascii.space)
                         lastWasSpace = true
                     }
                 } else if byte < 0x80 {
-                    // ASCII fast-path: direct passthrough (~95% of English text)
+
                     utf8Buffer.append(byte.underlying)
                     lastWasSpace = false
                 } else if let scalar = ISO_32000.WinAnsiEncoding.decode(byte) {
-                    // Extended chars (0x80-0xFF): encode to UTF-8
+
                     for unit in scalar.utf8 {
                         utf8Buffer.append(unit)
                     }
                     lastWasSpace = false
                 } else {
-                    // Unmapped byte: replace with '?'
+
                     utf8Buffer.append(0x3F)
                     lastWasSpace = false
                 }
             }
         }
 
-        // Single String conversion at end
         return String(decoding: utf8Buffer, as: UTF8.self)
     }
 }

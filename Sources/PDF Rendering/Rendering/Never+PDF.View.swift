@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  swift-pdf-rendering
-//
-//  Created by Coen ten Thije Boonkkamp on 05/12/2025.
-//
-
 extension Never: PDF.View {
     public typealias Content = Never
 

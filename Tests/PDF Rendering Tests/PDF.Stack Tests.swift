@@ -1,5 +1,3 @@
-// PDF.Stack Tests.swift
-
 import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
@@ -9,8 +7,6 @@ import Testing
 
 @Suite
 struct `PDF.Stack Tests` {
-
-    // MARK: - Vertical
 
     @Test
     func `Creates vertical stack with builder`() {
@@ -50,7 +46,6 @@ struct `PDF.Stack Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // Content stream should have data for all 3 texts
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
@@ -73,7 +68,6 @@ struct `PDF.Stack Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // 72 + line 1 (12) + spacing (20) + line 2 (12) = 116
         #expect(context.layout.box.lly == 116)
     }
 
@@ -95,7 +89,6 @@ struct `PDF.Stack Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // 72 + single line (12), no spacing added = 84
         #expect(context.layout.box.lly == 84)
     }
 
@@ -104,8 +97,6 @@ struct `PDF.Stack Tests` {
         let _: PDF.Stack<PDF.Text> = PDF.Stack { PDF.Text("Test") }
         #expect(Bool(true))
     }
-
-    // MARK: - Horizontal
 
     @Test
     func `Creates horizontal stack with builder`() {
@@ -144,7 +135,6 @@ struct `PDF.Stack Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // Content stream should have data
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
@@ -167,8 +157,6 @@ struct `PDF.Stack Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // HStack positions children horizontally, Y advances by max height (one line)
-        // 72 + 12 = 84
         #expect(context.layout.box.lly == 84)
     }
 
@@ -177,8 +165,6 @@ struct `PDF.Stack Tests` {
         let _: PDF.Stack<PDF.Text> = PDF.Stack(.horizontal) { PDF.Text("Test") }
         #expect(Bool(true))
     }
-
-    // MARK: - Nesting
 
     @Test
     func `Vertical can contain horizontal`() {

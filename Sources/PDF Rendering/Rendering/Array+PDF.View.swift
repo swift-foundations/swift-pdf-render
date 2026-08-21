@@ -1,6 +1,3 @@
-// Array+PDF.View.swift
-// PDF.View conformance for Array — enables `for...in` syntax in @PDF.Builder.
-
 public import PDF_Standard
 
 extension Array: PDF.View where Element: PDF.View {

@@ -1,19 +1,8 @@
-// PDF.Context+Render.swift
-// Render.Context conformance for cross-format rendering.
-//
-// Maps the 15 semantic methods to existing PDF.Context infrastructure,
-// enabling the same Render.View tree to render through both
-// HTML.Context and PDF.Context.
-
 import Layout_Primitives
 public import PDF_Standard
 public import Render_Primitives
 
-// MARK: - Render.Context Conformance
-
 extension PDF.Context {
-
-    // MARK: - Text
 
     public mutating func text(_ content: borrowing String) {
         let copy = copy content
@@ -28,8 +17,6 @@ extension PDF.Context {
         )
         append(inline: run)
     }
-
-    // MARK: - Block Structure
 
     public static func _pushBlock(
         _ context: inout Self,
@@ -83,8 +70,6 @@ extension PDF.Context {
         }
     }
 
-    // MARK: - Inline Structure
-
     public static func _pushInline(
         _ context: inout Self,
         role: Render.Semantic.Inline?,
@@ -111,8 +96,6 @@ extension PDF.Context {
             context.restore(saved)
         }
     }
-
-    // MARK: - Lists
 
     public static func _pushList(_ context: inout Self, kind: Render.Semantic.List, start: Int?) {
         context.flush.inline()
@@ -146,8 +129,6 @@ extension PDF.Context {
         context.flush.inline()
     }
 
-    // MARK: - Breaks
-
     public mutating func lineBreak() {
         flush.inline()
         advance.line()
@@ -162,8 +143,6 @@ extension PDF.Context {
         advance(PDF.UserSpace.Height(6))
     }
 
-    // MARK: - Media
-
     public mutating func image(source: String, alt: String) {
         flush.inline()
         let run = Self.Text.Run(
@@ -175,8 +154,6 @@ extension PDF.Context {
         append(inline: run)
         flush.inline()
     }
-
-    // MARK: - Links
 
     public static func _pushLink(_ context: inout Self, destination: borrowing String) {
         let copy = copy destination
@@ -192,8 +169,6 @@ extension PDF.Context {
         }
     }
 
-    // MARK: - Page
-
     public mutating func pageBreak() {
         flush.inline()
         flush.text()
@@ -201,10 +176,8 @@ extension PDF.Context {
     }
 }
 
-// MARK: - Scope Save/Restore
-
 extension PDF.Context {
-    /// Capture the current scoped state as a snapshot.
+
     private func savedScope() -> Scope {
         Scope(
             style: style,
@@ -215,7 +188,6 @@ extension PDF.Context {
         )
     }
 
-    /// Restore all scoped state from a snapshot.
     private mutating func restore(_ scope: Scope) {
         style = scope.style
         layout.box.llx = scope.llx
@@ -225,10 +197,8 @@ extension PDF.Context {
     }
 }
 
-// MARK: - Render.Style Mapping
-
 extension PDF.Context {
-    /// Apply Render.Style hints to the current PDF style.
+
     private mutating func apply(_ style: Render.Style) {
         if let size = style.font.size {
             self.style.fontSize = PDF.UserSpace.Size<1>(Double(size))
@@ -248,10 +218,8 @@ extension PDF.Context {
     }
 }
 
-// MARK: - PDF.Color ← Render.Style.Color
-
 extension PDF.Color {
-    /// Creates a PDF color from a rendering style color hint.
+
     init(_ color: Render.Style.Color) {
         self =
             switch color {

@@ -1,5 +1,3 @@
-// PDF.Spacer Tests.swift
-
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
@@ -8,8 +6,6 @@ import Testing
 
 @Suite
 struct `PDF.Spacer Tests` {
-
-    // MARK: - Construction
 
     @Test
     func `Creates spacer with height`() {
@@ -22,8 +18,6 @@ struct `PDF.Spacer Tests` {
         let spacer = PDF.Spacer(0)
         #expect(spacer.height == 0)
     }
-
-    // MARK: - Rendering
 
     @Test
     func `Does not add content to stream`() {
@@ -38,7 +32,6 @@ struct `PDF.Spacer Tests` {
         let spacer = PDF.Spacer(50)
         PDF.Spacer._render(spacer, context: &context)
 
-        // Spacer doesn't emit any content
         #expect(context.currentPageBuilder.data.isEmpty)
     }
 
@@ -110,7 +103,6 @@ struct `PDF.Spacer Tests` {
 
         PDF.Stack._render(stack, context: &context)
 
-        // 72 + "Before" (12) + Spacer (50) + "After" (12) = 146
         #expect(context.layout.box.lly == 146)
     }
 }

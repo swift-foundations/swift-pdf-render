@@ -1,5 +1,3 @@
-// PDF.Divider Tests.swift
-
 import PDF_Rendering_Test_Support
 import PDF_Standard
 import Testing
@@ -8,8 +6,6 @@ import Testing
 
 @Suite
 struct `PDF.Divider Tests` {
-
-    // MARK: - Construction
 
     @Test
     func `Creates divider with defaults`() {
@@ -32,8 +28,6 @@ struct `PDF.Divider Tests` {
         #expect(divider.thickness == 2.0)
         #expect(divider.padding == 10)
     }
-
-    // MARK: - Rendering
 
     @Test
     func `Creates graphics content`() {
@@ -64,7 +58,6 @@ struct `PDF.Divider Tests` {
         let divider = PDF.Divider(thickness: 2.0, padding: 10)
         PDF.Divider._render(divider, context: &context)
 
-        // 72 + padding before (10) + thickness (2) + padding after (10) = 94
         #expect(context.layout.box.lly == 94)
     }
 }

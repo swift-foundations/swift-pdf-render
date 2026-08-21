@@ -1,6 +1,3 @@
-// Conditional+PDF.View.swift
-// PDF.View conformance for Conditional
-
 public import PDF_Standard
 public import Render_Primitives
 

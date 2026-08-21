@@ -1,6 +1,3 @@
-// Optional+PDF.View.swift
-// PDF.View conformance for Optional
-
 public import PDF_Standard
 
 extension Optional: PDF.View where Wrapped: PDF.View {

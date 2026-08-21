@@ -1,6 +1,3 @@
-// PDF.Table Tests.swift
-// Table rendering test - writes PDF to /tmp for visual inspection
-
 import Binary_Serializable_Primitives
 import Foundation
 import Layout_Primitives
@@ -13,15 +10,6 @@ import Testing
 @Suite
 struct `PDF.Table Tests` {
 
-    /// Renders a table demonstrating ISO 32000-2:2020 table structure types.
-    ///
-    /// Features:
-    /// - THead, TBody, TFoot row groupings
-    /// - TH with scope attribute for accessibility
-    /// - TD data cells
-    /// - ColSpan for merged headers
-    /// - Alternating row backgrounds
-    /// - Array iteration via data.map(content)
     @Test
     func `Writes table PDF to tmp`() throws {
         let cellWidth: PDF.UserSpace.Width = 80

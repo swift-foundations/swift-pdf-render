@@ -1,5 +1,3 @@
-// PDF Rendering Performance Tests.swift
-
 import Binary_Serializable_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
@@ -10,8 +8,6 @@ import Testing
 extension PDF {
     #Tests
 }
-
-// MARK: - Text Rendering
 
 extension PDF.Test.Performance {
 
@@ -53,8 +49,6 @@ extension PDF.Test.Performance {
         PDF.Text._render(text, context: &context)
     }
 
-    // MARK: - Text.Run Encoding
-
     @Test(.timed(iterations: 1000, warmup: 100))
     func `Text.Run encoding short`() {
         let _ = PDF.Context.Text.Run(
@@ -90,8 +84,6 @@ extension PDF.Test.Performance {
         )
     }
 
-    // MARK: - Document Generation
-
     @Test(.timed(iterations: 100, warmup: 10))
     func `document with 1 text element`() {
         let doc = PDF.Document {
@@ -120,8 +112,6 @@ extension PDF.Test.Performance {
         let _ = [UInt8](doc)
     }
 
-    // MARK: - Throughput
-
     @Test(.timed(iterations: 500, warmup: 50))
     func `throughput single document with 18 paragraphs`() {
         let doc = PDF.Document {
@@ -148,8 +138,6 @@ extension PDF.Test.Performance {
         let _ = [UInt8](doc)
     }
 
-    // MARK: - Large Document (HexaPDF Comparison)
-
     @Test(.timed(iterations: 5, warmup: 2))
     func `large document HexaPDF comparison`() {
         let paragraph =
@@ -160,8 +148,6 @@ extension PDF.Test.Performance {
         }
         let _ = [UInt8](doc)
     }
-
-    // MARK: - Text.Run Rendering
 
     @Test(.timed(iterations: 100, warmup: 10))
     func `render 10 runs`() {
@@ -184,8 +170,6 @@ extension PDF.Test.Performance {
         PDF.Context.Text.Run.renderRuns(runs, context: &context)
     }
 }
-
-// MARK: - Helpers
 
 private func createContext() -> PDF.Context {
     PDF.Context(

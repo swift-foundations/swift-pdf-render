@@ -1,20 +1,15 @@
-// PDF.Divider.swift
-
 public import PDF_Standard
 
 extension PDF {
-    /// Horizontal divider line
+
     public struct Divider: PDF.View, Sendable {
-        /// Line color
+
         public var color: PDF.Color
 
-        /// Line thickness (stroke width and vertical extent)
         public var thickness: PDF.UserSpace.Size<1>
 
-        /// Vertical padding around the line
         public var padding: PDF.UserSpace.Height
 
-        /// Create a divider
         public init(
             color: PDF.Color = .gray50,
             thickness: PDF.UserSpace.Size<1> = 0.5,
@@ -35,7 +30,7 @@ extension PDF.Divider {
     }
 
     public static func _render(_ view: Self, context: inout PDF.Context) {
-        // Check for page break before rendering
+
         context.page.ensure(height: view.padding + view.thickness.height + view.padding)
 
         context.advance(view.padding)
@@ -45,7 +40,6 @@ extension PDF.Divider {
 
         context.advance(view.thickness.height + view.padding)
 
-        // Emit line directly to content stream
         context.emit.line(
             from: PDF.UserSpace.Coordinate(x: startX, y: lineY),
             to: PDF.UserSpace.Coordinate(

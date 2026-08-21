@@ -3,10 +3,7 @@ public import PDF_Standard
 import Render_Primitives
 
 extension Render.Context {
-    /// Creates a rendering context that forwards semantic operations to a PDF context.
-    ///
-    /// - Parameter state: A mutable reference to the PDF rendering state.
-    /// - Returns: A witness-based rendering context backed by the PDF context.
+
     public static func pdf(state: Ownership.Mutable<PDF.Context>) -> Self {
         .init(
             text: { state.value.text($0) },

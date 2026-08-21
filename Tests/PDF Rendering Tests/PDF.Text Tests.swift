@@ -1,5 +1,3 @@
-// PDF.Text Tests.swift
-
 import Layout_Primitives
 import PDF_Rendering_Test_Support
 import PDF_Standard
@@ -9,8 +7,6 @@ import Testing
 
 @Suite
 struct `PDF.Text Tests` {
-
-    // MARK: - Construction
 
     @Test
     func `Creates text with content`() {
@@ -51,8 +47,6 @@ struct `PDF.Text Tests` {
         #expect(text.state.characterSpacing == 1)
     }
 
-    // MARK: - Single Line Rendering
-
     @Test
     func `Renders single line text`() {
         var context = PDF.Context(
@@ -77,7 +71,6 @@ struct `PDF.Text Tests` {
         let text = PDF.Text("Hello")
         PDF.Text._render(text, context: &context)
 
-        // Y should have advanced
         #expect(context.layout.box.lly > startY)
     }
 
@@ -92,18 +85,15 @@ struct `PDF.Text Tests` {
         let text = PDF.Text("Hello")
         PDF.Text._render(text, context: &context)
 
-        // Font should be in the fonts used
         #expect(context.currentPageBuilder.fontsUsed.contains(PDF.Font.courier.bold))
     }
-
-    // MARK: - Text Wrapping
 
     @Test
     func `Wraps long text to multiple lines`() {
         var context = PDF.Context(
             x: 72,
             y: 72,
-            availableWidth: 100,  // Narrow width to force wrapping
+            availableWidth: 100,
             availableHeight: 700,
             mediaBox: .letter
         )
@@ -112,7 +102,6 @@ struct `PDF.Text Tests` {
         let startY = context.layout.box.lly
         PDF.Text._render(text, context: &context)
 
-        // Y should have advanced by more than one line
         let lineHeight = context.style.line.height
         #expect(height(context.layout.box.lly - startY) > lineHeight)
     }
@@ -122,7 +111,7 @@ struct `PDF.Text Tests` {
         var context = PDF.Context(
             x: 72,
             y: 72,
-            availableWidth: 50,  // Very narrow
+            availableWidth: 50,
             availableHeight: 700,
             mediaBox: .letter
         )
@@ -132,8 +121,6 @@ struct `PDF.Text Tests` {
 
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
-
-    // MARK: - Empty Text
 
     @Test
     func `Empty text produces single empty line`() {
@@ -148,17 +135,15 @@ struct `PDF.Text Tests` {
         #expect(!context.currentPageBuilder.data.isEmpty)
     }
 
-    // MARK: - Byte Storage
-
     @Test
     func `Stores content as bytes`() {
         let text = PDF.Text("ABC")
-        #expect(text.content == [0x41, 0x42, 0x43])  // WinAnsi for "ABC"
+        #expect(text.content == [0x41, 0x42, 0x43])
     }
 
     @Test
     func `Creates from raw bytes`() {
-        let text = PDF.Text(bytes: [0x48, 0x69])  // "Hi" in ASCII/WinAnsi
+        let text = PDF.Text(bytes: [0x48, 0x69])
         #expect(text.string == "Hi")
     }
 }

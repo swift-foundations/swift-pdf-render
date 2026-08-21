@@ -1,14 +1,5 @@
-//
-//  PDF.Page.swift
-//  swift-pdf-rendering
-//
-//  Created by Coen ten Thije Boonkkamp on 06/12/2025.
-//
-
 extension PDF.Page {
-    /// Create a page from a content stream, extracting font and image resources.
-    ///
-    /// This is the primitive page construction: `(ContentStream, [Annotation]) → Page`
+
     public init(
         mediaBox: ISO_32000.UserSpace.Rectangle,
         contentStream: ISO_32000.ContentStream,

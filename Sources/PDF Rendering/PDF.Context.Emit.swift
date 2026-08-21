@@ -1,16 +1,12 @@
-// PDF.Context.Emit.swift
-// Verb-as-property accessor for content stream emission
-
 import Byte_Primitives
 import Geometry_Primitives
 import PDF_Standard
 import Property_Primitives
 
 extension PDF.Context {
-    /// Tag for emit operations.
+
     public enum Emit {}
 
-    /// Emit operations for content stream output.
     public var emit: Property<Emit, Self> {
         get { Property(self) }
         _modify {
@@ -22,10 +18,7 @@ extension PDF.Context {
 }
 
 extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
-    /// Emit WinAnsi-encoded bytes at a position.
-    ///
-    /// Handles coordinate conversion and font/color setup.
-    /// Batches multiple text emissions within a single BT/ET block for efficiency.
+
     public mutating func text(
         _ bytes: [Byte],
         at position: PDF.UserSpace.Coordinate,
@@ -38,27 +31,23 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         let pdfY = base.pageTop - (position.y - PDF.UserSpace.Y.zero)
         let pdfPosition = PDF.UserSpace.Coordinate(x: position.x, y: pdfY)
 
-        // Open text block if not already open
         if !base.text.blockOpen {
             base.currentPageBuilder.beginText()
             base.text.blockOpen = true
             base.text.position = nil
         }
 
-        // Set color only if changed
         if base.text.color != color {
             base.setFillColor(color)
             base.text.color = color
         }
 
-        // Set font only if changed
         if base.text.font != font || base.text.fontSize != size {
             base.currentPageBuilder.setFont(font, size: size)
             base.text.font = font
             base.text.fontSize = size
         }
 
-        // Position text - use relative positioning if we have a previous position
         if let lastPos = base.text.position {
             base.currentPageBuilder.moveText(
                 dx: pdfPosition.x - lastPos.x,
@@ -75,7 +64,6 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         base.currentPageBuilder.showText(bytes)
     }
 
-    /// Emit a text string at a position (encodes to WinAnsi).
     public mutating func text(
         _ text: String,
         at position: PDF.UserSpace.Coordinate,
@@ -92,7 +80,6 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         )
     }
 
-    /// Emit a line.
     public mutating func line(
         from: PDF.UserSpace.Coordinate,
         to: PDF.UserSpace.Coordinate,
@@ -101,7 +88,6 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
     ) {
         guard !base.mode.measurement else { return }
 
-        // Must close text block before graphics operations
         base.flush.text()
 
         let pdfFromY = base.pageTop - (from.y - PDF.UserSpace.Y.zero)
@@ -115,7 +101,6 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         base.currentPageBuilder.stroke()
     }
 
-    /// Emit a rectangle.
     public mutating func rectangle(
         _ rect: PDF.UserSpace.Rectangle,
         fill: PDF.Color?,
@@ -123,11 +108,8 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
     ) {
         guard !base.mode.measurement else { return }
 
-        // Must close text block before graphics operations
         base.flush.text()
 
-        // In top-left coords: rect.lly is top, rect.lly + rect.height is bottom
-        // In PDF bottom-left coords: pdfLly = pageTop - (bottom position as displacement)
         let pdfLly = base.pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
 
         if let fill {
@@ -155,17 +137,14 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         }
     }
 
-    /// Emit an image.
     public mutating func image(
         _ image: ISO_32000.Image,
         in rect: PDF.UserSpace.Rectangle
     ) {
         guard !base.mode.measurement else { return }
 
-        // Must close text block before graphics operations
         base.flush.text()
 
-        // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
         let pdfLly = base.pageTop - (rect.lly + rect.height - PDF.UserSpace.Y.zero)
 
         let pdfRect = PDF.UserSpace.Rectangle(
@@ -178,7 +157,6 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
         base.currentPageBuilder.drawImage(image, in: pdfRect)
     }
 
-    /// Emit a circle.
     public mutating func circle(
         center: PDF.UserSpace.Coordinate,
         radius: PDF.UserSpace.Length,
@@ -188,10 +166,8 @@ extension Property where Tag == PDF.Context.Emit, Base == PDF.Context {
     ) {
         guard !base.mode.measurement else { return }
 
-        // Must close text block before graphics operations
         base.flush.text()
 
-        // Transform Y coordinate (top-left origin -> PDF bottom-left origin)
         let pdfCenterY = base.pageTop - (center.y - PDF.UserSpace.Y.zero)
         let pdfCenter = PDF.UserSpace.Point(
             x: center.x,
