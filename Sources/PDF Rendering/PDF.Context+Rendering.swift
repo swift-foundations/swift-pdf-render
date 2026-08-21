@@ -53,7 +53,7 @@ extension PDF.Context {
                 default: 11
                 }
             context.style.fontSize = PDF.UserSpace.Size<1>(headingSize)
-            context.style.font = context.style.font.bold ?? context.style.font
+            context.style.font = context.style.font.bold
             if context.lastY != nil {
                 context.advance(PDF.UserSpace.Height(headingSize * 0.5))
             }
@@ -96,10 +96,10 @@ extension PDF.Context {
         guard let role else { return }
         switch role {
         case .emphasis:
-            context.style.font = context.style.font.italic ?? context.style.font
+            context.style.font = context.style.font.italic
 
         case .strong:
-            context.style.font = context.style.font.bold ?? context.style.font
+            context.style.font = context.style.font.bold
 
         case .code:
             context.style.font = .courier
@@ -168,7 +168,7 @@ extension PDF.Context {
         flush.inline()
         let run = Self.Text.Run(
             text: alt.isEmpty ? "[image]" : "[\(alt)]",
-            font: style.font.italic ?? style.font,
+            font: style.font.italic,
             fontSize: style.fontSize,
             color: .gray(0.5)
         )
@@ -236,10 +236,10 @@ extension PDF.Context {
         if let weight = style.font.weight {
             switch weight {
             case .bold:
-                self.style.font = self.style.font.bold ?? self.style.font
+                self.style.font = self.style.font.bold
 
             case .normal:
-                self.style.font = self.style.font.regular ?? self.style.font
+                self.style.font = self.style.font.regular
             }
         }
         if let color = style.color {
